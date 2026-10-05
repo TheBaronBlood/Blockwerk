@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blockwerk – Blöcke für Pybricks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EEF2F6; --surface:#FFFFFF; --ink:#18212C; --muted:#5A6676; --rule:#D7DEE6;
+  --accent:#0090F5; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
+  --code-bg:#121820; --code-ink:#DCE4EE; --code-gutter:#5C6878; --code-sel:rgba(255,181,21,.16); --code-sel-bar:#FFB515;
+  --ui:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F141A; --surface:#171D25; --ink:#E4EAF1; --muted:#97A3B2; --rule:#2A333E;
+    --warn-bg:#3A3011; --warn-ink:#F3D98A;
+    --code-bg:#0B0F14; --code-ink:#DCE4EE; --code-gutter:#566170;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F141A; --surface:#171D25; --ink:#E4EAF1; --muted:#97A3B2; --rule:#2A333E;
+  --warn-bg:#3A3011; --warn-ink:#F3D98A;
+  --code-bg:#0B0F14; --code-ink:#DCE4EE; --code-gutter:#566170;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{height:100%;margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Kopfleiste */
+.bar{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.brand-mark{width:30px;height:30px;flex:0 0 auto}
+.brand h1{font-size:19px;margin:0;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.brand p{margin:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1.5px solid var(--rule);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;line-height:1.1;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+select.btn{padding-right:28px}
+.hidden{display:none!important}
+
+/* Reiter für schmale Bildschirme */
+.tabs{display:none;flex:0 0 auto;background:var(--surface);border-bottom:1px solid var(--rule)}
+.tabs button{flex:1;border:0;background:none;padding:10px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* Hauptbereich */
+main{flex:1 1 auto;display:flex;min-height:0}
+.ws-wrap{position:relative;flex:1 1 auto;min-width:0}
+#blocklyDiv{position:absolute;inset:0}
+.ws-tools{position:absolute;right:14px;bottom:14px;display:flex;gap:6px;z-index:5}
+.ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
+
+/* Codebereich */
+aside.code{flex:0 0 clamp(330px,38vw,600px);display:flex;flex-direction:column;min-height:0;background:var(--code-bg);color:var(--code-ink)}
+.code-head{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.code-head h2{margin:0 auto 0 0;font-size:15px;font-weight:700;letter-spacing:.01em}
+.code-head .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
+.code-head .btn:hover{border-color:#fff}
+.code-head a.btn{text-decoration:none}
+.warnings{margin:10px 14px 0;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:13.5px;line-height:1.4}
+.warnings ul{margin:0;padding-left:18px}
+.code-scroll{flex:1 1 auto;overflow:auto;padding:10px 0 16px}
+.code-lines{font-family:var(--mono);font-size:13.5px;line-height:1.6;min-width:max-content}
+.ln{display:flex;padding-right:16px;border-left:3px solid transparent;cursor:default}
+.ln[data-id]{cursor:pointer}
+.ln.sel{background:var(--code-sel);border-left-color:var(--code-sel-bar)}
+.ln .no{flex:0 0 3.2em;text-align:right;padding-right:14px;color:var(--code-gutter);user-select:none}
+.ln .tx{white-space:pre}
+.tk-kw{color:#FFB515}
+.tk-cls{color:#34CCF1}
+.tk-fn{color:#FF85DD}
+.tk-num{color:#6EE7A0}
+.tk-str{color:#F7D34E}
+.tk-com{color:#7C8796;font-style:italic}
+.tk-bi{color:#B996F9}
+details.run{border-top:1px solid rgba(255,255,255,.08);padding:10px 14px 14px;font-size:13.5px;line-height:1.5}
+details.run summary{cursor:pointer;font-weight:700}
+details.run ol{margin:8px 0 0;padding-left:20px}
+details.run a{color:#7CC8FF}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);background:#18212C;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+
+/* Blockly-Feinschliff */
+.blocklyToolboxDiv{font-family:var(--ui)!important}
+.blocklyTreeLabel{font-family:var(--ui)!important;font-size:14px!important}
+
+@media (max-width:820px){
+  .tabs{display:flex}
+  .brand p{display:none}
+  .bar{padding:8px 12px;gap:8px}
+  .actions{gap:6px}
+  .btn{padding:6px 10px}
+  select.btn{max-width:170px}
+  .brand h1{font-size:17px}
+  .code-head h2 .long{display:none}
+  main{position:relative}
+  aside.code{position:absolute;inset:0;flex:none}
+  main[data-view="blocks"] aside.code{display:none}
+  main[data-view="code"] .ws-wrap{visibility:hidden}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 30 30" aria-hidden="true">
+      <path d="M3,7 a4,4 0 0 1 4,-4 h3 l2,3 h6 l2,-3 h3 a4,4 0 0 1 4,4 v5 a4,4 0 0 1 -4,4 h-3 l-2,3 h-6 l-2,-3 h-3 a4,4 0 0 1 -4,-4 z" fill="#FFB515"/>
+      <path d="M3,19 a3,3 0 0 1 3,-3 h4 l2,3 h6 l2,-3 h4 a3,3 0 0 1 3,3 v5 a3,3 0 0 1 -3,3 H6 a3,3 0 0 1 -3,-3 z" fill="#FF4CCD"/>
+    </svg>
+    <div style="min-width:0">
+      <h1>Blockwerk</h1>
+      <p>Blockprogrammierung für Pybricks auf dem SPIKE-Prime-Hub</p>
+    </div>
+  </div>
+  <div class="actions">
+    <select class="btn" id="examples" aria-label="Beispiel laden">
+      <option value="">Beispiel laden …</option>
+      <option value="quadrat">Quadrat fahren</option>
+      <option value="wand">Halt vor der Wand</option>
+      <option value="linie">Linienfolger (P-Regler)</option>
+      <option value="zaehlen">Linien zählen</option>
+      <option value="funktion">Eigener Block</option>
+      <option value="motor">Greifarm mit Motor C</option>
+    </select>
+    <button class="btn" id="btnNew" type="button">Neu</button>
+    <button class="btn" id="btnOpen" type="button">Öffnen</button>
+    <button class="btn hidden" id="btnSave" type="button">Speichern</button>
+    <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Ansicht">
+  <button role="tab" id="tabBlocks" aria-selected="true">Blöcke</button>
+  <button role="tab" id="tabCode" aria-selected="false">Python</button>
+</nav>
+
+<main id="main" data-view="blocks">
+  <div class="ws-wrap">
+    <div id="blocklyDiv"></div>
+    <div class="ws-tools">
+      <button type="button" id="zoomOut" aria-label="Verkleinern">−</button>
+      <button type="button" id="zoomIn" aria-label="Vergrößern">+</button>
+      <button type="button" class="wide" id="tidy">Aufräumen</button>
+    </div>
+  </div>
+  <aside class="code" aria-label="Python-Code">
+    <div class="code-head">
+      <h2>Python<span class="long"> für Pybricks</span></h2>
+      <button class="btn" id="btnCopy" type="button">Kopieren</button>
+      <a class="btn" href="https://code.pybricks.com" target="_blank" rel="noopener">Pybricks Code öffnen</a>
+    </div>
+    <div class="warnings hidden" id="warnings"></div>
+    <div class="code-scroll"><div class="code-lines" id="codeLines"></div></div>
+    <details class="run">
+      <summary>So kommt das Programm auf den Hub</summary>
+      <ol>
+        <li>Einmalig: In <a href="https://code.pybricks.com" target="_blank" rel="noopener">Pybricks Code</a> über das Zahnrad die Pybricks-Firmware auf den Hub spielen.</li>
+        <li>Hier auf »Kopieren« klicken.</li>
+        <li>In Pybricks Code eine neue Python-Datei anlegen und den Code einfügen.</li>
+        <li>Hub per Bluetooth verbinden und das Programm starten.</li>
+      </ol>
+    </details>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/blockly@13.3.0/blockly_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@13.3.0/blocks_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@13.3.0/python_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@13.3.0/msg/de.js"></script>
+<script>
+(function(){
+'use strict';
+
+// ---------------------------------------------------------------
+// Farben (aus der SPIKE App) und Theme
+// ---------------------------------------------------------------
+const COL = {
+  event:['#F5C402','#F7D34E','#C8A300'], drive:['#FF4CCD','#FF85DD','#C80090'],
+  motor:['#0090F5','#4DB1F8','#0078CC'], sensor:['#34CCF1','#71DBF5','#00A8C9'],
+  hub:['#9B6AF6','#B996F9','#691FF0'], control:['#FFB515','#FFCB5B','#C98A01'],
+  op:['#00B94D','#4DCD82','#006A2A'], variable:['#FF8C1A','#FFAA5F','#DB6E00'],
+  proc:['#FF6680','#FF94A6','#E64D67']
+};
+const bs = (c, hat) => Object.assign({colourPrimary:c[0], colourSecondary:c[1], colourTertiary:c[2]}, hat ? {hat} : {});
+const blockStyles = {
+  event_blocks: bs(COL.event, 'cap'), drive_blocks: bs(COL.drive), motor_blocks: bs(COL.motor),
+  sensor_blocks: bs(COL.sensor), hub_blocks: bs(COL.hub), loop_blocks: bs(COL.control),
+  logic_blocks: bs(COL.op), math_blocks: bs(COL.op), text_blocks: bs(COL.op),
+  variable_blocks: bs(COL.variable), variable_dynamic_blocks: bs(COL.variable),
+  procedure_blocks: bs(COL.proc), list_blocks: bs(COL.op), colour_blocks: bs(COL.op), hat_blocks: bs(COL.event, 'cap')
+};
+const categoryStyles = {
+  event_cat:{colour:COL.event[0]}, drive_cat:{colour:COL.drive[0]}, motor_cat:{colour:COL.motor[0]},
+  sensor_cat:{colour:COL.sensor[0]}, hub_cat:{colour:COL.hub[0]}, control_cat:{colour:COL.control[0]},
+  op_cat:{colour:COL.op[0]}, variable_cat:{colour:COL.variable[0]}, proc_cat:{colour:COL.proc[0]}
+};
+const fontStyle = {family:'"Helvetica Neue", Helvetica, Arial, sans-serif', weight:'500', size:12};
+const THEME_LIGHT = Blockly.Theme.defineTheme('bw_light', {
+  base: Blockly.Themes.Classic, blockStyles, categoryStyles, fontStyle, startHats:false,
+  componentStyles:{workspaceBackgroundColour:'#F7F9FB', toolboxBackgroundColour:'#FFFFFF', toolboxForegroundColour:'#18212C',
+    flyoutBackgroundColour:'#EDF1F5', flyoutForegroundColour:'#18212C', flyoutOpacity:1, scrollbarColour:'#C5CED8', scrollbarOpacity:.8,
+    insertionMarkerColour:'#000', insertionMarkerOpacity:.2, cursorColour:'#0090F5'}
+});
+const THEME_DARK = Blockly.Theme.defineTheme('bw_dark', {
+  base: Blockly.Themes.Classic, blockStyles, categoryStyles, fontStyle, startHats:false,
+  componentStyles:{workspaceBackgroundColour:'#161C24', toolboxBackgroundColour:'#11161C', toolboxForegroundColour:'#E4EAF1',
+    flyoutBackgroundColour:'#1D252F', flyoutForegroundColour:'#E4EAF1', flyoutOpacity:1, scrollbarColour:'#3A4553', scrollbarOpacity:.8,
+    insertionMarkerColour:'#fff', insertionMarkerOpacity:.25, cursorColour:'#4DB1F8'}
+});
+
+// »falls« und Schleifen in Steuerungsfarbe wie in SPIKE
+['controls_if','controls_repeat_ext','controls_whileUntil','controls_flow_statements'].forEach(t => {
+  const def = Blockly.Blocks[t]; if (!def) return;
+  const init = def.init;
+  def.init = function(){ init.call(this); this.setStyle('loop_blocks'); };
+});
+
+// ---------------------------------------------------------------
+// Blockdefinitionen
+// ---------------------------------------------------------------
+const PORTS = ['A','B','C','D','E','F'].map(p => [p,p]);
+const DIRS = [['normal','CLOCKWISE'],['umgekehrt','COUNTERCLOCKWISE']];
+const NUM = name => ({type:'input_value', name, check:'Number'});
+const PORT = {type:'field_dropdown', name:'PORT', options:PORTS};
+
+function pixelIcon(rows, alt){
+  let rects = '';
+  rows.forEach((r,y) => r.split('').forEach((b,x) => {
+    rects += `<rect x="${x*5+.5}" y="${y*5+.5}" width="4" height="4" rx=".6" fill="${b==='1' ? '#fff' : 'rgba(255,255,255,.28)'}"/>`;
+  }));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25">${rects}</svg>`;
+  return {src:'data:image/svg+xml,' + encodeURIComponent(svg), width:22, height:22, alt};
+}
+const ICONS = [
+  [pixelIcon(['00000','01010','00000','10001','01110'],'Smiley'),'HAPPY'],
+  [pixelIcon(['00000','01010','00000','01110','10001'],'traurig'),'SAD'],
+  [pixelIcon(['01010','11111','11111','01110','00100'],'Herz'),'HEART'],
+  [pixelIcon(['00100','01110','10101','00100','00100'],'Pfeil hoch'),'ARROW_UP'],
+  [pixelIcon(['00100','00100','10101','01110','00100'],'Pfeil runter'),'ARROW_DOWN'],
+  [pixelIcon(['00100','01000','11111','01000','00100'],'Pfeil links'),'ARROW_LEFT'],
+  [pixelIcon(['00100','00010','11111','00010','00100'],'Pfeil rechts'),'ARROW_RIGHT']
+];
+const COLORS_SENSE = [['Rot','RED'],['Grün','GREEN'],['Blau','BLUE'],['Gelb','YELLOW'],['Weiß','WHITE'],['keine Farbe','NONE']];
+const COLORS_LIGHT = [['grün','GREEN'],['rot','RED'],['blau','BLUE'],['gelb','YELLOW'],['weiß','WHITE'],['aus','OFF']];
+
+const stmt = (o) => Object.assign({previousStatement:null, nextStatement:null, inputsInline:true}, o);
+const val = (o, check) => Object.assign({output:check, inputsInline:true}, o);
+
+Blockly.common.defineBlocksWithJsonArray([
+  {type:'pb_start', message0:'wenn Programm startet', nextStatement:null, style:'event_blocks',
+   tooltip:'Hier beginnt das Programm. Nur Blöcke, die hier andocken, werden übersetzt.'},
+
+  // Fahren
+  stmt({type:'pb_drive_setup', style:'drive_blocks', inputsInline:false,
+   message0:'Fahrbasis einrichten %1 linker Motor %2 Drehrichtung %3 %4 rechter Motor %5 Drehrichtung %6 %7 Raddurchmesser %8 mm %9 Spurbreite %10 mm %11 Gyrosensor nutzen %12',
+   args0:[{type:'input_end_row'},
+     {type:'field_dropdown',name:'LEFT_PORT',options:PORTS},{type:'field_dropdown',name:'LEFT_DIR',options:DIRS},{type:'input_end_row'},
+     {type:'field_dropdown',name:'RIGHT_PORT',options:PORTS},{type:'field_dropdown',name:'RIGHT_DIR',options:DIRS},{type:'input_end_row'},
+     {type:'field_number',name:'WHEEL',value:56,min:1},{type:'input_end_row'},
+     {type:'field_number',name:'AXLE',value:112,min:1},{type:'input_end_row'},
+     {type:'field_checkbox',name:'GYRO',checked:true}],
+   tooltip:'Beschreibt eure Fahrbasis. Gilt für das ganze Programm. Fährt der Roboter rückwärts oder dreht er sich im Kreis, die Drehrichtungen anpassen; die Spurbreite ist der Abstand zwischen den Radmitten.'}),
+  stmt({type:'pb_drive_straight', style:'drive_blocks', message0:'fahre geradeaus %1 mm', args0:[NUM('DIST')],
+   tooltip:'Fährt die angegebene Strecke. Negative Werte fahren rückwärts.'}),
+  stmt({type:'pb_drive_turn', style:'drive_blocks', message0:'drehe auf der Stelle um %1 Grad', args0:[NUM('ANGLE')],
+   tooltip:'Positive Werte drehen nach rechts, negative nach links.'}),
+  stmt({type:'pb_drive_arc', style:'drive_blocks', message0:'fahre Kurve mit Radius %1 mm über %2 Grad', args0:[NUM('RADIUS'),NUM('ANGLE')],
+   tooltip:'Positiver Radius: Kurve nach rechts, negativer Radius: Kurve nach links.'}),
+  stmt({type:'pb_drive_drive', style:'drive_blocks', message0:'fahre los mit %1 mm/s und Drehrate %2 Grad/s', args0:[NUM('SPEED'),NUM('RATE')],
+   tooltip:'Startet die Fahrt und läuft weiter, bis ein Stopp-Block kommt. Drehrate 0 bedeutet geradeaus.'}),
+  stmt({type:'pb_drive_stop', style:'drive_blocks', message0:'Fahrbasis %1', args0:[{type:'field_dropdown',name:'MODE',options:[['anhalten','stop'],['bremsen','brake']]}],
+   tooltip:'Beendet eine mit »fahre los« gestartete Fahrt.'}),
+  stmt({type:'pb_drive_settings', style:'drive_blocks', message0:'setze Fahrtempo auf %1 mm/s und Drehtempo auf %2 Grad/s', args0:[NUM('SPEED'),NUM('RATE')],
+   tooltip:'Gilt für »fahre geradeaus«, »drehe« und »fahre Kurve«.'}),
+  stmt({type:'pb_drive_reset', style:'drive_blocks', message0:'setze Strecke und Winkel der Fahrbasis auf 0', tooltip:'Setzt die Zähler der Fahrbasis zurück.'}),
+  val({type:'pb_drive_distance', style:'drive_blocks', message0:'gefahrene Strecke in mm', tooltip:'Strecke seit Programmstart oder dem letzten Zurücksetzen.'}, 'Number'),
+  val({type:'pb_drive_angle', style:'drive_blocks', message0:'gedrehter Winkel in Grad', tooltip:'Winkel seit Programmstart oder dem letzten Zurücksetzen.'}, 'Number'),
+
+  // Motoren
+  stmt({type:'pb_motor_run_angle', style:'motor_blocks', message0:'Motor %1 dreht sich um %2 Grad mit %3 Grad/s', args0:[PORT,NUM('ANGLE'),NUM('SPEED')], tooltip:'Dreht um einen Winkel und wartet, bis der Motor fertig ist.'}),
+  stmt({type:'pb_motor_run_time', style:'motor_blocks', message0:'Motor %1 läuft %2 ms mit %3 Grad/s', args0:[PORT,NUM('TIME'),NUM('SPEED')], tooltip:'Läuft eine bestimmte Zeit.'}),
+  stmt({type:'pb_motor_run_target', style:'motor_blocks', message0:'Motor %1 fährt zur Position %2 Grad mit %3 Grad/s', args0:[PORT,NUM('TARGET'),NUM('SPEED')], tooltip:'Fährt auf eine feste Position, gemessen ab dem Zurücksetzen.'}),
+  stmt({type:'pb_motor_run', style:'motor_blocks', message0:'Motor %1 startet mit %2 Grad/s', args0:[PORT,NUM('SPEED')], tooltip:'Läuft weiter, bis ein Stopp-Block kommt.'}),
+  stmt({type:'pb_motor_stop', style:'motor_blocks', message0:'Motor %1 %2', args0:[PORT,{type:'field_dropdown',name:'MODE',options:[['ausrollen lassen','stop'],['bremsen','brake'],['Position halten','hold']]}], tooltip:'Hält den Motor an.'}),
+  stmt({type:'pb_motor_reset', style:'motor_blocks', message0:'setze Winkel von Motor %1 auf %2 Grad', args0:[PORT,NUM('ANGLE')], tooltip:'Legt fest, welche Stellung als 0 Grad zählt.'}),
+  val({type:'pb_motor_angle', style:'motor_blocks', message0:'Winkel von Motor %1', args0:[PORT], tooltip:'Aktueller Winkel in Grad.'}, 'Number'),
+  val({type:'pb_motor_speed', style:'motor_blocks', message0:'Tempo von Motor %1', args0:[PORT], tooltip:'Aktuelle Geschwindigkeit in Grad pro Sekunde.'}, 'Number'),
+
+  // Sensoren
+  val({type:'pb_color_is', style:'sensor_blocks', message0:'Farbsensor %1 sieht %2', args0:[PORT,{type:'field_dropdown',name:'COLOR',options:COLORS_SENSE}],
+   tooltip:'Für schwarze Linien eignet sich »Reflexion« besser: Schwarz erkennt der Sensor als »keine Farbe«.'}, 'Boolean'),
+  val({type:'pb_reflection', style:'sensor_blocks', message0:'Reflexion an Farbsensor %1 in %%', args0:[PORT], tooltip:'0 = sehr dunkel, 100 = sehr hell.'}, 'Number'),
+  val({type:'pb_distance', style:'sensor_blocks', message0:'Abstand an Sensor %1 in mm', args0:[PORT], tooltip:'Liefert 2000, wenn nichts erkannt wird.'}, 'Number'),
+  val({type:'pb_force_pressed', style:'sensor_blocks', message0:'Kraftsensor %1 gedrückt', args0:[PORT], tooltip:'Wahr, sobald der Taster gedrückt ist.'}, 'Boolean'),
+  val({type:'pb_force', style:'sensor_blocks', message0:'Kraft an Sensor %1 in N', args0:[PORT], tooltip:'Druckkraft in Newton.'}, 'Number'),
+  val({type:'pb_heading', style:'sensor_blocks', message0:'Ausrichtung des Hubs in Grad', tooltip:'Gemessen vom eingebauten Gyrosensor, positiv nach rechts.'}, 'Number'),
+  stmt({type:'pb_reset_heading', style:'sensor_blocks', message0:'setze Ausrichtung des Hubs auf %1 Grad', args0:[NUM('ANGLE')], tooltip:'Legt die aktuelle Richtung als neuen Bezug fest.'}),
+  val({type:'pb_button', style:'sensor_blocks', message0:'Hub-Taste %1 gedrückt', args0:[{type:'field_dropdown',name:'BUTTON',options:[['links','LEFT'],['rechts','RIGHT']]}],
+   tooltip:'Die mittlere Taste beendet bei Pybricks das Programm.'}, 'Boolean'),
+  stmt({type:'pb_timer_reset', style:'sensor_blocks', message0:'setze Stoppuhr auf 0', tooltip:'Startet die Zeitmessung neu.'}),
+  val({type:'pb_timer', style:'sensor_blocks', message0:'Stoppuhr in ms', tooltip:'Zeit seit Programmstart oder dem letzten Zurücksetzen.'}, 'Number'),
+
+  // Licht und Ton
+  stmt({type:'pb_display_text', style:'hub_blocks', message0:'zeige Text %1', args0:[{type:'input_value',name:'TEXT'}], tooltip:'Lässt den Text über die Lichtmatrix laufen.'}),
+  stmt({type:'pb_display_number', style:'hub_blocks', message0:'zeige Zahl %1', args0:[NUM('NUM')], tooltip:'Zeigt Zahlen von −99 bis 99.'}),
+  stmt({type:'pb_display_icon', style:'hub_blocks', message0:'zeige Bild %1', args0:[{type:'field_dropdown',name:'ICON',options:ICONS}], tooltip:'Zeigt ein Bild auf der Lichtmatrix.'}),
+  stmt({type:'pb_display_off', style:'hub_blocks', message0:'schalte Lichtmatrix aus', tooltip:'Löscht die Anzeige.'}),
+  stmt({type:'pb_light', style:'hub_blocks', message0:'Statuslicht %1', args0:[{type:'field_dropdown',name:'COLOR',options:COLORS_LIGHT}], tooltip:'Farbe der Mitteltaste.'}),
+  stmt({type:'pb_beep', style:'hub_blocks', message0:'Piepton %1 Hz für %2 ms', args0:[NUM('FREQ'),NUM('DUR')], tooltip:'440 Hz ist der Kammerton a.'}),
+  stmt({type:'pb_print', style:'hub_blocks', message0:'gib %1 im Terminal aus', args0:[{type:'input_value',name:'TEXT'}], tooltip:'Erscheint im Terminal von Pybricks Code – praktisch zur Fehlersuche.'}),
+
+  // Steuerung
+  stmt({type:'pb_wait', style:'loop_blocks', message0:'warte %1 ms', args0:[NUM('MS')], tooltip:'1000 ms sind eine Sekunde.'}),
+  {type:'pb_forever', style:'loop_blocks', message0:'wiederhole fortlaufend %1 %2', args0:[{type:'input_end_row'},{type:'input_statement',name:'DO'}],
+   previousStatement:null, tooltip:'Wiederholt die Blöcke darin, bis das Programm beendet wird.'},
+  stmt({type:'pb_wait_until', style:'loop_blocks', message0:'warte bis %1', args0:[{type:'input_value',name:'COND',check:'Boolean'}], tooltip:'Wartet, bis die Bedingung erfüllt ist.'}),
+
+  // Operatoren
+  val({type:'pb_abs', style:'math_blocks', message0:'Betrag von %1', args0:[NUM('NUM')], tooltip:'Macht negative Zahlen positiv.'}, 'Number')
+]);
+
+// ---------------------------------------------------------------
+// Python-Generator
+// ---------------------------------------------------------------
+const py = python.pythonGenerator, Order = python.Order;
+py.INDENT = '    ';
+const MARK = '#\u27E6%1\u27E7\n';
+py.STATEMENT_PREFIX = MARK;
+const DEVICE_NAMES = ['motor','farbe','abstand','kraft'].flatMap(p => 'ABCDEF'.split('').map(c => p + '_' + c));
+py.addReservedWords(['hub','roboter','stoppuhr','wait','StopWatch','PrimeHub','Motor','ColorSensor','UltrasonicSensor','ForceSensor',
+  'DriveBase','Port','Direction','Stop','Color','Button','Icon'].concat(DEVICE_NAMES).join(','));
+
+// Umlaute in Namen lesbar halten (Zähler -> Zaehler)
+if (Blockly.Names && Blockly.Names.prototype && Blockly.Names.prototype.safeName){
+  const orig = Blockly.Names.prototype.safeName;
+  const map = {'ä':'ae','ö':'oe','ü':'ue','Ä':'Ae','Ö':'Oe','Ü':'Ue','ß':'ss'};
+  Blockly.Names.prototype.safeName = function(name){ return orig.call(this, String(name || '').replace(/[äöüÄÖÜß]/g, c => map[c])); };
+}
+
+const KIND = {
+  motor:{cls:'Motor', pre:'motor', label:'Motor'},
+  color:{cls:'ColorSensor', pre:'farbe', label:'Farbsensor'},
+  ultra:{cls:'UltrasonicSensor', pre:'abstand', label:'Abstandssensor'},
+  force:{cls:'ForceSensor', pre:'kraft', label:'Kraftsensor'}
+};
+let G = null;
+function newCtx(){ return {ports:{}, params:new Set(), tools:new Set(), drive:null, driveBlocks:0, usesDrive:false, timer:false, warnings:[]}; }
+function warn(t){ if (!G.warnings.includes(t)) G.warnings.push(t); }
+function dev(kind, port){
+  const slot = G.ports[port] || (G.ports[port] = {});
+  slot[kind] = true;
+  G.params.add('Port');
+  return KIND[kind].pre + '_' + port;
+}
+const v = (block, name, fallback='0', order=Order.NONE) => py.valueToCode(block, name, order) || fallback;
+const drive = () => { G.usesDrive = true; return 'roboter'; };
+
+const F = py.forBlock;
+F['pb_start'] = () => '';
+F['pb_drive_setup'] = (b) => {
+  G.driveBlocks++;
+  G.drive = {id:b.id, lp:b.getFieldValue('LEFT_PORT'), ld:b.getFieldValue('LEFT_DIR'), rp:b.getFieldValue('RIGHT_PORT'),
+             rd:b.getFieldValue('RIGHT_DIR'), wheel:b.getFieldValue('WHEEL'), axle:b.getFieldValue('AXLE'), gyro:b.getFieldValue('GYRO') === 'TRUE'};
+  return '';
+};
+F['pb_drive_straight'] = (b) => `${drive()}.straight(${v(b,'DIST')})\n`;
+F['pb_drive_turn'] = (b) => `${drive()}.turn(${v(b,'ANGLE')})\n`;
+F['pb_drive_arc'] = (b) => `${drive()}.arc(${v(b,'RADIUS','100')}, ${v(b,'ANGLE')})\n`;
+F['pb_drive_drive'] = (b) => `${drive()}.drive(${v(b,'SPEED')}, ${v(b,'RATE')})\n`;
+F['pb_drive_stop'] = (b) => `${drive()}.${b.getFieldValue('MODE')}()\n`;
+F['pb_drive_settings'] = (b) => `${drive()}.settings(straight_speed=${v(b,'SPEED','200')}, turn_rate=${v(b,'RATE','150')})\n`;
+F['pb_drive_reset'] = () => `${drive()}.reset()\n`;
+F['pb_drive_distance'] = () => [`${drive()}.distance()`, Order.FUNCTION_CALL];
+F['pb_drive_angle'] = () => [`${drive()}.angle()`, Order.FUNCTION_CALL];
+
+const m = (b) => dev('motor', b.getFieldValue('PORT'));
+F['pb_motor_run_angle'] = (b) => `${m(b)}.run_angle(${v(b,'SPEED','500')}, ${v(b,'ANGLE')})\n`;
+F['pb_motor_run_time'] = (b) => `${m(b)}.run_time(${v(b,'SPEED','500')}, ${v(b,'TIME')})\n`;
+F['pb_motor_run_target'] = (b) => `${m(b)}.run_target(${v(b,'SPEED','500')}, ${v(b,'TARGET')})\n`;
+F['pb_motor_run'] = (b) => `${m(b)}.run(${v(b,'SPEED')})\n`;
+F['pb_motor_stop'] = (b) => `${m(b)}.${b.getFieldValue('MODE')}()\n`;
+F['pb_motor_reset'] = (b) => `${m(b)}.reset_angle(${v(b,'ANGLE')})\n`;
+F['pb_motor_angle'] = (b) => [`${m(b)}.angle()`, Order.FUNCTION_CALL];
+F['pb_motor_speed'] = (b) => [`${m(b)}.speed()`, Order.FUNCTION_CALL];
+
+F['pb_color_is'] = (b) => { G.params.add('Color'); return [`${dev('color', b.getFieldValue('PORT'))}.color() == Color.${b.getFieldValue('COLOR')}`, Order.RELATIONAL]; };
+F['pb_reflection'] = (b) => [`${dev('color', b.getFieldValue('PORT'))}.reflection()`, Order.FUNCTION_CALL];
+F['pb_distance'] = (b) => [`${dev('ultra', b.getFieldValue('PORT'))}.distance()`, Order.FUNCTION_CALL];
+F['pb_force_pressed'] = (b) => [`${dev('force', b.getFieldValue('PORT'))}.pressed()`, Order.FUNCTION_CALL];
+F['pb_force'] = (b) => [`${dev('force', b.getFieldValue('PORT'))}.force()`, Order.FUNCTION_CALL];
+F['pb_heading'] = () => ['hub.imu.heading()', Order.FUNCTION_CALL];
+F['pb_reset_heading'] = (b) => `hub.imu.reset_heading(${v(b,'ANGLE')})\n`;
+F['pb_button'] = (b) => { G.params.add('Button'); return [`Button.${b.getFieldValue('BUTTON')} in hub.buttons.pressed()`, Order.RELATIONAL]; };
+F['pb_timer_reset'] = () => { G.timer = true; return 'stoppuhr.reset()\n'; };
+F['pb_timer'] = () => { G.timer = true; return ['stoppuhr.time()', Order.FUNCTION_CALL]; };
+
+F['pb_display_text'] = (b) => {
+  const t = v(b, 'TEXT', "''");
+  return `hub.display.text(${/^(['"]).*\1$/.test(t) ? t : 'str(' + t + ')'})\n`;
+};
+F['pb_display_number'] = (b) => `hub.display.number(${v(b,'NUM')})\n`;
+F['pb_display_icon'] = (b) => { G.params.add('Icon'); return `hub.display.icon(Icon.${b.getFieldValue('ICON')})\n`; };
+F['pb_display_off'] = () => 'hub.display.off()\n';
+F['pb_light'] = (b) => {
+  const c = b.getFieldValue('COLOR');
+  if (c === 'OFF') return 'hub.light.off()\n';
+  G.params.add('Color'); return `hub.light.on(Color.${c})\n`;
+};
+F['pb_beep'] = (b) => `hub.speaker.beep(${v(b,'FREQ','500')}, ${v(b,'DUR','100')})\n`;
+F['pb_print'] = (b) => `print(${v(b,'TEXT',"''")})\n`;
+
+F['pb_wait'] = (b) => { G.tools.add('wait'); return `wait(${v(b,'MS')})\n`; };
+F['pb_forever'] = (b) => `while True:\n${py.statementToCode(b,'DO') || py.PASS}`;
+F['pb_wait_until'] = (b) => { G.tools.add('wait'); return `while not ${v(b,'COND','False',Order.LOGICAL_NOT)}:\n${py.INDENT}wait(10)\n`; };
+F['pb_abs'] = (b) => [`abs(${v(b,'NUM')})`, Order.FUNCTION_CALL];
+// MicroPython kennt kein Modul »numbers« – »ändere um« deshalb schlicht addieren
+F['math_change'] = (b) => {
+  const name = py.getVariableName(b.getFieldValue('VAR'));
+  return `${name} = ${name} + ${v(b,'DELTA','0',Order.ADDITIVE)}\n`;
+};
+
+// ---------------------------------------------------------------
+// Code zusammensetzen
+// ---------------------------------------------------------------
+function generate(ws){
+  G = newCtx();
+  py.init(ws);
+  let main = '', starts = 0, orphans = 0;
+  for (const b of ws.getTopBlocks(true)){
+    if (b.type === 'pb_start'){ starts++; main += py.blockToCode(b); }
+    else if (b.type === 'procedures_defnoreturn' || b.type === 'procedures_defreturn'){ py.blockToCode(b); }
+    else orphans++;
+  }
+  const body = py.finish(main);
+
+  if (G.driveBlocks > 1) warn('Es gibt mehrere Blöcke »Fahrbasis einrichten«. Verwendet wird der zuletzt übersetzte.');
+  if (starts > 1) warn('Es gibt mehrere Startblöcke. Bei Pybricks laufen sie nacheinander, nicht gleichzeitig.');
+  if (orphans) warn(orphans === 1 ? 'Ein Block hängt an keinem Startblock und wird nicht übersetzt.' : `${orphans} Blöcke hängen an keinem Startblock und werden nicht übersetzt.`);
+
+  // Fahrbasis
+  let d = null, defaulted = false;
+  if (G.usesDrive || G.drive){
+    d = G.drive;
+    if (!d){ d = {id:null, lp:'A', ld:'COUNTERCLOCKWISE', rp:'B', rd:'CLOCKWISE', wheel:56, axle:112, gyro:true}; defaulted = true; }
+    if (d.lp === d.rp) warn('Linker und rechter Motor der Fahrbasis hängen am selben Anschluss.');
+    [[d.lp,d.ld],[d.rp,d.rd]].forEach(([p,dir]) => {
+      const slot = G.ports[p] || (G.ports[p] = {});
+      slot.motor = true; slot.dir = dir;
+    });
+  }
+  for (const [p, slot] of Object.entries(G.ports)){
+    const kinds = Object.keys(slot).filter(k => KIND[k]);
+    if (kinds.length > 1) warn(`Anschluss ${p} wird gleichzeitig als ${kinds.map(k => KIND[k].label).join(' und ')} benutzt.`);
+  }
+
+  // Kopf mit Importen und Geräten
+  const H = []; const push = (text, id=null) => H.push({text, id});
+  const devClasses = new Set();
+  for (const slot of Object.values(G.ports)) for (const k of Object.keys(slot)) if (KIND[k]) devClasses.add(KIND[k].cls);
+  if (Object.values(G.ports).some(s => s.dir === 'COUNTERCLOCKWISE')) G.params.add('Direction');
+  if (Object.keys(G.ports).length) G.params.add('Port');
+  if (G.timer) G.tools.add('StopWatch');
+
+  push('from pybricks.hubs import PrimeHub');
+  if (G.params.size) push('from pybricks.parameters import ' + [...G.params].sort().join(', '));
+  if (devClasses.size) push('from pybricks.pupdevices import ' + [...devClasses].sort().join(', '));
+  if (d) push('from pybricks.robotics import DriveBase');
+  if (G.tools.size) push('from pybricks.tools import ' + [...G.tools].sort((a,b) => a === 'wait' ? -1 : b === 'wait' ? 1 : a.localeCompare(b)).join(', '));
+  push(''); push('hub = PrimeHub()');
+
+  const ports = Object.keys(G.ports).sort();
+  if (ports.length){
+    push(''); push('# Geräte an den Anschlüssen');
+    for (const p of ports){
+      const s = G.ports[p];
+      for (const k of Object.keys(KIND)) if (s[k]){
+        const dir = (k === 'motor' && s.dir === 'COUNTERCLOCKWISE') ? ', Direction.COUNTERCLOCKWISE' : '';
+        push(`${KIND[k].pre}_${p} = ${KIND[k].cls}(Port.${p}${dir})`, k === 'motor' && d && (p === d.lp || p === d.rp) ? d.id : null);
+      }
+    }
+  }
+  if (d){
+    push(''); push(defaulted ? '# Fahrbasis (Standardwerte, kein Block »Fahrbasis einrichten« gefunden)' : '# Fahrbasis', d.id);
+    push(`roboter = DriveBase(motor_${d.lp}, motor_${d.rp}, wheel_diameter=${d.wheel}, axle_track=${d.axle})`, d.id);
+    if (d.gyro) push('roboter.use_gyro(True)', d.id);
+  }
+  if (G.timer){ push(''); push('stoppuhr = StopWatch()'); }
+
+  // Rumpf: Markierungen auswerten, Zeilen den Blöcken zuordnen
+  const lines = [...H, {text:'', id:null}];
+  const stack = [];
+  const markRe = /^(\s*)#\u27E6'(.*)'\u27E7$/;
+  const bodyLines = body.replace(/^\n+/, '').split('\n');
+  let emptyRun = 0;
+  for (const raw of bodyLines){
+    const mk = raw.match(markRe);
+    if (mk){ const ind = mk[1].length; while (stack.length && stack[stack.length-1].ind >= ind) stack.pop(); stack.push({ind, id:mk[2]}); continue; }
+    const ind = raw.length - raw.trimStart().length;
+    if (raw.trim()) while (stack.length && stack[stack.length-1].ind > ind) stack.pop();
+    if (!raw.trim()){ emptyRun++; if (emptyRun > 1) continue; } else emptyRun = 0;
+    lines.push({text: raw, id: raw.trim() && stack.length ? stack[stack.length-1].id : null});
+  }
+  while (lines.length && !lines[lines.length-1].text.trim()) lines.pop();
+  if (!starts){
+    lines.push({text:'', id:null});
+    lines.push({text:'# Zieh den Block »wenn Programm startet« aus »Ereignisse« auf die Fläche.', id:null});
+  }
+  return {lines, warnings: G.warnings};
+}
+
+// ---------------------------------------------------------------
+// Syntaxhervorhebung
+// ---------------------------------------------------------------
+const KW = new Set('from import def return while for in if elif else not and or True False None global pass break continue is lambda'.split(' '));
+const CLS = new Set('PrimeHub Motor ColorSensor UltrasonicSensor ForceSensor DriveBase Port Direction Stop Color Button Icon StopWatch'.split(' '));
+const BI = new Set('range print abs str int float round min max len'.split(' '));
+function highlight(line, el){
+  const re = /(#.*$)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|(\s+)|([^\sA-Za-z_\d"'#]+)/g;
+  let mm;
+  while ((mm = re.exec(line))){
+    let cls = null;
+    const t = mm[0];
+    if (mm[1]) cls = 'tk-com'; else if (mm[2]) cls = 'tk-str'; else if (mm[3]) cls = 'tk-num';
+    else if (mm[4]){
+      if (KW.has(t)) cls = 'tk-kw';
+      else if (CLS.has(t)) cls = 'tk-cls';
+      else if (BI.has(t)) cls = 'tk-bi';
+      else if (line[re.lastIndex] === '(') cls = 'tk-fn';
+    }
+    if (cls){ const s = document.createElement('span'); s.className = cls; s.textContent = t; el.appendChild(s); }
+    else el.appendChild(document.createTextNode(t));
+  }
+}
+
+// ---------------------------------------------------------------
+// Werkzeugkasten
+// ---------------------------------------------------------------
+const N = n => ({shadow:{type:'math_number', fields:{NUM:n}}});
+const T = t => ({shadow:{type:'text', fields:{TEXT:t}}});
+const blk = (type, extra) => Object.assign({kind:'block', type}, extra || {});
+const toolbox = {kind:'categoryToolbox', contents:[
+  {kind:'category', name:'Ereignisse', categorystyle:'event_cat', contents:[blk('pb_start')]},
+  {kind:'category', name:'Fahren', categorystyle:'drive_cat', contents:[
+    blk('pb_drive_setup', {fields:{LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE'}}),
+    blk('pb_drive_straight', {inputs:{DIST:N(200)}}),
+    blk('pb_drive_turn', {inputs:{ANGLE:N(90)}}),
+    blk('pb_drive_arc', {inputs:{RADIUS:N(150), ANGLE:N(90)}}),
+    blk('pb_drive_drive', {inputs:{SPEED:N(200), RATE:N(0)}}),
+    blk('pb_drive_stop'),
+    blk('pb_drive_settings', {inputs:{SPEED:N(300), RATE:N(180)}}),
+    blk('pb_drive_reset'), blk('pb_drive_distance'), blk('pb_drive_angle')]},
+  {kind:'category', name:'Motoren', categorystyle:'motor_cat', contents:[
+    blk('pb_motor_run_angle', {fields:{PORT:'C'}, inputs:{ANGLE:N(360), SPEED:N(500)}}),
+    blk('pb_motor_run_time', {fields:{PORT:'C'}, inputs:{TIME:N(1000), SPEED:N(500)}}),
+    blk('pb_motor_run_target', {fields:{PORT:'C'}, inputs:{TARGET:N(90), SPEED:N(500)}}),
+    blk('pb_motor_run', {fields:{PORT:'C'}, inputs:{SPEED:N(500)}}),
+    blk('pb_motor_stop', {fields:{PORT:'C'}}),
+    blk('pb_motor_reset', {fields:{PORT:'C'}, inputs:{ANGLE:N(0)}}),
+    blk('pb_motor_angle', {fields:{PORT:'C'}}), blk('pb_motor_speed', {fields:{PORT:'C'}})]},
+  {kind:'category', name:'Sensoren', categorystyle:'sensor_cat', contents:[
+    blk('pb_color_is', {fields:{PORT:'C'}}), blk('pb_reflection', {fields:{PORT:'C'}}),
+    blk('pb_distance', {fields:{PORT:'D'}}),
+    blk('pb_force_pressed', {fields:{PORT:'E'}}), blk('pb_force', {fields:{PORT:'E'}}),
+    blk('pb_heading'), blk('pb_reset_heading', {inputs:{ANGLE:N(0)}}),
+    blk('pb_button'), blk('pb_timer_reset'), blk('pb_timer')]},
+  {kind:'category', name:'Licht und Ton', categorystyle:'hub_cat', contents:[
+    blk('pb_display_text', {inputs:{TEXT:T('Hallo')}}), blk('pb_display_number', {inputs:{NUM:N(42)}}),
+    blk('pb_display_icon'), blk('pb_display_off'), blk('pb_light'),
+    blk('pb_beep', {inputs:{FREQ:N(440), DUR:N(200)}}), blk('pb_print', {inputs:{TEXT:T('Hallo')}})]},
+  {kind:'category', name:'Steuerung', categorystyle:'control_cat', contents:[
+    blk('pb_wait', {inputs:{MS:N(1000)}}),
+    blk('controls_repeat_ext', {inputs:{TIMES:N(4)}}),
+    blk('pb_forever'),
+    blk('controls_if'), blk('controls_if', {extraState:{hasElse:true}}),
+    blk('pb_wait_until'),
+    blk('controls_whileUntil'),
+    blk('controls_flow_statements')]},
+  {kind:'category', name:'Operatoren', categorystyle:'op_cat', contents:[
+    blk('math_number'), blk('math_arithmetic', {inputs:{A:N(1), B:N(1)}}),
+    blk('pb_abs', {inputs:{NUM:N(-5)}}), blk('math_round', {inputs:{NUM:N(3.1)}}),
+    blk('math_modulo', {inputs:{DIVIDEND:N(10), DIVISOR:N(3)}}),
+    blk('math_constrain', {inputs:{VALUE:N(50), LOW:N(-100), HIGH:N(100)}}),
+    blk('logic_compare', {inputs:{A:N(0), B:N(50)}}), blk('logic_operation'), blk('logic_negate'), blk('logic_boolean'),
+    blk('text'), blk('text_join')]},
+  {kind:'sep'},
+  {kind:'category', name:'Variablen', categorystyle:'variable_cat', custom:'VARIABLE'},
+  {kind:'category', name:'Meine Blöcke', categorystyle:'proc_cat', custom:'PROCEDURE'}
+]};
+
+// ---------------------------------------------------------------
+// Beispiele
+// ---------------------------------------------------------------
+const B = (type, fields, inputs, extraState) => { const o = {type}; if (fields) o.fields = fields; if (inputs) o.inputs = inputs; if (extraState) o.extraState = extraState; return o; };
+const seq = (...list) => { for (let i = 0; i < list.length - 1; i++) list[i].next = {block:list[i+1]}; return list[0]; };
+const S = (...list) => ({block: seq(...list)});
+const at = (block, x, y) => Object.assign(block, {x, y});
+const NB = (n, block) => ({shadow:{type:'math_number', fields:{NUM:n}}, block});
+const setup = () => B('pb_drive_setup', {LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE', WHEEL:56, AXLE:112, GYRO:true});
+const refl = () => B('pb_reflection', {PORT:'C'});
+const cmp = (op, a, bn) => B('logic_compare', {OP:op}, {A:{block:a}, B:N(bn)});
+const ws_ = (blocks, variables) => ({blocks:{languageVersion:0, blocks}, ...(variables ? {variables} : {})});
+
+const EXAMPLES = {
+  quadrat: () => ws_([at(seq(B('pb_start'), setup(),
+      B('controls_repeat_ext', null, {TIMES:N(4), DO:S(B('pb_drive_straight', null, {DIST:N(200)}), B('pb_drive_turn', null, {ANGLE:N(90)}))}),
+      B('pb_beep', null, {FREQ:N(880), DUR:N(200)})), 40, 40)]),
+  wand: () => ws_([at(seq(B('pb_start'), setup(), B('pb_display_icon', {ICON:'ARROW_UP'}),
+      B('pb_wait_until', null, {COND:{block:B('pb_force_pressed', {PORT:'E'})}}),
+      B('pb_drive_drive', null, {SPEED:N(150), RATE:N(0)}),
+      B('pb_wait_until', null, {COND:{block:cmp('LT', B('pb_distance', {PORT:'D'}), 100)}}),
+      B('pb_drive_stop', {MODE:'brake'}), B('pb_display_icon', {ICON:'HAPPY'})), 40, 40)]),
+  linie: () => ws_([at(seq(B('pb_start'), setup(),
+      B('pb_forever', null, {DO:S(B('pb_drive_drive', null, {SPEED:N(120),
+        RATE:NB(0, B('math_arithmetic', {OP:'MULTIPLY'}, {A:{block:B('math_arithmetic', {OP:'MINUS'}, {A:{block:refl()}, B:N(50)})}, B:N(1.2)}))}))})), 40, 40)]),
+  zaehlen: () => ws_([at(seq(B('pb_start'), setup(),
+      B('variables_set', {VAR:{id:'var_linien'}}, {VALUE:N(0)}),
+      B('pb_drive_drive', null, {SPEED:N(120), RATE:N(0)}),
+      B('pb_forever', null, {DO:S(
+        B('pb_wait_until', null, {COND:{block:cmp('LT', refl(), 30)}}),
+        B('math_change', {VAR:{id:'var_linien'}}, {DELTA:N(1)}),
+        B('pb_display_number', null, {NUM:NB(0, B('variables_get', {VAR:{id:'var_linien'}}))}),
+        B('pb_wait_until', null, {COND:{block:cmp('GT', refl(), 60)}}))})), 40, 40)],
+      [{name:'Linien', id:'var_linien'}]),
+  funktion: () => ws_([
+      at(B('procedures_defnoreturn', {NAME:'Ecke'}, {STACK:S(B('pb_drive_straight', null, {DIST:N(200)}), B('pb_drive_turn', null, {ANGLE:N(90)}))}), 40, 40),
+      at(seq(B('pb_start'), setup(), B('controls_repeat_ext', null, {TIMES:N(4), DO:S(B('procedures_callnoreturn', null, null, {name:'Ecke'}))})), 40, 260)]),
+  motor: () => ws_([at(seq(B('pb_start'),
+      B('pb_motor_reset', {PORT:'C'}, {ANGLE:N(0)}),
+      B('pb_motor_run_angle', {PORT:'C'}, {ANGLE:N(90), SPEED:N(300)}),
+      B('pb_wait', null, {MS:N(500)}),
+      B('pb_motor_run_target', {PORT:'C'}, {TARGET:N(0), SPEED:N(300)}),
+      B('pb_display_text', null, {TEXT:T('fertig')})), 40, 40)])
+};
+
+// ---------------------------------------------------------------
+// Arbeitsfläche
+// ---------------------------------------------------------------
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => {
+  const t = document.documentElement.getAttribute('data-theme');
+  return t ? t === 'dark' : darkQuery.matches;
+};
+const ws = Blockly.inject('blocklyDiv', {
+  toolbox, theme: isDark() ? THEME_DARK : THEME_LIGHT, renderer:'zelos', media:'', sounds:false, trashcan:false,
+  zoom:{controls:false, wheel:true, startScale:0.72, maxScale:2, minScale:0.35, scaleSpeed:1.15},
+  grid:{spacing:26, length:2, colour:isDark() ? '#2A333E' : '#DDE3EA', snap:false},
+  move:{scrollbars:true, drag:true, wheel:false}
+});
+darkQuery.addEventListener('change', () => ws.setTheme(isDark() ? THEME_DARK : THEME_LIGHT));
+ws.addChangeListener(Blockly.Events.disableOrphans);
+
+const codeEl = document.getElementById('codeLines');
+const warnEl = document.getElementById('warnings');
+let currentCode = '';
+let selectedId = null;
+
+function render(){
+  let res;
+  try { res = generate(ws); }
+  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + err.message, id:null}], warnings:[]}; }
+  currentCode = res.lines.map(l => l.text).join('\n') + '\n';
+  codeEl.textContent = '';
+  const frag = document.createDocumentFragment();
+  res.lines.forEach((l, i) => {
+    const row = document.createElement('div'); row.className = 'ln';
+    if (l.id){ row.dataset.id = l.id; if (l.id === selectedId) row.classList.add('sel'); }
+    const no = document.createElement('span'); no.className = 'no'; no.textContent = i + 1;
+    const tx = document.createElement('span'); tx.className = 'tx'; highlight(l.text, tx);
+    row.append(no, tx); frag.appendChild(row);
+  });
+  codeEl.appendChild(frag);
+  if (res.warnings.length){
+    warnEl.innerHTML = '';
+    const ul = document.createElement('ul');
+    res.warnings.forEach(w => { const li = document.createElement('li'); li.textContent = w; ul.appendChild(li); });
+    warnEl.appendChild(ul); warnEl.classList.remove('hidden');
+  } else warnEl.classList.add('hidden');
+}
+function markSelection(id){
+  selectedId = id;
+  let first = null;
+  codeEl.querySelectorAll('.ln').forEach(r => {
+    const on = !!id && r.dataset.id === id;
+    r.classList.toggle('sel', on);
+    if (on && !first) first = r;
+  });
+  if (first) first.scrollIntoView({block:'nearest'});
+}
+codeEl.addEventListener('click', (e) => {
+  const row = e.target.closest('.ln[data-id]'); if (!row) return;
+  const b = ws.getBlockById(row.dataset.id); if (!b) return;
+  if (Blockly.common && Blockly.common.setSelected) Blockly.common.setSelected(b); else b.select();
+  ws.centerOnBlock(b.id);
+  if (document.getElementById('main').dataset.view === 'code') setView('blocks');
+});
+
+const STORE_KEY = 'blockwerk-workspace-v1';
+let renderTimer = null, saveTimer = null;
+ws.addChangeListener((e) => {
+  if (e.type === Blockly.Events.SELECTED){ markSelection(e.newElementId || null); return; }
+  if (e.isUiEvent) return;
+  clearTimeout(renderTimer); renderTimer = setTimeout(render, 80);
+  clearTimeout(saveTimer); saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(Blockly.serialization.workspaces.save(ws))); } catch (err) {}
+  }, 400);
+});
+
+function loadState(state){
+  ws.clear();
+  Blockly.serialization.workspaces.load(state, ws);
+  if (window.matchMedia('(max-width: 820px)').matches) ws.zoomToFit(); else ws.scrollCenter();
+  render();
+}
+let restored = false;
+try {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw){ loadState(JSON.parse(raw)); restored = true; }
+} catch (err) { restored = false; }
+if (!restored) loadState(EXAMPLES.quadrat());
+
+// ---------------------------------------------------------------
+// Bedienelemente
+// ---------------------------------------------------------------
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600); }
+
+document.getElementById('examples').addEventListener('change', (e) => {
+  const key = e.target.value; if (!key) return;
+  loadState(EXAMPLES[key]()); e.target.value = '';
+  toast('Beispiel geladen – Strg+Z macht es rückgängig.');
+});
+document.getElementById('btnNew').addEventListener('click', () => {
+  ws.clear();
+  const b = ws.newBlock('pb_start'); b.initSvg(); b.render(); b.moveBy(40, 40);
+  render(); toast('Neue Arbeitsfläche – Strg+Z holt das alte Programm zurück.');
+});
+document.getElementById('zoomIn').addEventListener('click', () => ws.zoomCenter(1));
+document.getElementById('zoomOut').addEventListener('click', () => ws.zoomCenter(-1));
+document.getElementById('tidy').addEventListener('click', () => ws.cleanUp());
+
+async function copyCode(){
+  try { await navigator.clipboard.writeText(currentCode); toast('Code kopiert.'); return; } catch (err) {}
+  const ta = document.createElement('textarea'); ta.value = currentCode; ta.setAttribute('readonly','');
+  ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+  let ok = false; try { ok = document.execCommand('copy'); } catch (err) {}
+  ta.remove();
+  if (ok) toast('Code kopiert.');
+  else {
+    const range = document.createRange(); range.selectNodeContents(codeEl);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    toast('Code ist markiert – mit Strg+C kopieren.');
+  }
+}
+document.getElementById('btnCopy').addEventListener('click', copyCode);
+
+// Projekt öffnen
+const fileInput = document.getElementById('fileInput');
+document.getElementById('btnOpen').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files && fileInput.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      loadState(data.workspace || data);
+      toast('Projekt geöffnet.');
+    } catch (err) { toast('Die Datei ist kein gültiges Blockwerk-Projekt.'); }
+    fileInput.value = '';
+  };
+  r.readAsText(f);
+});
+
+// Projekt speichern (als Download)
+const btnSave = document.getElementById('btnSave');
+btnSave.classList.remove('hidden');
+btnSave.addEventListener('click', () => {
+  const data = JSON.stringify({format:'blockwerk', version:1, workspace:Blockly.serialization.workspaces.save(ws)}, null, 1);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], {type:'application/json'}));
+  a.download = 'blockwerk-projekt.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// Reiter auf schmalen Bildschirmen
+const mainEl = document.getElementById('main');
+const tabBlocks = document.getElementById('tabBlocks'), tabCode = document.getElementById('tabCode');
+function setView(view){
+  mainEl.dataset.view = view;
+  tabBlocks.setAttribute('aria-selected', String(view === 'blocks'));
+  tabCode.setAttribute('aria-selected', String(view === 'code'));
+  if (view === 'blocks') setTimeout(() => Blockly.svgResize(ws), 0);
+}
+tabBlocks.addEventListener('click', () => setView('blocks'));
+tabCode.addEventListener('click', () => setView('code'));
+
+new ResizeObserver(() => Blockly.svgResize(ws)).observe(document.querySelector('.ws-wrap'));
+})();
+</script>
+</body>
+</html>

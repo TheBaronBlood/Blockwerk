@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blockwerk – Blöcke für Pybricks</title>
+<link rel="icon" type="image/svg+xml" href="./logo.svg">
+<!-- Ladebildschirm: steht hier direkt in der Seite, damit er schon sichtbar ist, bevor
+     Skript und Stylesheet geladen sind. main.ts blendet ihn aus, sobald die Arbeitsfläche steht. -->
+<style>
+  #splash{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    background:#EEF2F6;color:#18212C;font-family:"Segoe UI",system-ui,sans-serif;transition:opacity .25s}
+  #splash img{width:112px;height:112px;animation:splash-pulse 1.2s ease-in-out infinite}
+  #splash b{font-size:26px;letter-spacing:-.01em}
+  #splash.done{opacity:0;pointer-events:none}
+  @keyframes splash-pulse{50%{transform:scale(1.08)}}
+  @media (prefers-color-scheme: dark){ #splash{background:#16171D;color:#ECEDE8} }
+  @media (prefers-reduced-motion: reduce){ #splash img{animation:none} }
+</style>
+</head>
+<body>
+<div id="splash" role="status" aria-label="Blockwerk wird geladen">
+  <img src="./logo.svg" alt="">
+  <b>Blockwerk</b>
+</div>
+<header class="bar">
+  <div class="brand">
+    <img class="brand-mark" src="./logo.svg" alt="">
+    <div style="min-width:0">
+      <h1>Blockwerk <button type="button" class="version" id="btnAbout" title="Über Blockwerk: Versionen und Firmware"></button></h1>
+      <p>Blockprogrammierung für Pybricks auf dem SPIKE-Prime-Hub</p>
+    </div>
+  </div>
+  <div class="actions">
+    <select class="btn" id="examples" aria-label="Beispiel laden">
+      <option value="">Beispiel laden …</option>
+      <option value="quadrat">Quadrat fahren</option>
+      <option value="wand">Halt vor der Wand</option>
+      <option value="linie">Linienfolger (P-Regler)</option>
+      <option value="zaehlen">Linien zählen</option>
+      <option value="funktion">Eigener Block</option>
+      <option value="motor">Greifarm mit Motor C</option>
+      <option value="steuerfeld">Fernsteuern mit dem Steuerfeld</option>
+      <option value="gleichzeitig">Mehreres gleichzeitig</option>
+    </select>
+    <button class="btn" id="btnExt" type="button">Erweiterungen</button>
+    <button class="btn" id="btnHelp" type="button">Hilfe</button>
+    <button class="btn" id="btnNew" type="button">Neu</button>
+    <button class="btn" id="btnOpen" type="button">Öffnen</button>
+    <button class="btn" id="btnSave" type="button">Speichern</button>
+    <button class="btn icon" id="btnSettings" type="button" aria-label="Einstellungen" title="Einstellungen">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.400 15a1.700 1.700 0 0 0 .300 1.800l.100.100a2 2 0 1 1-2.800 2.800l-.100-.100a1.700 1.700 0 0 0-1.800-.300 1.700 1.700 0 0 0-1 1.500V21a2 2 0 1 1-4 0v-.100a1.700 1.700 0 0 0-1.100-1.500 1.700 1.700 0 0 0-1.800.300l-.100.100a2 2 0 1 1-2.800-2.800l.100-.100a1.700 1.700 0 0 0 .300-1.800 1.700 1.700 0 0 0-1.500-1H3a2 2 0 1 1 0-4h.100a1.700 1.700 0 0 0 1.500-1.100 1.700 1.700 0 0 0-.300-1.800l-.100-.100a2 2 0 1 1 2.800-2.800l.100.100a1.700 1.700 0 0 0 1.800.300H9a1.700 1.700 0 0 0 1-1.500V3a2 2 0 1 1 4 0v.100a1.700 1.700 0 0 0 1 1.500 1.700 1.700 0 0 0 1.800-.300l.100-.100a2 2 0 1 1 2.800 2.800l-.100.100a1.700 1.700 0 0 0-.300 1.800V9a1.700 1.700 0 0 0 1.500 1H21a2 2 0 1 1 0 4h-.100a1.700 1.700 0 0 0-1.500 1z"/></svg>
+    </button>
+    <input type="file" id="fileInput" accept=".json,.llsp3,.llsp,application/json" class="hidden">
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Ansicht">
+  <button role="tab" id="tabBlocks" aria-selected="true">Blöcke</button>
+  <button role="tab" id="tabCode" aria-selected="false">Python</button>
+</nav>
+
+<main id="main" data-view="blocks">
+  <div class="ws-wrap">
+    <div id="blocklyDiv"></div>
+    <div class="ws-tools">
+      <button type="button" id="zoomOut" aria-label="Verkleinern">−</button>
+      <button type="button" id="zoomIn" aria-label="Vergrößern">+</button>
+      <button type="button" class="wide" id="tidy">Aufräumen</button>
+    </div>
+    <!-- Start und Stopp direkt an der Arbeitsfläche – auch wenn der Python-Bereich eingeklappt ist -->
+    <div class="ws-run" id="wsRun">
+      <span class="ws-hub" id="wsHub" role="status">kein Hub</span>
+      <!-- nur sichtbar, wenn das Programm das Steuerfeld abfragt -->
+      <button type="button" class="gamepad hidden" id="btnPadWs" aria-label="Steuerfeld als Controller öffnen" title="Steuerfeld">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.500 6h9a5.500 5.500 0 0 1 5.400 6.500l-.800 4.300a2.700 2.700 0 0 1-4.800 1.200L14.500 16h-5l-1.800 2a2.700 2.700 0 0 1-4.800-1.200l-.800-4.300A5.500 5.500 0 0 1 7.500 6Z" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"/><path d="M8 9.500v3M6.500 11h3" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round"/><circle cx="15.200" cy="12" r="1.100"/><circle cx="17.800" cy="10" r="1.100"/></svg>
+      </button>
+      <button type="button" class="stop" id="btnStopWs" aria-label="Programm stoppen" title="Stopp" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.500"/></svg>
+      </button>
+      <button type="button" class="play" id="btnRunWs" aria-label="Programm auf den Hub laden und starten" title="Starten">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500v11l9-5.500z"/></svg>
+      </button>
+    </div>
+    <button type="button" class="code-toggle" id="codeToggle" aria-expanded="true" aria-controls="codePanel" title="Python-Bereich ein- oder ausklappen"><span>Python</span></button>
+  </div>
+  <div class="split" id="splitCode" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Breite des Codebereichs ändern" title="Ziehen: Breite ändern · Doppelklick: Standard"></div>
+  <aside class="code" id="codePanel" aria-label="Python-Code">
+    <div class="code-head">
+      <h2>Python<span class="long"> für Pybricks</span></h2>
+      <button class="btn" id="btnCopy" type="button">Kopieren</button>
+    </div>
+    <div class="hub-bar" id="hubBar">
+      <button class="btn" id="btnConnect" type="button">Hub verbinden</button>
+      <button class="btn primary" id="btnRun" type="button">▶ Starten</button>
+      <button class="btn" id="btnStop" type="button" disabled>■ Stopp</button>
+      <button class="btn" id="btnPad" type="button" aria-pressed="false">Steuerfeld</button>
+      <button class="btn" id="btnHubView" type="button" title="Zeigt, was an den Anschlüssen hängt, die Messwerte und den Akku">Hub-Ansicht</button>
+      <span class="hub-state" id="hubState" role="status">kein Hub</span>
+    </div>
+    <div class="warnings hidden" id="warnings"></div>
+    <div class="code-scroll"><div class="code-lines" id="codeLines"></div></div>
+    <section class="pad hidden" id="pad" tabindex="0" aria-label="Steuerfeld">
+      <div class="pad-stick" aria-label="Joystick"><div class="pad-knob"></div></div>
+      <div class="pad-buttons">
+        <button type="button" data-pad="A">A</button>
+        <button type="button" data-pad="B">B</button>
+        <button type="button" data-pad="C">C</button>
+        <button type="button" data-pad="D">D</button>
+      </div>
+      <p class="pad-note">Tastatur: erst hier hineinklicken, dann Pfeiltasten oder W A S D für den Joystick, 1 bis 4 für die Tasten. Ein Controller an diesem Gerät bedient das Steuerfeld ebenfalls.</p>
+      <p class="pad-gamepad hidden" id="padGamepad" role="status"></p>
+      <button class="btn" id="btnPadBig" type="button" title="Steuerfeld bildschirmfüllend, zum Anordnen und für Tablets">Controller-Ansicht</button>
+    </section>
+    <div class="split-h" id="splitTerm" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Höhe des Terminals ändern" title="Ziehen: Höhe ändern · Doppelklick: Standard"></div>
+    <section class="term collapsed" id="term" aria-label="Terminal">
+      <div class="term-head">
+        <button class="term-toggle" id="termToggle" type="button" aria-expanded="false" aria-controls="termOut">Terminal</button>
+        <button class="btn" id="btnTermClear" type="button">Leeren</button>
+      </div>
+      <pre class="term-out" id="termOut"></pre>
+    </section>
+    <details class="run">
+      <summary>So kommt das Programm auf den Hub</summary>
+      <ol>
+        <li>Einmalig: In <a href="https://code.pybricks.com" target="_blank" rel="noopener">Pybricks Code</a> über das Zahnrad die Pybricks-Firmware auf den Hub spielen.</li>
+        <li>Hub einschalten und hier auf »Starten« klicken. Bluetooth oder USB-Kabel wählen, dann den Hub auswählen.</li>
+        <li>Das Programm wird übertragen und läuft sofort los. »Stopp« oder die mittlere Taste am Hub beendet es.</li>
+      </ol>
+      <p>Über das USB-Kabel geht es nur mit einer Pybricks-Firmware, die USB kann (derzeit die Beta 4.1). Mit der normalen Firmware bitte Bluetooth nehmen.</p>
+      <p id="hubUnsupported" class="hidden">Dieser Browser kann sich nicht mit dem Hub verbinden. Nimm Chrome oder Edge – oder kopiere den Code und füge ihn in Pybricks Code in eine neue Python-Datei ein.</p>
+    </details>
+  </aside>
+  <aside class="help hidden" id="help" aria-label="Hilfe">
+    <div class="help-head">
+      <button class="btn" id="helpBack" type="button">‹ Zurück</button>
+      <h2 id="helpTitle">Hilfe</h2>
+      <button class="btn" id="helpClose" type="button" aria-label="Hilfe schließen">✕</button>
+    </div>
+    <div class="help-body" id="helpBody"></div>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

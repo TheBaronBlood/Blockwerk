@@ -1,0 +1,15 @@
+# Blockwerk: LEGO-Hubs mit Pybricks-Firmware am USB-Kabel (Linux)
+#
+# Der Hub meldet sich als serielle Schnittstelle (/dev/ttyACM…). Ohne diese Regel darf
+# nur die Gruppe »dialout« darauf zugreifen, und der ModemManager stört die Verbindung,
+# weil er den Hub für ein Modem hält.
+#
+# Das .deb-Paket von Blockwerk installiert die Datei selbst. Von Hand:
+#   sudo cp 70-blockwerk-hub.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload
+# danach den Hub neu einstecken.
+#
+# Die Nummer im Dateinamen muss unter 73 liegen, sonst wirkt »uaccess« nicht.
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="0694", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0694", MODE="0666", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+__pycache__/
+checkdist/
+*.tsbuildinfo
+release/
+.DS_Store
+# Schlüssel für die Android-App gehören nie ins Repository (README, »Android-Schlüssel«)
+*.jks
+*.keystore

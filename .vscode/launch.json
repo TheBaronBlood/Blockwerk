@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Blockwerk starten (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Blockwerk: Entwicklungsserver"
+    },
+    {
+      "name": "Blockwerk starten (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Blockwerk: Entwicklungsserver"
+    },
+    {
+      "name": "Blockwerk bauen und fertigen Build starten (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:4173",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Blockwerk: Vorschau des Builds"
+    }
+  ]
+}

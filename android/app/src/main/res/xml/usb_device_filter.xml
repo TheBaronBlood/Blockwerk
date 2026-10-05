@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hubs von LEGO (Herstellernummer 0x0694 = 1684): Wird einer eingesteckt, bietet Android
+     Blockwerk an und erteilt die Erlaubnis für das Gerät gleich mit. -->
+<resources>
+    <usb-device vendor-id="1684" />
+</resources>

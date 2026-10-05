@@ -1,0 +1,136 @@
+{
+  "name": "blockwerk",
+  "version": "0.25.0",
+  "description": "Blockeditor im Stil der LEGO-SPIKE-App, der Python-Code für Pybricks erzeugt",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "app": "npm run build && electron .",
+    "app:check": "npm run build && electron . --smoke-test",
+    "dist": "npm run build && electron-builder --publish never",
+    "version": "node build/app-version.mjs && git add ios/App/App.xcodeproj/project.pbxproj",
+    "tablet": "npm run build && cap sync",
+    "tablet:ios": "npm run tablet && cap open ios",
+    "tablet:android": "npm run tablet && cap open android"
+  },
+  "devDependencies": {
+    "@capacitor-community/bluetooth-le": "^8.3.0",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/share": "^8.0.3",
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@pybricks/mpy-cross-v6": "^2.0.0",
+    "@types/node": "^26.6.4",
+    "@types/w3c-web-serial": "^1.0.8",
+    "@types/web-bluetooth": "^0.0.21",
+    "blockly": "13.3.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "fflate": "^0.8.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  },
+  "main": "electron/main.cjs",
+  "author": {
+    "name": "Miro-Patrice",
+    "email": "69164517+TheBaronBlood@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/TheBaronBlood/blockwerk",
+  "build": {
+    "appId": "de.blockwerk.app",
+    "productName": "Blockwerk",
+    "copyright": "Copyright © 2026 Miro-Patrice",
+    "artifactName": "Blockwerk-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "../blockwerk-programm",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "build/icon.png"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education",
+      "synopsis": "Blockeditor für Pybricks auf dem SPIKE-Prime-Hub"
+    },
+    "deb": {
+      "fpm": [
+        "build/70-blockwerk-hub.rules=/usr/lib/udev/rules.d/70-blockwerk-hub.rules"
+      ]
+    },
+    "electronLanguages": [
+      "de",
+      "en-US"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "artifactName": "Blockwerk-${version}-win-${arch}-Setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "include": "build/installer.nsh",
+      "perMachine": false,
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "language": "1031",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Blockwerk",
+      "uninstallDisplayName": "Blockwerk",
+      "deleteAppDataOnUninstall": true
+    },
+    "portable": {
+      "artifactName": "Blockwerk-${version}-win-${arch}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extraResources": [
+        {
+          "from": "node_modules/electron/dist/LICENSES.chromium.html",
+          "to": "LICENSES.chromium.html"
+        },
+        {
+          "from": "node_modules/electron/dist/LICENSE",
+          "to": "LICENSE.electron.txt"
+        }
+      ],
+      "extendInfo": {
+        "NSBluetoothAlwaysUsageDescription": "Blockwerk verbindet sich per Bluetooth mit dem LEGO-Hub, um Programme zu übertragen."
+      }
+    }
+  }
+}

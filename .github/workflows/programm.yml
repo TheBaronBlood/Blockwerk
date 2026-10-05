@@ -1,0 +1,175 @@
+# Baut Blockwerk als Programm für Linux, Windows und macOS.
+# Start: auf GitHub unter »Actions« → »Programm bauen« → »Run workflow«,
+# oder automatisch bei einem Versions-Tag (z. B. v0.20.0).
+# Die fertigen Dateien hängen danach als »Artifacts« am Lauf. Bei einem Versions-Tag entsteht
+# zusätzlich ein Release mit allen Programmen und den Änderungen seit der vorigen Version
+# (build/release-notes.mjs: Abschnitt aus CHANGELOG.md plus Commits, nach feat/fix/… sortiert).
+name: Programm bauen
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+# Die Läufe dürfen das Repository nur lesen; allein der Job »release« darf schreiben (siehe dort).
+permissions:
+  contents: read
+
+jobs:
+  bauen:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      # falls npm das Installationsskript von Electron nicht ausgeführt hat
+      - run: node node_modules/electron/install.js
+
+      - name: Tests
+        run: npm test
+      - name: Seite bauen
+        run: npm run build
+
+      - name: Selbsttest des Programms (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npx electron . --smoke-test --smoke-ext --smoke-hub --no-sandbox
+      - name: Selbsttest des Programms
+        if: runner.os != 'Linux'
+        run: npx electron . --smoke-test --smoke-ext --smoke-hub
+
+      - name: Programm packen
+        run: npx electron-builder --publish never --config.directories.output=release
+
+      # Eine ungültige Signatur meldet macOS nach dem Herunterladen als »beschädigt«
+      - name: Prüfen, ob die Mac-Programme gültig signiert sind
+        if: runner.os == 'macOS'
+        run: for app in release/mac*/Blockwerk.app; do codesign --verify --deep --strict "$app"; done
+
+      # Ohne diese Regel kommt unter Linux niemand an den Hub am USB-Kabel
+      - name: Prüfen, ob das .deb die udev-Regel enthält
+        if: runner.os == 'Linux'
+        run: dpkg -c release/*.deb | grep 70-blockwerk-hub.rules
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Blockwerk-${{ runner.os }}
+          if-no-files-found: error
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.exe
+            release/*.zip
+            release/*.dmg
+
+  # App für Android als APK zum Installieren von Hand.
+  # Mit festem Schlüssel (README, »Android-Schlüssel«: vier Secrets im Repository) entsteht die
+  # Release-Fassung, die sich über eine vorhandene Installation aktualisieren lässt. Ohne die
+  # Secrets entsteht die Debug-Fassung mit einem Schlüssel, den jeder Lauf neu erzeugt – ein
+  # Update geht dann nur nach dem Deinstallieren.
+  android:
+    name: Android-App bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Seite bauen und in das Android-Projekt übernehmen
+        run: |
+          npm run build
+          npx cap sync android
+      - name: Schlüssel bereitlegen
+        id: key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/blockwerk.jks"
+            echo "fest=ja" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Kein fester Schlüssel hinterlegt – es entsteht die Debug-Fassung."
+            echo "fest=nein" >> "$GITHUB_OUTPUT"
+          fi
+      - name: App bauen (Release, fester Schlüssel)
+        if: steps.key.outputs.fest == 'ja'
+        working-directory: android
+        env:
+          BLOCKWERK_KEYSTORE: ${{ runner.temp }}/blockwerk.jks
+          BLOCKWERK_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BLOCKWERK_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          BLOCKWERK_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease --console=plain
+          mv app/build/outputs/apk/release/app-release.apk ../app.apk
+          # eine unsignierte Datei ließe sich auf keinem Gerät installieren
+          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs ../app.apk | head -2
+      - name: App bauen (Debug, Wegwerf-Schlüssel)
+        if: steps.key.outputs.fest != 'ja'
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug --console=plain
+          mv app/build/outputs/apk/debug/app-debug.apk ../app.apk
+      - name: Datei benennen
+        run: mv app.apk "Blockwerk-$(node -p "require('./package.json').version")-android.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Blockwerk-Android
+          if-no-files-found: error
+          path: Blockwerk-*-android.apk
+
+  # Nur bei einem Versions-Tag und nur, wenn alle drei Systeme gebaut und geprüft sind.
+  # Die Android-App kommt dazu, wenn ihr Bau geklappt hat – scheitert er, entsteht das Release ohne sie.
+  release:
+    name: Release anlegen
+    needs: [bauen, android]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.bauen.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # alle Commits und Tags – daraus entsteht die Liste der Änderungen
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: programme
+          merge-multiple: true
+
+      - name: Notizen schreiben
+        run: |
+          node build/release-notes.mjs "$GITHUB_REF_NAME" programme > notizen.md
+          cat notizen.md
+
+      # Läuft der Schritt ein zweites Mal (»Re-run«), werden Dateien und Notizen ersetzt
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" programme/* --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes-file notizen.md
+          else
+            gh release create "$GITHUB_REF_NAME" programme/* --verify-tag \
+              --title "Blockwerk ${GITHUB_REF_NAME#v}" --notes-file notizen.md
+          fi

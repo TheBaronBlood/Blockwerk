@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Blockwerk: Entwicklungsserver",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "__kein_treffer__" },
+        "background": { "activeOnStart": true, "beginsPattern": "vite", "endsPattern": "ready in|Local" }
+      }
+    },
+    {
+      "label": "Blockwerk: bauen",
+      "type": "npm",
+      "script": "build",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Blockwerk: Vorschau des Builds",
+      "type": "npm",
+      "script": "preview",
+      "dependsOn": "Blockwerk: bauen",
+      "isBackground": true,
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "__kein_treffer__" },
+        "background": { "activeOnStart": true, "beginsPattern": "vite", "endsPattern": "Local" }
+      }
+    },
+    {
+      "label": "Blockwerk: Tests",
+      "type": "npm",
+      "script": "test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    }
+  ]
+}

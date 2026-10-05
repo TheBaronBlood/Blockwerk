@@ -1,0 +1,576 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SPIKE-Import: Projekte der AG > M0 Bug-Jagd - Das Herz bleibt unsichtbar: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Icon
+
+hub = PrimeHub()
+
+hub.display.icon(Icon.HEART)
+hub.display.off()
+hub.speaker.beep(523, 300)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M0 Loesung - Begruessung: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Icon
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+hub.display.icon(Icon.HAPPY)
+hub.speaker.beep(262, 300)
+wait(1000)
+hub.display.text('Hallo AG')
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M1 Bug-Jagd - Der Roboter will nicht anhalten: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+roboter.straight(8796)
+hub.speaker.beep(262, 300)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M1 Demo - Eine Radumdrehung: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.straight(176)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M1 Loesung - Exakt 50 cm: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+roboter.straight(500)
+hub.speaker.beep(262, 300)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M2 Bug-Jagd - Aus dem Quadrat wird ein Strich: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+for count in range(4):
+    roboter.straight(200)
+roboter.turn(90)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M2 Demo - Quadrat ohne Schleife: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.straight(200)
+roboter.turn(90)
+roboter.straight(200)
+roboter.turn(90)
+roboter.straight(200)
+roboter.turn(90)
+roboter.straight(200)
+roboter.turn(90)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M2 Loesung - Quadrat mit Schleife: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+for count in range(4):
+    roboter.straight(200)
+    roboter.turn(90)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M3 Bug-Jagd - Der Roboter ignoriert die Wand: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor, UltrasonicSensor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+abstand_D = UltrasonicSensor(Port.D)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+roboter.drive(145, 0)
+if abstand_D.distance() < 100:
+    roboter.brake()
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M3 Demo - Was sieht der Sensor: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Port
+from pybricks.pupdevices import UltrasonicSensor
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+abstand_D = UltrasonicSensor(Port.D)
+
+while True:
+    hub.display.text(str(abstand_D.distance() / 10))
+    wait(500)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M3 Loesung - Halt vor der Wand: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import ForceSensor, Motor, UltrasonicSensor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+abstand_D = UltrasonicSensor(Port.D)
+kraft_E = ForceSensor(Port.E)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+while not kraft_E.pressed():
+    wait(10)
+roboter.drive(145, 0)
+while not (abstand_D.distance() < 100):
+    wait(10)
+roboter.brake()
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M4 Bug-Jagd - Der Roboter faehrt einfach los: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Color, Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+while True:
+    if farbe_C.color() == Color.RED:
+        roboter.brake()
+    else:
+        roboter.drive(145, 0)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M4 Loesung - Ampel-Roboter: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Color, Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=145, turn_rate=150)
+while True:
+    if farbe_C.color() == Color.RED:
+        roboter.brake()
+    if farbe_C.color() == Color.GREEN:
+        roboter.drive(145, 0)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M5 Bug-Jagd - Der Zaehler spinnt: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Color, Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+farbe_C.detectable_colors([  # mit Schwarz
+    Color.RED, Color.YELLOW, Color.GREEN, Color.BLUE,
+    Color.WHITE, Color.BLACK, Color.NONE,
+])
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+# Variablen anlegen
+Linien = 0
+
+Linien = 0
+roboter.settings(straight_speed=120, turn_rate=125)
+roboter.drive(120, 0)
+while True:
+    while not (farbe_C.color() == Color.BLACK):
+        wait(10)
+    Linien = Linien + 1
+    hub.display.text(str(Linien))
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M5 Loesung - Linienzaehler: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Color, Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+farbe_C.detectable_colors([  # mit Schwarz
+    Color.RED, Color.YELLOW, Color.GREEN, Color.BLUE,
+    Color.WHITE, Color.BLACK, Color.NONE,
+])
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+# Variablen anlegen
+Linien = 0
+
+Linien = 0
+roboter.settings(straight_speed=120, turn_rate=125)
+roboter.drive(120, 0)
+while True:
+    while not (farbe_C.color() == Color.BLACK):
+        wait(10)
+    Linien = Linien + 1
+    hub.display.text(str(Linien))
+    while not (not farbe_C.color() == Color.BLACK):
+        wait(10)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M6 Bug-Jagd - Nur die erste Drehung klappt: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=100, turn_rate=100)
+hub.imu.reset_heading(0)
+for count in range(4):
+    roboter.straight(200)
+    roboter.drive(0, 100)
+    while not (abs(hub.imu.heading()) > 88):
+        wait(10)
+    roboter.brake()
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M6 Loesung - 90-Grad-Drehung mit dem Gyrosensor: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=100, turn_rate=100)
+hub.imu.reset_heading(0)
+roboter.drive(0, 100)
+while not (abs(hub.imu.heading()) > 88):
+    wait(10)
+roboter.brake()
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M6 Loesung - Linienfolger mit zwei Zustaenden: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=120, turn_rate=125)
+while True:
+    if farbe_C.reflection() < 50:
+        roboter.drive(85, -38)
+    else:
+        roboter.drive(85, 38)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M6 Loesung - Proportionalregler: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.settings(straight_speed=120, turn_rate=125)
+while True:
+    roboter.drive(120, ((farbe_C.reflection() - 50) * 0.8) * 1.25)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M7 Bug-Jagd - Der Block dreht immer gleich weit: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+def drehe(Winkel):
+    hub.imu.reset_heading(0)
+    roboter.drive(0, 100)
+    while not (abs(hub.imu.heading()) > 88):
+        wait(10)
+    roboter.brake()
+
+roboter.settings(straight_speed=100, turn_rate=100)
+drehe(45)
+wait(1000)
+drehe(180)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M7 Loesung - Eigener Block drehe: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+def drehe(Winkel):
+    hub.imu.reset_heading(0)
+    roboter.drive(0, 100)
+    while not (abs(hub.imu.heading()) > Winkel - 2):
+        wait(10)
+    roboter.brake()
+
+roboter.settings(straight_speed=100, turn_rate=100)
+for count in range(4):
+    roboter.straight(200)
+    drehe(90)
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > M7 Loesung - Eigener Block fahre bis Linie: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Color, Direction, Port
+from pybricks.pupdevices import ColorSensor, Motor
+from pybricks.robotics import DriveBase
+from pybricks.tools import wait
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+farbe_C = ColorSensor(Port.C)
+farbe_C.detectable_colors([  # mit Schwarz
+    Color.RED, Color.YELLOW, Color.GREEN, Color.BLUE,
+    Color.WHITE, Color.BLACK, Color.NONE,
+])
+
+# Fahrbasis
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+def fahre_bis_Linie():
+    roboter.drive(120, 0)
+    while not (farbe_C.color() == Color.BLACK):
+        wait(10)
+    roboter.brake()
+
+roboter.settings(straight_speed=120, turn_rate=125)
+fahre_bis_Linie()
+"
+`;
+
+exports[`SPIKE-Import: Projekte der AG > Project_1-original: vollständig übersetzt, gültiges Python 1`] = `
+"from pybricks.hubs import PrimeHub
+from pybricks.parameters import Direction, Port
+from pybricks.pupdevices import Motor
+from pybricks.robotics import DriveBase
+
+hub = PrimeHub()
+
+# Geräte an den Anschlüssen
+motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)
+motor_B = Motor(Port.B)
+
+# Fahrbasis (Standardwerte, kein Block »Fahrbasis einrichten« gefunden)
+roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
+roboter.use_gyro(True)
+
+roboter.straight(1759)
+"
+`;

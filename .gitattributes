@@ -1,0 +1,6 @@
+# Zeilenenden überall LF, damit Snapshots und erzeugter Code auf jedem System gleich sind
+* text=auto eol=lf
+*.llsp3 binary
+*.llsp binary
+*.png binary
+*.wav binary

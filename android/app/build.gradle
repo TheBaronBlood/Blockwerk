@@ -1,0 +1,80 @@
+apply plugin: 'com.android.application'
+
+// Die Versionsnummer steht nur an einer Stelle: in package.json. Aus 0.21.3 wird die Zahl 2103,
+// an der Android erkennt, welche Fassung neuer ist.
+def blockwerkVersion = new groovy.json.JsonSlurper().parseText(file('../../package.json').text).version
+def versionParts = blockwerkVersion.tokenize('.-').take(3).collect { it.toInteger() }
+
+// Fester Schlüssel für die App (README, »Android-Schlüssel«): Sind die vier Angaben gesetzt – im
+// Workflow aus den Secrets des Repositorys –, wird die Release-Fassung damit signiert. Nur so lässt
+// sich eine neue Fassung über eine vorhandene installieren. Ohne die Angaben gibt es die
+// Debug-Fassung mit dem Wegwerf-Schlüssel des jeweiligen Rechners. Der Schlüssel selbst gehört
+// nie ins Repository.
+def keystorePath = System.getenv('BLOCKWERK_KEYSTORE')
+def hasKey = keystorePath && file(keystorePath).exists()
+
+android {
+    namespace = "de.blockwerk.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "de.blockwerk.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2]
+        versionName blockwerkVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (hasKey) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('BLOCKWERK_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('BLOCKWERK_KEY_ALIAS')
+                keyPassword System.getenv('BLOCKWERK_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasKey) signingConfig signingConfigs.release
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+    // Hub am USB-Kabel: serielle Schnittstelle (CDC ACM) über den USB-Host von Android
+    implementation 'com.github.mik3y:usb-serial-for-android:3.9.0'
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Musterprogramme für die Robotik-AG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#F3F6F9;
+  --dot:#D3DBE4;
+  --card:#FFFFFF;
+  --ink:#1B2430;
+  --muted:#556172;
+  --rule:#DCE3EA;
+  --demo:#2563C9;
+  --bug:#C9362E;
+  --sol:#17806A;
+  --focus:#2563C9;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --round:"Nunito", "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12171D; --dot:#232B35; --card:#1A2129; --ink:#E6ECF2; --muted:#9AA7B5; --rule:#2B3440;
+    --demo:#6EA0F5; --bug:#F2766E; --sol:#4CC3A4; --focus:#6EA0F5;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12171D; --dot:#232B35; --card:#1A2129; --ink:#E6ECF2; --muted:#9AA7B5; --rule:#2B3440;
+  --demo:#6EA0F5; --bug:#F2766E; --sol:#4CC3A4; --focus:#6EA0F5;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;
+  background-color:var(--paper);
+  background-image:radial-gradient(var(--dot) 1px, transparent 1.2px);
+  background-size:18px 18px;
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.5;
+}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 64px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:20px;padding-top:20px}}
+
+/* Navigation */
+nav.modnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start}
+nav.modnav h2{font-family:var(--round);font-weight:800;font-size:15px;margin:0 0 10px;color:var(--muted)}
+nav.modnav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+nav.modnav a{display:flex;gap:10px;align-items:baseline;text-decoration:none;padding:6px 8px;border-radius:8px;font-size:15px}
+nav.modnav a:hover{background:var(--card)}
+nav.modnav .no{font-family:var(--round);font-weight:900;width:1.2em;text-align:right;color:var(--muted)}
+.toggle{margin-top:18px;width:100%;font:inherit;font-size:14px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer;text-align:left}
+.toggle[aria-pressed="true"]{border-color:var(--sol)}
+@media (max-width:860px){
+  nav.modnav{position:static}
+  nav.modnav ol{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  nav.modnav a{white-space:nowrap;background:var(--card)}
+  .toggle{width:auto}
+}
+
+/* Kopf */
+header.intro{margin-bottom:36px}
+header.intro h1{font-family:var(--round);font-weight:900;font-size:clamp(30px,4.6vw,46px);line-height:1.08;margin:0 0 12px;letter-spacing:-0.01em;max-width:18ch}
+header.intro p.lede{font-size:18px;max-width:62ch;margin:0 0 22px;color:var(--muted)}
+.hero-script{margin:0 0 26px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.fact{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.fact h3{font-family:var(--round);font-weight:800;font-size:16px;margin:0 0 6px}
+.fact p,.fact ul{margin:0;font-size:15px}
+.fact ul{padding-left:18px}
+.types{display:flex;flex-direction:column;gap:6px;font-size:15px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:4px}
+.legend span{font-family:var(--round);font-weight:800;font-size:12.5px;color:#fff;padding:3px 9px;border-radius:999px;text-shadow:0 1px 0 rgba(0,0,0,.2)}
+.legend span.dark{color:#3B2B00;text-shadow:none}
+
+/* Module */
+section.mod{margin-top:44px}
+section.mod > h2{font-family:var(--round);font-weight:900;font-size:28px;margin:0 0 4px;display:flex;gap:12px;align-items:baseline}
+section.mod > h2 .no{color:var(--muted)}
+section.mod > p.concept{margin:0 0 18px;color:var(--muted);max-width:66ch}
+.cards{display:flex;flex-direction:column;gap:16px}
+
+.card{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--t);border-radius:10px;padding:16px 18px 18px}
+.card.demo{--t:var(--demo)} .card.bug{--t:var(--bug)} .card.loesung{--t:var(--sol)}
+.card .head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;margin-bottom:6px}
+.card h3{font-family:var(--round);font-weight:800;font-size:19px;margin:0}
+.badge{font-size:13px;font-weight:700;color:var(--t);border:1.5px solid var(--t);border-radius:999px;padding:1px 9px}
+.card p.task{margin:0 0 12px;max-width:68ch}
+.card p.note{margin:12px 0 0;font-size:15px;color:var(--muted);max-width:68ch}
+.card details{margin-top:12px;font-size:15px}
+.card summary{cursor:pointer;font-weight:700;color:var(--bug)}
+.card details p{margin:8px 0 0;max-width:68ch}
+.scroll{overflow-x:auto;padding:4px 2px 6px}
+.scripts{display:flex;flex-wrap:wrap;gap:22px 32px;align-items:flex-start}
+.script{flex:0 0 auto}
+body.hide-sol .card.loesung{display:none}
+.hidden-hint{display:none;font-size:14px;color:var(--muted);margin:0}
+body.hide-sol .hidden-hint{display:block}
+
+/* Blöcke (SVG) */
+.script{flex:0 0 auto}
+.script svg{display:block;overflow:visible}
+.bt{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:500;font-size:16px;dominant-baseline:central}
+footer.foot{margin-top:56px;font-size:14px;color:var(--muted);max-width:70ch}
+
+@media print{
+  body{background:#fff;color:#000}
+  nav.modnav,.toggle,.hero-script{display:none}
+  .wrap{display:block;padding:0}
+  .card{break-inside:avoid;border-color:#bbb}
+  section.mod{break-before:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="modnav" aria-label="Module">
+    <h2>Module</h2>
+    <ol id="navlist"></ol>
+    <button class="toggle" id="toggle" type="button" aria-pressed="false">Musterlösungen ausblenden</button>
+  </nav>
+
+  <main>
+    <header class="intro">
+      <h1>Musterprogramme für die Robotik-AG</h1>
+      <p class="lede">Wortblöcke für LEGO SPIKE Prime zu den Modulen 0 bis 7 des Leitfadens, beschriftet wie in eurer SPIKE App – zum Nachbauen, zum Zeigen am Beamer und zum Ausdrucken als Programmkarten.</p>
+      <div class="hero-script" id="hero"></div>
+      <div class="facts">
+        <div class="fact">
+          <h3>Drei Kartenarten</h3>
+          <div class="types">
+            <div><span class="badge" style="--t:var(--demo)">Demo</span> zum Zeigen im Einstieg</div>
+            <div><span class="badge" style="--t:var(--bug)">Bug-Jagd</span> zum Austeilen, Auflösung verdeckt</div>
+            <div><span class="badge" style="--t:var(--sol)">Musterlösung</span> nur für die Leitung</div>
+          </div>
+        </div>
+        <div class="fact">
+          <h3>Anschlüsse am Hub</h3>
+          <ul>
+            <li>A und B: Fahrmotoren links und rechts</li>
+            <li>C: Farbsensor, nach unten gerichtet</li>
+            <li>D: Abstandssensor, nach vorn gerichtet</li>
+            <li>E: Kraftsensor als Starttaste</li>
+          </ul>
+        </div>
+        <div class="fact">
+          <h3>Blockfarben</h3>
+          <p>Die Farbe zeigt, in welcher Kategorie der App der Block zu finden ist.</p>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+    </header>
+
+    <p class="hidden-hint" id="hint">Musterlösungen sind ausgeblendet – die Seite kann so am Beamer gezeigt werden.</p>
+    <div id="modules"></div>
+
+    <footer class="foot">
+      Die Beschriftungen entsprechen der englischen Oberfläche der SPIKE App. Eigene Blöcke und Variablen tragen deutsche Namen, weil man sie selbst benennt. Modul 8, das Mini-Robot-Game, hat bewusst keine Musterprogramme: Dort sollen die Teams ihre eigenen Wege finden. Musterlösungen für die offenen Challenges fehlen aus demselben Grund.
+    </footer>
+  </main>
+</div>
+
+<script>
+// ---------- Kategorien: Farben aus der SPIKE App ----------
+const CAT = {
+  ev:  {c:'#F5C402', d:'#C8A300', name:'Events'},
+  mov: {c:'#FF4CCD', d:'#C80090', name:'Movement'},
+  lig: {c:'#9B6AF6', d:'#691FF0', name:'Light'},
+  snd: {c:'#C061F1', d:'#8A40AF', name:'Sound'},
+  ctl: {c:'#FFB515', d:'#C98A01', name:'Control'},
+  sen: {c:'#34CCF1', d:'#00A8C9', name:'Sensors'},
+  op:  {c:'#00B94D', d:'#006A2A', name:'Operators'},
+  var: {c:'#FF8C1A', d:'#DB6E00', name:'Variables'},
+  my:  {c:'#FF6680', d:'#E64D67', name:'My Blocks'}
+};
+const SWATCH = {red:'#FF000C', green:'#00B94D', black:'#1B1B1B'};
+const SWATCH_NAME = {red:'Rot', green:'Grün', black:'Schwarz'};
+
+// ---------- Notation ----------
+const n    = v => ({k:'in', v});           // weißes Zahlen-/Textfeld
+const pill = v => ({k:'pill', v});         // gefülltes Dropdown (Anschluss, Variable, abs, yaw)
+const opt  = v => ({k:'opt', v});          // umrandetes Dropdown (Einheit, Vergleich)
+const arr  = v => ({k:'arrow', v});        // Richtungs-Dropdown mit Pfeil
+const img  = v => ({k:'img', v});          // Bildauswahl der Lichtmatrix
+const sw   = v => ({k:'sw', v});           // Farbfeld
+const I    = v => ({k:'icon', v});         // Symbol mit Trennlinie
+const R    = (c,...p) => ({k:'rep', c, p});
+const Bo   = (c,...p) => ({k:'bool', c, p});
+const Pr   = (c,...p) => ({k:'proto', c, p});
+const H    = (c,...p) => ({t:'hat', c, p});
+const DEF  = (c,...p) => ({t:'def', c, p});
+const B    = (c,...p) => ({t:'b', c, p});
+const C    = (c,p,body,o={}) => ({t:'c', c, p, body, ...o});
+const CE   = (c,p,body,p2,body2) => ({t:'ce', c, p, body, p2, body2});
+
+// ---------- Häufige Blöcke, beschriftet wie in der App ----------
+const start   = H('ev', I('play'), 'when program starts');
+const motors  = B('mov', I('move'), 'set movement motors to', pill('A+B'));
+const speed   = v => B('mov', I('move'), 'set movement speed to', n(v), '%');
+const move    = (d,v,u) => B('mov', I('move'), 'move', arr(d), 'for', n(v), opt(u));
+const go      = d => B('mov', I('move'), 'start moving', arr(d));
+const steer   = x => B('mov', I('move'), 'start moving', x);
+const stop    = B('mov', I('move'), 'stop moving');
+const beep    = (t,s) => B('snd', I('hub'), 'play beep', n(t), 'for', n(s), 'seconds');
+const lightOn = pic => B('lig', I('hub'), 'turn on', img(pic));
+const lightOff= B('lig', I('hub'), 'turn off pixels');
+const write   = x => B('lig', I('hub'), 'write', x);
+const wait    = s => B('ctl', 'wait', n(s), 'seconds');
+const until   = cond => B('ctl', 'wait until', cond);
+const forever = body => C('ctl', ['forever'], body, {loop:true, cap:true});
+const repeat  = (k,body) => C('ctl', ['repeat', n(k)], body, {loop:true});
+const ifThen  = (cond,body) => C('ctl', ['if', cond, 'then'], body);
+const ifElse  = (cond,b1,b2) => CE('ctl', ['if', cond, 'then'], b1, ['else'], b2);
+const color   = col => Bo('sen', I('color'), pill('C'), 'is color', sw(col), '?');
+const reflLt  = v => Bo('sen', I('color'), pill('C'), 'reflection', opt('<'), n(v), '% ?');
+const refl    = R('sen', I('color'), pill('C'), 'reflected light');
+const closer  = v => Bo('sen', I('dist'), pill('D'), 'is', opt('closer than'), n(v), opt('cm'), '?');
+const dist    = R('sen', I('dist'), pill('D'), 'distance in', opt('cm'));
+const pressed = Bo('sen', I('force'), pill('E'), 'is', opt('pressed'), '?');
+const yaw     = R('sen', I('hub'), pill('yaw'), 'angle');
+const resetYaw= B('sen', I('hub'), 'set yaw angle to 0');
+const abs     = x => R('op', pill('abs'), 'of', x);
+const gt      = (a,b) => Bo('op', a, '>', b);
+const not     = x => Bo('op', 'not', x);
+const minus   = (a,b) => R('op', a, '-', b);
+const times   = (a,b) => R('op', a, '*', b);
+const setVar  = (v,x) => B('var', 'set', pill(v), 'to', n(x));
+const chVar   = (v,x) => B('var', 'change', pill(v), 'by', n(x));
+const varR    = v => R('var', v);
+const param   = v => R('my', v);
+const define  = (name,...params) => DEF('my', 'define', Pr('my', name, ...params));
+
+// ---------- Inhalte ----------
+const MODULES = [
+ {no:0,title:'Erster Kontakt',concept:'Ein Programm ist eine präzise Folge von Anweisungen, die der Hub wörtlich ausführt.',cards:[
+  {type:'loesung',title:'Begrüßung',task:'Grundaufgabe: Ein Symbol erscheint, ein Ton erklingt, danach läuft ein Text über die Lichtmatrix.',
+   scripts:[[start,lightOn('smiley'),beep(60,0.3),wait(1),write(n('Hallo AG'))]],
+   note:'Statt »Hallo AG« den eigenen Namen schreiben lassen – ein schneller, persönlicher erster Erfolg.'},
+  {type:'bug',title:'Das Herz bleibt unsichtbar',task:'Soll: Ein Herz leuchtet auf, dann erklingt ein Ton. Beobachtung: Niemand sieht das Herz.',
+   scripts:[[start,lightOn('heart'),lightOff,beep(72,0.3)]],
+   solution:'Zwischen »turn on« und »turn off pixels« fehlt ein »wait«-Block. Der Hub arbeitet die Befehle in Sekundenbruchteilen ab, das Herz ist sofort wieder aus. Alternative Lösung: der Block »turn on … for 2 seconds«.'}
+ ]},
+ {no:1,title:'Sequenz',concept:'Anweisungen werden der Reihe nach ausgeführt; Zahlen brauchen die richtige Einheit.',cards:[
+  {type:'demo',title:'Eine Radumdrehung',task:'Vor dem Start schätzen lassen: Wie weit fährt der Roboter?',
+   scripts:[[start,motors,move('up',1,'rotations')]],
+   note:'Nach dem Lauf mit dem Maßband messen. Bei Rädern mit 5,6 cm Durchmesser sind es etwa 17,6 cm.'},
+  {type:'loesung',title:'Exakt 50 cm',task:'Grundaufgabe: 50 cm fahren, anhalten, Ton ausgeben.',
+   scripts:[[start,motors,speed(30),move('up',50,'cm'),beep(60,0.3)]],
+   note:'Langsame Fahrt erhöht die Genauigkeit. Die Einheit wählt man im Dropdown hinter der Zahl; voreingestellt sind »rotations«.'},
+  {type:'bug',title:'Der Roboter will nicht anhalten',task:'Soll: 50 cm fahren. Beobachtung: Der Roboter fährt quer durch den ganzen Raum.',
+   scripts:[[start,motors,speed(30),move('up',50,'rotations'),beep(60,0.3)]],
+   solution:'Die Einheit steht auf »rotations« statt auf »cm«. 50 Radumdrehungen entsprechen fast neun Metern.'}
+ ]},
+ {no:2,title:'Schleifen',concept:'Wiederholen statt Kopieren: Was mehrfach gleich abläuft, gehört in eine Schleife.',cards:[
+  {type:'demo',title:'Quadrat ohne Schleife',task:'Zeigen und fragen: Was fällt euch an diesem Programm auf?',
+   scripts:[[start,motors,move('up',20,'cm'),move('cw',180,'degrees'),move('up',20,'cm'),move('cw',180,'degrees'),move('up',20,'cm'),move('cw',180,'degrees'),move('up',20,'cm'),move('cw',180,'degrees')]],
+   note:'180 Motorgrad sind nur ein Startwert für eine Vierteldrehung des Roboters und müssen meist nachjustiert werden – eine gute offene Frage für später.'},
+  {type:'loesung',title:'Quadrat mit Schleife',task:'Grundaufgabe: dasselbe Quadrat mit einem einzigen »repeat«-Block.',
+   scripts:[[start,motors,repeat(4,[move('up',20,'cm'),move('cw',180,'degrees')])]],
+   note:'Für die Vieleck-Challenge: Pro Ecke dreht der Roboter um 360° geteilt durch die Eckenzahl. Bei einer Drehung auf der Stelle gilt: Motorgrad = Robotergrad × Radabstand ÷ Raddurchmesser.'},
+  {type:'bug',title:'Aus dem Quadrat wird ein Strich',task:'Soll: ein Quadrat. Beobachtung: Der Roboter fährt weit geradeaus und dreht sich erst ganz am Ende.',
+   scripts:[[start,motors,repeat(4,[move('up',20,'cm')]),move('cw',180,'degrees')]],
+   solution:'Der Drehblock steht unter der Schleife statt in ihr. Wiederholt wird nur, was innerhalb der Klammer von »repeat« steht.'}
+ ]},
+ {no:3,title:'Sensoren und Warten',concept:'Der Roboter reagiert auf seine Umgebung, statt blind eine feste Strecke abzufahren.',cards:[
+  {type:'demo',title:'Was sieht der Sensor?',task:'Der gemessene Abstand läuft fortlaufend über die Lichtmatrix.',
+   scripts:[[start,forever([write(dist),wait(0.5)])]],
+   note:'Eine Hand vor den Sensor halten und die Werte beobachten. Auch schräge und weiche Flächen ausprobieren.'},
+  {type:'loesung',title:'Halt vor der Wand',task:'Grundaufgabe: Start per Kraftsensor, fahren bis unter 10 cm Abstand, anhalten.',
+   scripts:[[start,motors,speed(30),until(pressed),go('up'),until(closer(10)),stop]],
+   note:'Wichtig: Bei den Abstandsblöcken ist die Einheit auf »%« voreingestellt und muss im Dropdown auf »cm« umgestellt werden. Für die Einpark-Challenge den Grenzwert schrittweise verkleinern.'},
+  {type:'bug',title:'Der Roboter ignoriert die Wand',task:'Soll: vor der Wand anhalten. Beobachtung: Er fährt ungebremst dagegen.',
+   scripts:[[start,motors,speed(30),go('up'),ifThen(closer(10),[stop])]],
+   solution:'»if« prüft genau einmal, direkt nach dem Start – da ist die Wand noch weit entfernt. Danach fragt das Programm nie wieder nach. Abhilfe: »wait until« oder eine Schleife.'}
+ ]},
+ {no:4,title:'Bedingungen',concept:'Wenn – dann – sonst: Der Roboter entscheidet abhängig von dem, was er misst.',cards:[
+  {type:'loesung',title:'Ampel-Roboter',task:'Grundaufgabe: Auf Rot anhalten, auf Grün losfahren.',
+   scripts:[[start,motors,speed(30),forever([ifThen(color('red'),[stop]),ifThen(color('green'),[go('up')])])]],
+   note:'Der Farbsensor zeigt nach unten und sitzt knapp über dem Boden. Auf weißem Untergrund behält der Roboter seinen Zustand bei.'},
+  {type:'bug',title:'Der Roboter fährt einfach los',task:'Soll: nur auf Grün losfahren. Beobachtung: Er fährt sofort los, auch ohne grünes Feld.',
+   scripts:[[start,motors,speed(30),forever([ifElse(color('red'),[stop],[go('up')])])]],
+   solution:'»else« greift bei jeder Farbe außer Rot, also auch auf dem weißen Boden. Für »nur bei Grün« braucht es eine eigene, zweite Bedingung.'}
+ ]},
+ {no:5,title:'Variablen',concept:'Eine Variable merkt sich einen Wert, der sich während des Programms ändert.',cards:[
+  {type:'loesung',title:'Linienzähler',task:'Grundaufgabe: Schwarze Querlinien überfahren und ihre Anzahl anzeigen.',
+   scripts:[[start,setVar('Linien',0),motors,speed(25),go('up'),forever([until(color('black')),chVar('Linien',1),write(varR('Linien')),until(not(color('black')))])]],
+   note:'Die Variable »Linien« vorher über »Make a Variable« anlegen.'},
+  {type:'bug',title:'Der Zähler spinnt',task:'Soll: jede Linie genau einmal zählen. Beobachtung: Schon bei einer einzigen Linie springt die Anzeige auf hohe Werte.',
+   scripts:[[start,setVar('Linien',0),motors,speed(25),go('up'),forever([until(color('black')),chVar('Linien',1),write(varR('Linien'))])]],
+   solution:'Solange der Sensor über derselben Linie steht, ist die Bedingung bei jedem Durchlauf erneut erfüllt. Der Roboter muss warten, bis er die Linie wieder verlassen hat.'}
+ ]},
+ {no:6,title:'Regelung',concept:'Ständiges Messen und Nachkorrigieren – die Grundlage für präzise Fahrten im Robot Game.',cards:[
+  {type:'loesung',title:'Linienfolger mit zwei Zuständen',task:'Grundaufgabe A: Der Roboter tastet sich an der Kante einer Linie entlang.',
+   scripts:[[start,motors,speed(25),forever([ifElse(reflLt(50),[steer(n('left: 30'))],[steer(n('right: 30'))])])]],
+   note:'Der Schwellwert liegt zwischen den Messwerten für Schwarz und Weiß; vorher mit »reflected light« ermitteln. Werden links und rechts vertauscht, folgt der Roboter der anderen Kante.'},
+  {type:'loesung',title:'90°-Drehung mit dem Gyrosensor',task:'Grundaufgabe B: eine Vierteldrehung, gemessen statt geschätzt.',
+   scripts:[[start,motors,speed(20),resetYaw,go('cw'),until(gt(abs(yaw),n(88))),stop]],
+   note:'Im Block »angle« das Dropdown von »pitch« auf »yaw« stellen. 88 statt 90, weil der Roboter nach dem Stoppbefehl noch etwas nachdreht; »abs« macht das Programm unabhängig von der Drehrichtung.'},
+  {type:'loesung',title:'Proportionalregler (Profi)',task:'Die Lenkung wächst mit der Abweichung vom Sollwert.',
+   scripts:[[start,motors,speed(25),forever([steer(times(minus(refl,n(50)),n(0.8)))])]],
+   note:'Der Rechenblock wird in das Lenkungsfeld von »start moving (right: 30)« gezogen; negative Werte lenken nach links. Der Faktor 0.8 ist ein Startwert: zu groß, und der Roboter schlingert; zu klein, und er verliert die Linie in Kurven.'},
+  {type:'bug',title:'Nur die erste Drehung klappt',task:'Soll: ein Quadrat mit Gyro-Drehungen. Beobachtung: Nach der ersten Ecke fährt der Roboter nur noch geradeaus.',
+   scripts:[[start,motors,speed(20),resetYaw,repeat(4,[move('up',20,'cm'),go('cw'),until(gt(abs(yaw),n(88))),stop])]],
+   solution:'Der Gierwinkel wird nur einmal vor der Schleife zurückgesetzt. Ab der zweiten Ecke steht er bereits bei etwa 90, die Bedingung ist sofort erfüllt. »set yaw angle to 0« gehört vor jede einzelne Drehung.'}
+ ]},
+ {no:7,title:'Eigene Blöcke',concept:'Einmal sauber definiert, beliebig oft verwendet – das macht lange Programme beherrschbar.',cards:[
+  {type:'loesung',title:'Eigener Block: drehe (Winkel)',task:'Links die Definition, rechts die Verwendung im Quadrat.',
+   scripts:[
+     [define('drehe',param('Winkel')),resetYaw,go('cw'),until(gt(abs(yaw),minus(param('Winkel'),n(2)))),stop],
+     [start,motors,speed(20),repeat(4,[move('up',20,'cm'),B('my','drehe',n(90))])]
+   ],
+   note:'Der Abzug von 2 Grad gleicht das Nachdrehen aus. Den Parameter »Winkel« beim Anlegen des Blocks unter »My Blocks« als Zahleneingabe hinzufügen.'},
+  {type:'loesung',title:'Eigener Block: fahre bis Linie',task:'Ein zweiter Baustein für die spätere Missionsbibliothek.',
+   scripts:[[define('fahre bis Linie'),go('up'),until(color('black')),stop]],
+   note:'Aus solchen Bausteinen entstehen später die Missionsprogramme für das Robot Game.'},
+  {type:'bug',title:'Der Block dreht immer gleich weit',task:'Soll: erst 45°, dann 180° drehen. Beobachtung: Beide Drehungen sind gleich groß.',
+   scripts:[
+     [define('drehe',param('Winkel')),resetYaw,go('cw'),until(gt(abs(yaw),n(88))),stop],
+     [start,motors,speed(20),B('my','drehe',n(45)),wait(1),B('my','drehe',n(180))]
+   ],
+   solution:'Im Inneren des Blocks steht der feste Wert 88 statt des Parameters »Winkel«. Der Block ignoriert damit jede Eingabe.'}
+ ]}
+];
+
+// ---------- SVG-Renderer nach den Maßen von Scratch 3 / SPIKE ----------
+const NS = 'http://www.w3.org/2000/svg';
+const SCALE = 0.8;
+const FONT = '500 16px "Helvetica Neue", Helvetica, Arial, sans-serif';
+const mctx = document.createElement('canvas').getContext('2d');
+mctx.font = FONT;
+const tw = t => mctx.measureText(String(t)).width;
+
+const GAP = 8, MIN_STACK_H = 48, MIN_REP_H = 40, FIELD_H = 32;
+const ARM = 16, MOUTH_MIN = 24, C_BOTTOM = 32, ELSE_H = 40, HAT_RISE = 17;
+const NOTCH_L = 'c2,0 3,1 4,2 l4,4 c1,1 2,2 4,2 h12 c2,0 3,-1 4,-2 l4,-4 c1,-1 2,-2 4,-2';
+const NOTCH_R = 'c-2,0 -3,1 -4,2 l-4,4 c-1,1 -2,2 -4,2 h-12 c-2,0 -3,-1 -4,-2 l-4,-4 c-1,-1 -2,-2 -4,-2';
+const PICS = {
+  smiley:['00000','01010','00000','10001','01110'],
+  heart: ['01010','11111','11111','01110','00100']
+};
+
+function S(name, attrs, parent){
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function label(g, x, cy, text, cat, opts={}){
+  const t = S('text', {x, y:cy, class:'bt', fill: opts.fill || '#fff'}, g);
+  if (!opts.fill){
+    t.setAttribute('stroke', CAT[cat].d); t.setAttribute('stroke-width','2.2');
+    t.setAttribute('stroke-opacity','0.5'); t.setAttribute('paint-order','stroke');
+    t.setAttribute('stroke-linejoin','round');
+  }
+  if (opts.anchor) t.setAttribute('text-anchor', opts.anchor);
+  t.textContent = text;
+  return t;
+}
+function caret(g, x, cy){ S('path', {d:`M${x},${cy-3} h10 l-5,6 z`, fill:'#fff'}, g); }
+
+// Symbole (32 × 32)
+function drawIcon(g, name, x, cy, cat){
+  const c = CAT[cat].c, y = cy - 16;
+  const G = S('g', {transform:`translate(${x},${y})`}, g);
+  if (name === 'play'){ S('path', {d:'M8,5 L26,16 L8,27 Z', fill:'#fff'}, G); return; }
+  if (name === 'hub'){
+    S('rect', {x:6, y:1, width:20, height:30, rx:3.5, fill:'#fff'}, G);
+    for (let r=0;r<5;r++) for (let k=0;k<5;k++)
+      S('rect', {x:8.6+k*3.1, y:4+r*3.1, width:2.3, height:2.3, fill:c}, G);
+    S('circle', {cx:16, cy:26.5, r:2, fill:'none', stroke:c, 'stroke-width':1.3}, G);
+    return;
+  }
+  if (name === 'color'){
+    S('rect', {x:2, y:2, width:28, height:28, rx:4, fill:'#fff'}, G);
+    S('circle', {cx:16, cy:16, r:10, fill:'none', stroke:c, 'stroke-width':2.2}, G);
+    S('circle', {cx:16, cy:16, r:7, fill:c}, G);
+    return;
+  }
+  if (name === 'force'){
+    S('rect', {x:2, y:2, width:28, height:28, rx:4, fill:'#fff'}, G);
+    S('rect', {x:4, y:11.5, width:24, height:9, rx:4.5, fill:c}, G);
+    S('circle', {cx:16, cy:16, r:6.5, fill:c, stroke:'#fff', 'stroke-width':1.6}, G);
+    S('path', {d:'M16,12.6 v6.8 M12.6,16 h6.8', stroke:'#fff', 'stroke-width':1.6, 'stroke-linecap':'round'}, G);
+    return;
+  }
+  if (name === 'dist'){
+    S('rect', {x:2, y:2, width:28, height:28, rx:4, fill:'#fff'}, G);
+    S('rect', {x:3.5, y:9, width:25, height:14, rx:7, fill:c}, G);
+    S('circle', {cx:10.5, cy:16, r:4.2, fill:'#fff'}, G);
+    S('circle', {cx:21.5, cy:16, r:4.2, fill:'#fff'}, G);
+    S('circle', {cx:10.5, cy:16, r:2, fill:c}, G);
+    S('circle', {cx:21.5, cy:16, r:2, fill:c}, G);
+    return;
+  }
+  if (name === 'move'){
+    S('circle', {cx:20, cy:20, r:10.5, fill:'#fff', stroke:CAT[cat].d, 'stroke-width':1.2}, G);
+    S('circle', {cx:14, cy:14, r:11.5, fill:'#fff', stroke:CAT[cat].d, 'stroke-width':1.2}, G);
+    [[14,8.2],[19.8,14],[14,19.8],[8.2,14]].forEach(([a,b]) => S('circle', {cx:a, cy:b, r:2.5, fill:c}, G));
+    S('path', {d:'M14,12 v4 M12,14 h4', stroke:c, 'stroke-width':1.4}, G);
+  }
+}
+function drawArrowGlyph(g, dir, x, cy, cat){
+  const G = S('g', {transform:`translate(${x},${cy-10})`}, g);
+  const st = CAT[cat].d;
+  if (dir === 'up'){
+    S('path', {d:'M10,1 L18,9.5 H13 V19 H7 V9.5 H2 Z', fill:'#fff', stroke:st, 'stroke-width':1.2, 'stroke-linejoin':'round'}, G);
+  } else {
+    S('path', {d:'M4.5,15.5 A6.8,6.8 0 1 1 15.5,8', fill:'none', stroke:st, 'stroke-width':5, 'stroke-linecap':'round'}, G);
+    S('path', {d:'M4.5,15.5 A6.8,6.8 0 1 1 15.5,8', fill:'none', stroke:'#fff', 'stroke-width':2.8, 'stroke-linecap':'round'}, G);
+    S('path', {d:'M11.6,5.8 L19,4 L17.6,11.6 Z', fill:'#fff', stroke:st, 'stroke-width':1, 'stroke-linejoin':'round'}, G);
+  }
+}
+function drawLoopArrow(g, x, cy){
+  const G = S('g', {transform:`translate(${x},${cy-9})`}, g);
+  S('path', {d:'M2,15 Q12,15 13,6', fill:'none', stroke:'#fff', 'stroke-width':2.6, 'stroke-linecap':'round'}, G);
+  S('path', {d:'M8.6,7.4 L13.2,1 L17.6,7.6 Z', fill:'#fff'}, G);
+}
+
+// Ein Feld oder Text vermessen; liefert Breite, Höhe und eine Zeichenfunktion
+function item(p, cat){
+  if (typeof p === 'string'){
+    const w = tw(p);
+    return {w, h:16, first:'text', draw:(g,x,cy)=>label(g,x,cy,p,cat)};
+  }
+  switch (p.k){
+    case 'in': {
+      const w = Math.max(40, tw(p.v) + 24);
+      return {w, h:FIELD_H, first:'field', draw:(g,x,cy)=>{
+        S('rect', {x, y:cy-16, width:w, height:32, rx:16, fill:'#fff', stroke:'rgba(0,0,0,0.12)'}, g);
+        label(g, x+w/2, cy, p.v, cat, {fill:'#575E75', anchor:'middle'});
+      }};
+    }
+    case 'pill': case 'opt': {
+      const w = 12 + tw(p.v) + 7 + 10 + 10;
+      return {w, h:FIELD_H, first:'field', draw:(g,x,cy)=>{
+        if (p.k === 'pill') S('rect', {x, y:cy-16, width:w, height:32, rx:16, fill:CAT[cat].d}, g);
+        else S('rect', {x:x+0.5, y:cy-15.5, width:w-1, height:31, rx:5, fill:'rgba(0,0,0,0.04)', stroke:CAT[cat].d, 'stroke-width':1.2}, g);
+        label(g, x+12, cy, p.v, cat);
+        caret(g, x+w-20, cy);
+      }};
+    }
+    case 'arrow': {
+      const w = 10 + 20 + 7 + 10 + 9;
+      return {w, h:FIELD_H, first:'field', draw:(g,x,cy)=>{
+        S('rect', {x:x+0.5, y:cy-15.5, width:w-1, height:31, rx:5, fill:'rgba(0,0,0,0.04)', stroke:CAT[cat].d, 'stroke-width':1.2}, g);
+        drawArrowGlyph(g, p.v, x+9, cy, cat);
+        caret(g, x+w-19, cy);
+      }};
+    }
+    case 'img': {
+      const w = 11 + 21 + 8 + 10 + 10;
+      return {w, h:FIELD_H, first:'field', draw:(g,x,cy)=>{
+        S('rect', {x, y:cy-16, width:w, height:32, rx:16, fill:CAT[cat].d}, g);
+        PICS[p.v].forEach((row,r)=>row.split('').forEach((b,k)=>
+          S('rect', {x:x+11+k*4.2, y:cy-10.5+r*4.2, width:3.4, height:3.4, rx:0.5, fill: b==='1' ? '#fff' : 'rgba(255,255,255,0.22)'}, g)));
+        caret(g, x+w-20, cy);
+      }};
+    }
+    case 'sw': {
+      const w = 54;
+      return {w, h:FIELD_H, first:'field', draw:(g,x,cy)=>{
+        S('rect', {x:x+1, y:cy-15, width:w-2, height:30, rx:15, fill:SWATCH[p.v], stroke:'rgba(255,255,255,0.85)', 'stroke-width':2}, g);
+        caret(g, x+w-20, cy);
+      }};
+    }
+    case 'icon': {
+      return {w:42, h:32, first:'icon', icon:true, draw:(g,x,cy,H)=>{
+        drawIcon(g, p.v, x, cy, cat);
+        const half = Math.max(12, H/2 - 8);
+        S('line', {x1:x+41.5, y1:cy-half, x2:x+41.5, y2:cy+half, stroke:CAT[cat].d, 'stroke-width':1.2, 'stroke-opacity':0.75}, g);
+      }};
+    }
+    case 'rep': case 'bool': case 'proto': {
+      const row = layoutRow(p.p, p.c);
+      const h = Math.max(MIN_REP_H, row.h + 8);
+      let padL, padR;
+      if (p.k === 'rep'){ padL = row.firstKind==='text' ? 12 : (row.firstKind==='icon' ? 8 : 4); padR = row.lastKind==='text' ? 12 : 4; }
+      else if (p.k === 'bool'){ padL = row.firstKind==='text' ? h/2 : h/2 - 6; padR = row.lastKind==='text' ? h/2 : h/2 - 6; }
+      else { padL = 10; padR = 10; }
+      const w = padL + row.w + padR;
+      return {w, h, first:'field', draw:(g,x,cy)=>{
+        const y = cy - h/2, c = CAT[p.c];
+        if (p.k === 'rep') S('rect', {x, y, width:w, height:h, rx:h/2, fill:c.c, stroke:c.d, 'stroke-width':1}, g);
+        else if (p.k === 'bool') S('path', {d:`M${x+h/2},${y} H${x+w-h/2} L${x+w},${cy} L${x+w-h/2},${y+h} H${x+h/2} L${x},${cy} Z`, fill:c.c, stroke:c.d, 'stroke-width':1}, g);
+        else S('rect', {x, y, width:w, height:h, rx:5, fill:c.c, stroke:c.d, 'stroke-width':1}, g);
+        drawRow(g, row, x+padL, cy, h);
+      }};
+    }
+  }
+}
+function layoutRow(parts, cat){
+  const items = parts.map(p => item(p, cat));
+  let w = 0, h = 16;
+  items.forEach((it,i) => { w += it.w + (i ? GAP : 0); h = Math.max(h, it.h); });
+  return {items, w, h, firstKind: items[0] ? items[0].first : 'text', lastKind: items.length ? items[items.length-1].first : 'text'};
+}
+function drawRow(g, row, x, cy, H){
+  row.items.forEach((it,i) => { if (i) x += GAP; it.draw(g, x, cy, H); x += it.w; });
+}
+
+// Blöcke vermessen und zeichnen
+function layoutBlock(b){
+  const cat = CAT[b.c];
+  const row = layoutRow(b.p, b.c);
+  const padL = row.firstKind === 'icon' ? 8 : 10, padR = 10;
+  if (b.t === 'b' || b.t === 'hat' || b.t === 'def'){
+    const H = Math.max(b.t === 'def' ? 64 : MIN_STACK_H, row.h + (b.t === 'def' ? 24 : 16));
+    const minW = b.t === 'hat' ? 112 : (b.t === 'def' ? 120 : 64);
+    const W = Math.max(minW, padL + row.w + padR);
+    const top = b.t === 'hat' ? HAT_RISE : 0;
+    return {W, vis:W, H, extraTop:top, draw:(g,x,y)=>{
+      const G = S('g', {transform:`translate(${x},${y - top})`}, g);
+      let d;
+      if (b.t === 'hat') d = `M0,${top} c25,-22 71,-22 96,0 H${W-4} a4,4 0 0 1 4,4`;
+      else if (b.t === 'def') d = `M0,20 a20,20 0 0 1 20,-20 H${W-20} a20,20 0 0 1 20,20`;
+      else d = `M0,4 a4,4 0 0 1 4,-4 H12 ${NOTCH_L} H${W-4} a4,4 0 0 1 4,4`;
+      d += ` V${top+H-4} a4,4 0 0 1 -4,4 H48 ${NOTCH_R} H4 a4,4 0 0 1 -4,-4 Z`;
+      S('path', {d, fill:cat.c, stroke:cat.d, 'stroke-width':1}, G);
+      drawRow(G, row, padL, top + H/2 + (b.t === 'def' ? 2 : 0), H);
+    }};
+  }
+  // C-Blöcke
+  const body1 = layoutStack(b.body), body2 = b.t === 'ce' ? layoutStack(b.body2) : null;
+  const row2 = b.t === 'ce' ? layoutRow(b.p2, b.c) : null;
+  const hh = Math.max(MIN_STACK_H, row.h + 16);
+  const m1 = Math.max(MOUTH_MIN, body1.H), m2 = body2 ? Math.max(MOUTH_MIN, body2.H) : 0;
+  const W = Math.max(160, padL + row.w + padR, row2 ? 10 + row2.w + 10 : 0);
+  const H = hh + m1 + (body2 ? ELSE_H + m2 : 0) + C_BOTTOM;
+  const vis = Math.max(W, ARM + body1.vis, body2 ? ARM + body2.vis : 0);
+  return {W, vis, H, extraTop:0, draw:(g,x,y)=>{
+    const G = S('g', {transform:`translate(${x},${y})`}, g);
+    const mouth = (yTop, m) => ` H${ARM+12+36} ${NOTCH_R} H${ARM+4} a4,4 0 0 0 -4,4 V${yTop+m-4} a4,4 0 0 0 4,4 H${W-4} a4,4 0 0 1 4,4`;
+    let d = `M0,4 a4,4 0 0 1 4,-4 H12 ${NOTCH_L} H${W-4} a4,4 0 0 1 4,4 V${hh-4} a4,4 0 0 1 -4,4`;
+    d += mouth(hh, m1);
+    if (body2){
+      const ye = hh + m1 + ELSE_H;
+      d += ` V${ye-4} a4,4 0 0 1 -4,4` + mouth(ye, m2);
+    }
+    d += ` V${H-4} a4,4 0 0 1 -4,4 ` + (b.cap ? '' : `H48 ${NOTCH_R} `) + `H4 a4,4 0 0 1 -4,-4 Z`;
+    S('path', {d, fill:cat.c, stroke:cat.d, 'stroke-width':1}, G);
+    drawRow(G, row, padL, hh/2, hh);
+    body1.draw(G, ARM, hh);
+    if (body2){
+      drawRow(G, row2, 10, hh + m1 + ELSE_H/2, ELSE_H);
+      body2.draw(G, ARM, hh + m1 + ELSE_H);
+    }
+    if (b.loop) drawLoopArrow(G, W - 30, H - C_BOTTOM/2);
+  }};
+}
+function layoutStack(list){
+  const blocks = list.map(layoutBlock);
+  let H = 0, vis = 0;
+  blocks.forEach(b => { H += b.H; vis = Math.max(vis, b.vis); });
+  return {H, vis, extraTop: blocks[0] ? blocks[0].extraTop : 0, draw:(g,x,y)=>{
+    let cy = y;
+    blocks.forEach(b => { b.draw(g, x, cy); cy += b.H; });
+  }};
+}
+
+// Textfassung für Screenreader
+function partText(p){
+  if (typeof p === 'string') return p;
+  if (p.k === 'icon') return '';
+  if (p.k === 'img') return '[' + (p.v === 'heart' ? 'Herz' : 'Smiley') + ']';
+  if (p.k === 'sw') return '[' + SWATCH_NAME[p.v] + ']';
+  if (p.k === 'arrow') return '[' + (p.v === 'up' ? 'vorwärts' : 'rechts drehen') + ']';
+  if (p.k === 'rep' || p.k === 'proto') return '(' + p.p.map(partText).filter(Boolean).join(' ') + ')';
+  if (p.k === 'bool') return '<' + p.p.map(partText).filter(Boolean).join(' ') + '>';
+  return '[' + p.v + ']';
+}
+function blockText(b, ind){
+  const pre = '  '.repeat(ind);
+  const line = pre + b.p.map(partText).filter(Boolean).join(' ');
+  if (b.t !== 'c' && b.t !== 'ce') return [line];
+  let out = [line, ...b.body.flatMap(x => blockText(x, ind+1))];
+  if (b.t === 'ce') out = out.concat([pre + b.p2.map(partText).join(' '), ...b.body2.flatMap(x => blockText(x, ind+1))]);
+  return out.concat([pre + 'end']);
+}
+
+function script(list){
+  const st = layoutStack(list);
+  const pad = 2, top = st.extraTop;
+  const w = st.vis + pad*2, h = top + st.H + 8 + pad*2;
+  const wrap = document.createElement('div'); wrap.className = 'script';
+  const svg = S('svg', {viewBox:`0 0 ${w} ${h}`, width:(w*SCALE).toFixed(1), height:(h*SCALE).toFixed(1), role:'img'});
+  svg.setAttribute('aria-label', list.flatMap(b => blockText(b, 0)).join('\n'));
+  st.draw(svg, pad, pad + top);
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+// ---------- Seite aufbauen ----------
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+const TYPE = {demo:'Demo', bug:'Bug-Jagd', loesung:'Musterlösung'};
+
+document.getElementById('hero').appendChild(script([start, write(n('Hallo AG'))]));
+const lg = document.getElementById('legend');
+Object.values(CAT).forEach(c => { const s = el('span', c === CAT.ev ? 'dark' : null, c.name); s.style.background = c.c; lg.appendChild(s); });
+
+const nav = document.getElementById('navlist');
+const root = document.getElementById('modules');
+MODULES.forEach(m => {
+  const id = 'modul-' + m.no;
+  const li = el('li'); const a = el('a'); a.href = '#' + id;
+  a.appendChild(el('span','no',String(m.no))); a.appendChild(el('span',null,m.title));
+  li.appendChild(a); nav.appendChild(li);
+
+  const sec = el('section','mod'); sec.id = id;
+  const h = el('h2'); h.appendChild(el('span','no',String(m.no))); h.appendChild(el('span',null,m.title)); sec.appendChild(h);
+  sec.appendChild(el('p','concept',m.concept));
+  const cards = el('div','cards');
+  m.cards.forEach(c => {
+    const card = el('article','card ' + c.type);
+    const head = el('div','head'); head.appendChild(el('h3',null,c.title)); head.appendChild(el('span','badge',TYPE[c.type])); card.appendChild(head);
+    card.appendChild(el('p','task',c.task));
+    const sc = el('div','scroll'); const ss = el('div','scripts');
+    c.scripts.forEach(s => ss.appendChild(script(s)));
+    sc.appendChild(ss); card.appendChild(sc);
+    if (c.note) card.appendChild(el('p','note',c.note));
+    if (c.solution){ const d = el('details'); d.appendChild(el('summary',null,'Auflösung zeigen')); d.appendChild(el('p',null,c.solution)); card.appendChild(d); }
+    cards.appendChild(card);
+  });
+  sec.appendChild(cards); root.appendChild(sec);
+});
+
+// Musterlösungen ein- und ausblenden
+const KEY = 'spike-musterprogramme-hide-sol';
+const btn = document.getElementById('toggle');
+function setHidden(hd){
+  document.body.classList.toggle('hide-sol', hd);
+  btn.setAttribute('aria-pressed', String(hd));
+  btn.textContent = hd ? 'Musterlösungen einblenden' : 'Musterlösungen ausblenden';
+}
+let initial = false;
+try { initial = localStorage.getItem(KEY) === '1'; } catch(e){}
+setHidden(initial);
+btn.addEventListener('click', () => {
+  const hd = !document.body.classList.contains('hide-sol');
+  setHidden(hd);
+  try { localStorage.setItem(KEY, hd ? '1' : '0'); } catch(e){}
+});
+
+</script>
+</body>
+</html>
