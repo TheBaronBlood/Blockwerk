@@ -9,6 +9,11 @@ export const PYBRICKS_HUB_CAPABILITIES_CHAR = 'c5f50003-8280-46da-89f4-6d8051e4a
 export const DEVICE_INFO_SERVICE = 0x180a;
 export const FIRMWARE_REVISION_CHAR = 0x2a26;
 export const SOFTWARE_REVISION_CHAR = 0x2a28;
+/**
+ * Die lange Schreibweise einer 16-Bit-Kennung. Web Bluetooth erlaubt auch die Zahl, aber nicht jeder
+ * Browser nimmt sie an: Bluefy am iPad weist die ganze Anfrage zurück (»Request payload could not be parsed«).
+ */
+export const uuid16 = (id: number) => `0000${id.toString(16).padStart(4, '0')}-0000-1000-8000-00805f9b34fb`;
 
 export const Command = {StopUserProgram:0, StartUserProgram:1, WriteUserProgramMeta:3, WriteUserRam:4, WriteStdin:6} as const;
 export const HubEvent = {StatusReport:0, WriteStdout:1} as const;
