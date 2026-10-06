@@ -69,6 +69,7 @@ const PLATFORMS = [
   'Programm für den Computer: Electron bringt Chromium und weitere Bibliotheken mit. Deren Lizenztexte liegen dem Programm in der Datei LICENSES.chromium.html bei – unter Windows und Linux im Programmordner, unter macOS im Programmpaket (Contents/Resources).',
   'App für Android: enthält außerdem die AndroidX-Bibliotheken und die Kotlin-Laufzeit (Apache License 2.0 – der Text steht oben bei Blockly) sowie die Dateisystem-Bibliothek von Ionic (MIT).',
   'App für iPadOS: enthält außerdem die Dateisystem-Bibliothek von Ionic (MIT).',
+  'Der Klang beim Zusammenstecken der Blöcke (snap.mp3) stammt von Pixabay und steht unter der Pixabay-Inhaltslizenz (https://pixabay.com/service/license-summary/), nicht unter der MIT-Lizenz: Er darf als Teil von Blockwerk benutzt und weitergegeben, aber nicht für sich allein angeboten oder verkauft werden.',
   'LEGO und SPIKE sind Marken der LEGO Gruppe. Blockwerk ist kein Produkt von LEGO oder Pybricks und wird von beiden weder unterstützt noch geprüft.'
 ].join('\n\n');
 

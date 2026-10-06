@@ -354,7 +354,10 @@ dabei bleiben; eine Gewähr gibt es nicht.
 
 Blockly: Apache-2.0. Pybricks (Firmware, mpy-cross, Protokoll), fflate, Capacitor und
 Electron: MIT. Die Schriften Atkinson Hyperlegible und JetBrains Mono: SIL Open Font
-License 1.1.
+License 1.1. Der Klang beim Zusammenstecken der Blöcke (`src/assets/snap.mp3`) stammt von
+[Pixabay](https://pixabay.com/service/license-summary/) und steht unter der dortigen
+Inhaltslizenz, nicht unter MIT: als Teil von Blockwerk frei benutzbar, aber nicht für sich
+allein weiterzuverkaufen.
 
 Die vollständigen Lizenztexte stellt der Build aus den Paketen zusammen, die wirklich im
 fertigen Blockwerk stecken (`build/lizenzen.mjs`), und legt sie als `lizenzen.txt` neben die
