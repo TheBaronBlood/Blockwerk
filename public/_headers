@@ -1,0 +1,12 @@
+# Kopfzeilen für Cloudflare Pages (landet beim Bauen in dist/_headers).
+# Die Inhaltsrichtlinie muss dieselbe sein wie CSP in electron/main.cjs –
+# tests/hosting.test.ts prüft das.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'
+  Permissions-Policy: bluetooth=(self), serial=(self), gamepad=(self), camera=(), microphone=(), geolocation=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+
+# Dateinamen mit Prüfsumme ändern sich bei jeder Version – dauerhaft zwischenspeichern
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

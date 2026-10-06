@@ -241,6 +241,23 @@ setzt dieselbe Regel von sich aus):
 Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'
 ```
 
+### Im Netz bereitstellen (Cloudflare Pages)
+
+So lässt sich Blockwerk für die AG als Link anbieten – ohne Installation, mit HTTPS (nötig für
+Bluetooth und Kabel). Die Kinder brauchen Chrome oder Edge.
+
+1. In Cloudflare: **Workers & Pages → Create → Pages → Connect to Git**, dieses Repository
+   wählen.
+2. Einstellungen: Build command `npm run build`, Build output directory `dist`.
+3. Unter *Environment variables* `ELECTRON_SKIP_BINARY_DOWNLOAD` = `1` setzen (Electron wird
+   zum Bauen der Seite nicht gebraucht; der Download würde nur Zeit kosten). Die Node-Version
+   steht in `.node-version`.
+4. Nach dem ersten Bau: **Custom domains** → eigene Subdomain eintragen, zum Beispiel
+   `blockwerk.deinedomain.de`. Liegt die Domain bei Cloudflare, legt es den DNS-Eintrag selbst an.
+
+Jeder Push nach `main` baut danach neu. Die Kopfzeilen (Inhaltsrichtlinie, Zugriff auf
+Bluetooth und Kabel, Zwischenspeicher) stehen in `public/_headers` und gelten automatisch.
+
 ### Was Blockwerk speichert und was ins Internet geht
 
 Blockwerk hat keinen Server, keine Konten und keine Auswertung der Nutzung. Programme,
