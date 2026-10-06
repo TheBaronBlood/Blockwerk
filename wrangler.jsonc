@@ -1,0 +1,8 @@
+// Bereitstellung bei Cloudflare (README, »Im Netz bereitstellen«): `npx wrangler deploy` lädt den
+// fertigen Build aus dist/ hoch – nur Dateien, kein eigenes Skript. Die Kopfzeilen stehen in
+// public/_headers. Der Name muss so heißen wie das Projekt bei Cloudflare.
+{
+  "name": "blockwerk",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" }
+}
