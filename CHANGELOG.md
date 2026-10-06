@@ -12,6 +12,13 @@ Die Versionsnummer hat drei Stellen: `0.11.0`.
 0.26.0 gehört zu jeder Version ein Git-Tag (`v0.26.0` …) und ein Release mit den fertigen
 Programmen. Die Einträge vor 0.25.0 beschreiben, wie Blockwerk bis dahin entstanden ist.
 
+## 0.26.1 – 6. Oktober 2026
+
+- Behoben: »Hub verbinden« scheiterte in Browsern, die dem iPad Bluetooth beibringen (Bluefy),
+  noch bevor die Liste der Hubs erschien. Blockwerk nannte dem Browser einen Dienst des Hubs als
+  Zahl – Chrome und Edge nehmen das an, Bluefy nicht. Am iPad in Bluefy bestätigt. Safari und
+  Chrome können am iPad weiterhin kein Bluetooth; für die Programme am Computer ändert sich nichts.
+
 ## 0.26.0 – 6. Oktober 2026
 
 Die erste Version mit fertigen Programmen zum Herunterladen. Was Blockwerk kann, steht im
