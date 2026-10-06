@@ -101,6 +101,7 @@ jobs:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE" ]; then
             echo "::notice::Kein fester Schlüssel hinterlegt – es entsteht die Debug-Fassung."
@@ -116,10 +117,31 @@ jobs:
             echo "::error::Das Secret ANDROID_KEYSTORE ist kein gültiges Base64: ${#TEXT} Zeichen, davon $FREMD, die in Base64 nicht vorkommen (eine Schlüsseldatei ergibt mehrere tausend Zeichen und beginnt mit MII). Es muss die Schlüsseldatei selbst enthalten, in Base64 umgewandelt (README, »Android-Schlüssel«) – nicht ihren Pfad, nicht den Befehl und nicht das Passwort."
             exit 1
           fi
-          # lieber hier eine klare Meldung als später eine von Gradle
-          if ! keytool -list -keystore "$RUNNER_TEMP/blockwerk.jks" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "::error::Der Schlüssel lässt sich nicht öffnen (Datei: $(( $(wc -c < "$RUNNER_TEMP/blockwerk.jks") )) Bytes). Entweder ist ANDROID_KEYSTORE unvollständig eingefügt, oder das Passwort (ANDROID_KEYSTORE_PASSWORD) oder der Name (ANDROID_KEY_ALIAS) passt nicht dazu."
-            exit 1
+          # Lieber hier eine klare Meldung als später eine von Gradle: Welches der Secrets passt nicht?
+          # (Ausgegeben wird nur, was nichts verrät – nie das Passwort, auch nicht seine Länge.)
+          JKS="$RUNNER_TEMP/blockwerk.jks"
+          oeffnet() { KT_PASS="$1" keytool -list -keystore "$JKS" -storepass:env KT_PASS ${2:+-alias "$2"} > /dev/null 2>&1; }
+          ohne_rand() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          fehler() { echo "::error::$1"; exit 1; }
+          BYTES=$(( $(wc -c < "$JKS") ))
+          [ -n "$KEYSTORE_PASSWORD" ] || fehler "Das Secret ANDROID_KEYSTORE_PASSWORD fehlt oder ist leer."
+          [ -n "$KEY_ALIAS" ] || fehler "Das Secret ANDROID_KEY_ALIAS fehlt oder ist leer."
+          if ! oeffnet "$KEYSTORE_PASSWORD"; then
+            if oeffnet "$(ohne_rand "$KEYSTORE_PASSWORD")"; then
+              fehler "ANDROID_KEYSTORE_PASSWORD beginnt oder endet mit einem Leerzeichen oder Zeilenumbruch. Das Passwort selbst stimmt – das Secret neu eintragen, ohne etwas davor oder dahinter (ebenso ANDROID_KEY_PASSWORD)."
+            fi
+            fehler "Die Schlüsseldatei ist angekommen ($BYTES Bytes), aber ANDROID_KEYSTORE_PASSWORD öffnet sie nicht: Das Passwort im Secret ist nicht das, mit dem die Datei angelegt wurde – oder ANDROID_KEYSTORE ist unvollständig eingefügt."
+          fi
+          if ! oeffnet "$KEYSTORE_PASSWORD" "$KEY_ALIAS"; then
+            NAMEN=$(KT_PASS="$KEYSTORE_PASSWORD" keytool -list -keystore "$JKS" -storepass:env KT_PASS 2> /dev/null | grep 'PrivateKeyEntry' | cut -d, -f1 | tr '\n' ' ' | sed 's/ $//')
+            if oeffnet "$KEYSTORE_PASSWORD" "$(ohne_rand "$KEY_ALIAS")"; then
+              fehler "ANDROID_KEY_ALIAS beginnt oder endet mit einem Leerzeichen oder Zeilenumbruch – neu eintragen, nur: $NAMEN"
+            fi
+            fehler "Das Passwort stimmt, aber ANDROID_KEY_ALIAS passt nicht. In der Schlüsseldatei heißt der Eintrag: $NAMEN"
+          fi
+          # eine PKCS12-Datei (so legt das README sie an) hat nur ein Passwort für Datei und Schlüssel
+          if [ "$KEY_PASSWORD" != "$KEYSTORE_PASSWORD" ] && KT_PASS="$KEYSTORE_PASSWORD" keytool -list -keystore "$JKS" -storepass:env KT_PASS 2> /dev/null | grep -qi 'PKCS12'; then
+            fehler "ANDROID_KEY_PASSWORD muss dasselbe Passwort enthalten wie ANDROID_KEYSTORE_PASSWORD – diese Art Schlüsseldatei hat nur eines."
           fi
           echo "fest=ja" >> "$GITHUB_OUTPUT"
       - name: App bauen (Release, fester Schlüssel)
