@@ -15,6 +15,18 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.26.3 – 7. Oktober 2026
+
+- Neu: Scheitert ein Programm, weil ein Gerät am falschen Anschluss steckt, **sieht Blockwerk von
+  selbst nach, wo es wirklich ist**, und schreibt es ins Terminal: »Das Programm erwartet einen
+  Kraftsensor an F; dort steckt nichts. Ein Kraftsensor steckt an E.« Die Blockliste zeigt
+  danach wieder die richtigen Anschlüsse, und der Block, der das Gerät benutzt, ist markiert
+  (bisher nur bei den Motoren der Fahrbasis). Blöcke auf der Arbeitsfläche ändert Blockwerk
+  nicht von selbst. Gehört zu »Anschlüsse erkennen« in den Einstellungen. Am echten Hub geprüft
+  (Kabel).
+- Geändert: Die Hinweise zu einem Fehler stehen im Terminal jetzt hinter der Erklärung des Hubs
+  und nicht mehr mitten darin.
+
 ## 0.26.2 – 7. Oktober 2026
 
 - Neu: **Blockwerk erkennt, was am Hub steckt.** Nach »Hub verbinden« sieht es kurz nach – am
