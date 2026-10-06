@@ -2,7 +2,8 @@ import * as Blockly from 'blockly';
 import { describe, expect, it } from 'vitest';
 import '../src/blocks';
 import { MonitorFeed, MONITOR_MARK } from '../src/hub/monitor';
-import { allPortsSeen, describePorts, foundPorts, motorRoles, PORT_BLOCKS, samePorts, withFoundPorts, type FoundPorts } from '../src/ports';
+import { generate } from '../src/generator';
+import { allPortsSeen, describePorts, deviceLine, foundPorts, missingDeviceHint, motorRoles, PORT_BLOCKS, samePorts, withFoundPorts, type FoundPorts } from '../src/ports';
 import { toolbox, toolboxWith } from '../src/toolbox';
 
 type Item = {kind: string; type?: string; name?: string; fields?: Record<string, string>; inputs?: Record<string, {block?: Item; shadow?: Item}>; contents?: Item[]};
@@ -89,5 +90,38 @@ describe('Anschlüsse erkennen', () => {
     expect(describePorts(none)).toBe('An den Anschlüssen des Hubs steckt nichts, das Blockwerk kennt.');
     expect(samePorts(none, {...none})).toBe(true);
     expect(samePorts(none, null)).toBe(false);
+  });
+
+  it('erkennt im erzeugten Programm die Zeilen, die ein Gerät anlegen', () => {
+    // genau das, was der Generator schreibt: Ändert er die Namen der Geräte, fällt es hier auf
+    const print = (type: string, port: string, next?: object) => ({type:'pb_print', inputs:{TEXT:{block:{type, fields:{PORT:port}}}}, ...(next ? {next:{block:next}} : {})});
+    const ws = new Blockly.Workspace();
+    Blockly.serialization.workspaces.load({blocks:{languageVersion:0, blocks:[{type:'pb_start', x:0, y:0, next:{block:
+      print('pb_motor_angle', 'B', print('pb_reflection', 'F', print('pb_distance', 'D', print('pb_force', 'E')))) }}]}}, ws);
+    const lines = generate(ws).lines.map(l => l.text);
+    ws.dispose();
+    const found = lines.map(deviceLine).filter(d => d);
+    expect(found).toEqual([{kind:'motor', port:'B'}, {kind:'ultra', port:'D'}, {kind:'force', port:'E'}, {kind:'color', port:'F'}]);
+    expect(lines).toContain('kraft_E = ForceSensor(Port.E)');
+    // andere Zeilen sind keine Geräte
+    expect(deviceLine('roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)')).toBeNull();
+    expect(deviceLine('motor_A = Motor(Port.A, Direction.COUNTERCLOCKWISE)')).toEqual({kind:'motor', port:'A'});
+    expect(deviceLine('zaehler_A = int(Port.A)')).toBeNull();
+    expect(deviceLine('    kraft_E = ForceSensor(Port.E)')).toBeNull();
+  });
+
+  it('sagt nach dem Fehler »Gerät fehlt«, wo das Gerät wirklich steckt', () => {
+    const s = state('V 1', 'P A m 48 0 0', 'P B m 48 0 0', 'P C c 61 0 0 0 5 NONE', 'P D c 61 0 0 0 5 NONE', 'P E -', 'P F f 63 0 0');
+    expect(missingDeviceHint({kind:'force', port:'E'}, s))
+      .toBe('Das Programm erwartet einen Kraftsensor an E; dort steckt nichts. Ein Kraftsensor steckt an F – stell die Blöcke darauf um oder steck ihn um.');
+    expect(missingDeviceHint({kind:'color', port:'F'}, s))
+      .toBe('Das Programm erwartet einen Farbsensor an F; dort steckt ein Kraftsensor. Farbsensoren stecken an C und D – stell die Blöcke darauf um oder steck einen um.');
+    expect(missingDeviceHint({kind:'ultra', port:'A'}, s))
+      .toBe('Das Programm erwartet einen Abstandssensor an A; dort steckt ein Motor. Am Hub steckt gar kein Abstandssensor.');
+    // inzwischen eingesteckt (oder das Kabel saß locker)
+    expect(missingDeviceHint({kind:'motor', port:'B'}, s)).toContain('dort steckt jetzt einer');
+    // ein Anschluss, den das Programm noch nicht angesehen hat, und ein fremdes Gerät
+    expect(missingDeviceHint({kind:'force', port:'E'}, state('V 1', 'P F f 63 0 0'))).toBe('Das Programm erwartet einen Kraftsensor an E. Ein Kraftsensor steckt an F – stell die Blöcke darauf um oder steck ihn um.');
+    expect(missingDeviceHint({kind:'force', port:'E'}, state('V 1', 'P E x 64'))).toContain('dort steckt ein Gerät, das Blockwerk nicht kennt. Am Hub steckt gar kein Kraftsensor.');
   });
 });

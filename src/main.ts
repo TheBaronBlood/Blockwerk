@@ -20,7 +20,7 @@ import { initSettingsDialog, isDark, loadSettings, onSettings, settings, updateS
 import { browserGamepads, watchGamepad } from './hub/gamepad';
 import { createPad } from './hub/pad';
 import { lastFirmware, rememberFirmware } from './hub/lastHub';
-import { MONITOR_HEARTBEAT, MONITOR_HEARTBEAT_MS, MONITOR_PROGRAM, MonitorFeed, StrayFilter } from './hub/monitor';
+import { MONITOR_HEARTBEAT, MONITOR_HEARTBEAT_MS, MONITOR_PROGRAM, MonitorFeed, StrayFilter, type MonitorState } from './hub/monitor';
 import { initHubView } from './hub/monitorView';
 import { usbHint } from './versions';
 import { PAD_BUTTONS } from './hub/padProtocol';
@@ -32,7 +32,7 @@ import { highlight } from './highlight';
 import { initLayout } from './layout';
 import { installSnapSound } from './sound';
 import { FIXED_FLYOUT, START_SCALE } from './flyout';
-import { allPortsSeen, describePorts, foundPorts, samePorts, withFoundPorts, type FoundPorts } from './ports';
+import { allPortsSeen, describePorts, deviceLine, foundPorts, missingDeviceHint, PORT_BLOCKS, samePorts, withFoundPorts, type DeviceAt, type FoundPorts } from './ports';
 import { isTablet, tabletSystem } from './platform';
 import { saveFile } from './files';
 import { toolboxWith } from './toolbox';
@@ -467,14 +467,20 @@ function termWrite(text: string, cls = ''){
   termTimer ??= window.setTimeout(termFlush, 30);
 }
 const traceback = new TracebackParser((e) => {
-  const id = e.line ? runLines[e.line - 1]?.id : null;
-  const block = id ? ws.getBlockById(id) : null;
-  if (e.hint) termWrite('→ ' + e.hint + '\n', 't-hint');
-  if (block){
-    Blockly.common.setSelected(block); ws.centerOnBlock(block.id);
-    termWrite('→ Der Block dazu ist markiert.\n', 't-hint');
-  }
+  const line = e.line ? runLines[e.line - 1] : null;
+  let block = line?.id ? ws.getBlockById(line.id) : null;
+  // Fehlt ein Gerät, steht der Fehler in der Zeile, die es anlegt. Sie gehört zu keinem bestimmten Block –
+  // markiert wird der erste, der dieses Gerät an diesem Anschluss benutzt.
+  const noDevice = /ENODEV/.test(e.message);
+  const missing = noDevice && line ? deviceLine(line.text) : null;
+  if (!block && missing) block = ws.getAllBlocks(true).find(b => b.isEnabled() && PORT_BLOCKS[b.type] === missing.kind && b.getFieldValue('PORT') === missing.port) ?? null;
+  // Der Hub schreibt nach der Fehlerzeile noch eine Erklärung; die Hinweise kommen erst danach, nicht mitten hinein
+  const hints = (e.hint ? '→ ' + e.hint + '\n' : '') + (block ? '→ Der Block dazu ist markiert.\n' : '');
+  if (hints) setTimeout(() => termWrite(hints, 't-hint'), 250);
+  if (block){ Blockly.common.setSelected(block); ws.centerOnBlock(block.id); }
   toast(block ? 'Fehler im Programm – der Block ist markiert.' : 'Fehler im Programm – siehe Terminal.');
+  // … und Blockwerk sieht nach, was wirklich am Hub steckt
+  if (noDevice) void recheckPorts(missing);
 });
 
 // dieselben Knöpfe noch einmal an der Arbeitsfläche
@@ -737,17 +743,22 @@ function setDetectedPorts(found: FoundPorts | null){
   };
   apply();
 }
-async function scanPorts(){
-  if (!settings().autoPorts || !hub || hubBusy || monitor || hubView.isOpen()) return;
+/**
+ * Sieht nach, was am Hub steckt, und stellt die Blockliste darauf ein. Liefert den Stand der Anschlüsse –
+ * oder null, wenn nicht nachgesehen wurde (abgeschaltet, Hub beschäftigt, getrennt).
+ * `settleMs`: so lange vorher warten, `announce`: das Ergebnis ins Terminal schreiben.
+ */
+async function scanPorts(settleMs = 600, announce = true): Promise<MonitorState | null> {
+  if (!settings().autoPorts || !hub || hubBusy || monitor || hubView.isOpen()) return null;
   const connected = hub;
   hubBusy = scanning = true; updateHubUi();
   let settle: number | undefined, timeout: number | undefined;
   try {
-    // Die erste Statusmeldung abwarten: Läuft auf dem Hub schon ein Programm, bleibt es ungestört
-    await sleep(600);
-    if (hub !== connected || connected.isRunning) return;
+    // Nach dem Verbinden die erste Statusmeldung abwarten: Läuft auf dem Hub schon ein Programm, bleibt es ungestört
+    if (settleMs) await sleep(settleMs);
+    if (hub !== connected || connected.isRunning) return null;
     const payload = await monitorProgram();
-    if (hub !== connected || connected.isRunning) return;
+    if (hub !== connected || connected.isRunning) return null;
     runLines = []; runUsesPad = false; traceback.reset();
     monitorSink = null;
     const done = new Promise<void>((resolve) => { scanWake = resolve; });
@@ -761,16 +772,17 @@ async function scanPorts(){
     await connected.run(payload);
     timeout = window.setTimeout(() => scanWake?.(), SCAN_TIMEOUT_MS);
     await done;
-    if (hub !== connected) return;
+    if (hub !== connected) return null;
     const found = Object.keys(feed.state.ports).length ? foundPorts(feed.state) : null;
     await endMonitor(connected);
-    if (found && hub === connected){
-      setDetectedPorts(found);
-      termWrite(`— ${describePorts(found)} —\n`, 't-info');
-    }
+    if (!found || hub !== connected) return null;
+    setDetectedPorts(found);
+    if (announce) termWrite(`— ${describePorts(found)} —\n`, 't-info');
+    return feed.state;
   } catch (err){
     // Die Erkennung ist eine Zugabe: Scheitert sie, bleibt es bei den üblichen Vorgaben – ohne Fehlermeldung
     console.warn('Anschlüsse nicht erkannt:', err);
+    return null;
   } finally {
     clearTimeout(settle); clearTimeout(timeout); scanWake = null; scanning = false;
     retireMonitor();
@@ -778,6 +790,22 @@ async function scanPorts(){
     if (!hub || hub === connected) hubBusy = false;
     updateHubUi();
   }
+}
+/**
+ * Das Programm ist gescheitert, weil an einem Anschluss das erwartete Gerät fehlt: nachsehen, was wirklich
+ * steckt, die Blockliste nachziehen und sagen, wo das Gerät ist. (Das gescheiterte Programm liegt danach
+ * wieder auf dem Hub – Blockwerk hat es selbst geladen.)
+ */
+async function recheckPorts(missing: DeviceAt | null){
+  const connected = hub;
+  if (!connected || !settings().autoPorts) return;
+  // erst wenn der Hub das Ende des Programms gemeldet hat
+  for (let i = 0; i < 60 && hub === connected && connected.isRunning; i++) await sleep(50);
+  if (hub !== connected) return;
+  const state = await scanPorts(0, false);
+  if (!state) return;
+  if (missing) termWrite('→ ' + missingDeviceHint(missing, state) + '\n', 't-hint');
+  termWrite(`— ${describePorts(foundPorts(state))} —\n`, 't-info');
 }
 for (const opener of [btnHubView, hubState, wsHub]) opener.addEventListener('click', () => void openHubView());
 

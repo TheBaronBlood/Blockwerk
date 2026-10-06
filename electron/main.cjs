@@ -285,14 +285,35 @@ function runSmokeTest(win){
           view.querySelector('[data-act=close]').click();
           const idle = await until(() => document.getElementById('hubState').textContent.includes('bereit'), 5000);
           const terminal = document.getElementById('termOut').textContent;
+          // Fehler »Gerät fehlt« nachstellen: Das Programm erwartet einen Farbsensor an F – am Test-Hub steckt er an C.
+          // Blockwerk sieht danach von selbst nach und sagt, wo der Sensor ist.
+          const ws = window.__blockwerkWorkspace, term = () => document.getElementById('termOut').textContent;
+          ws.clear();
+          const mk = (type) => { const b = ws.newBlock(type); b.initSvg(); b.render(); return b; };
+          const start = mk('pb_start'), print = mk('pb_print'), sensor = mk('pb_reflection');
+          sensor.setFieldValue('F', 'PORT');
+          print.getInput('TEXT').connection.connect(sensor.outputConnection);
+          start.nextConnection.connect(print.previousConnection);
+          await until(() => window.blockwerk.code().includes('farbe_F = ColorSensor(Port.F)'), 3000);
+          document.getElementById('btnRun').click();
+          await until(() => term().includes('[Test-Hub] Programm vollständig angekommen'), 8000);
+          const lineNo = window.blockwerk.code().split('\\n').indexOf('farbe_F = ColorSensor(Port.F)') + 1;
+          const bytes = new TextEncoder().encode('Traceback (most recent call last):\\r\\n  File "__main__.py", line ' + lineNo + ', in <module>\\r\\nOSError: [Errno 19] ENODEV: \\r\\n\\r\\nA sensor or motor is not connected to the specified port:\\r\\n');
+          const event = new Uint8Array(bytes.length + 1); event[0] = 1; event.set(bytes, 1);
+          window.blockwerk.hub().handleEvent(new DataView(event.buffer));
+          const explained = await until(() => term().includes('Das Programm erwartet einen Farbsensor an F; dort steckt nichts. Ein Farbsensor steckt an C'), 12000);
+          const marked = !!sensor.getSvgRoot().classList.contains('blocklySelected');
+          await until(() => document.getElementById('hubState').textContent.includes('bereit'), 5000);
+          const tidy = !term().includes('\\x1e');
           window.blockwerk.hub().disconnect();
           // ohne Hub gelten wieder die üblichen Vorgaben
           await until(() => motorPort() === 'C', 2000);
           ports.push(motorPort());
-          return {live:!!live, kinds, battery, idle:!!idle, clean:!terminal.includes('\\x1e') && !terminal.includes('Programm beendet'), ports:ports.join('>'), told};
+          return {live:!!live, kinds, battery, idle:!!idle, clean:!terminal.includes('\\x1e') && !terminal.includes('Programm beendet'), ports:ports.join('>'), told, explained:!!explained && lineNo > 0, marked, tidy};
         })()`, true);
         result.hubOk = !!result.hub.live && result.hub.kinds === 'A:motor C:color E:force B:none D:ultra F:none' && / V$/.test(result.hub.battery)
-          && result.hub.idle && result.hub.clean && result.hub.ports === 'C>A>C' && result.hub.told;
+          && result.hub.idle && result.hub.clean && result.hub.ports === 'C>A>C' && result.hub.told
+          && result.hub.explained && result.hub.marked && result.hub.tidy;
         if (!result.hubOk) errors.push('Hub-Ansicht: ' + JSON.stringify(result.hub));
       }
       // »--smoke-matrix« legt den Block »zeige Muster« auf die Fläche und öffnet seinen Editor

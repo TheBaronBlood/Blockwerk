@@ -23,6 +23,9 @@ export const PORT_BLOCKS: Record<string, PortKind> = {
   pb_force_pressed:'force', pb_force:'force'
 };
 const KIND_NAMES: Record<PortKind, string> = {motor:'Motor', color:'Farbsensor', ultra:'Abstandssensor', force:'Kraftsensor'};
+const KIND_PLURAL: Record<PortKind, string> = {motor:'Motoren', color:'Farbsensoren', ultra:'Abstandssensoren', force:'Kraftsensoren'};
+/** So beginnen im erzeugten Programm die Namen der Geräte (generator.ts): »kraft_E = ForceSensor(Port.E)«. */
+const DEVICE_PREFIX: Record<string, PortKind> = {motor:'motor', farbe:'color', abstand:'ultra', kraft:'force'};
 
 /** Ob von jedem Anschluss schon bekannt ist, was dort steckt (oder dass er frei ist). */
 export const allPortsSeen = (state: MonitorState) => PORT_NAMES.every(p => state.ports[p]);
@@ -92,6 +95,34 @@ export function describePorts(found: FoundPorts): string {
     .map(k => `${KIND_NAMES[k]} an ${list(found[k])}`);
   return parts.length ? `Am Hub erkannt: ${parts.join(', ')}. Die Blockliste ist darauf eingestellt.`
     : 'An den Anschlüssen des Hubs steckt nichts, das Blockwerk kennt.';
+}
+
+/** Ein Gerät an einem Anschluss, wie das Programm es erwartet. */
+export interface DeviceAt { kind: PortKind; port: string }
+
+/**
+ * Liest aus einer Zeile des erzeugten Programms, welches Gerät sie anlegt. Meldet der Hub »ENODEV«,
+ * steht der Fehler in so einer Zeile: Dort erwartet das Programm ein Gerät, das nicht steckt.
+ */
+export function deviceLine(text: string): DeviceAt | null {
+  const m = text.match(/^(\w+?)_([A-F]) = \w+\(Port\.([A-F])\b/);
+  return m && DEVICE_PREFIX[m[1]] && m[2] === m[3] ? {kind:DEVICE_PREFIX[m[1]], port:m[2]} : null;
+}
+
+/** Nach einem Fehler »Gerät fehlt«: was das Programm erwartet hat, was dort wirklich steckt und wo das Gerät ist. */
+export function missingDeviceHint(expected: DeviceAt, state: MonitorState): string {
+  const name = KIND_NAMES[expected.kind], there = state.ports[expected.port]?.kind;
+  const elsewhere = foundPorts(state)[expected.kind].filter(p => p !== expected.port);
+  const list = (ports: string[]) => ports.length > 1 ? `${ports.slice(0, -1).join(', ')} und ${ports[ports.length - 1]}` : ports[0];
+  if (there === expected.kind){
+    return `Das Programm erwartet einen ${name} an ${expected.port} – dort steckt jetzt einer. Sitzt das Kabel fest? Dann einfach noch einmal starten.`;
+  }
+  const found = there === undefined ? '' : there === 'none' ? ' dort steckt nichts.'
+    : there === 'other' ? ' dort steckt ein Gerät, das Blockwerk nicht kennt.' : ` dort steckt ein ${KIND_NAMES[there]}.`;
+  const where = !elsewhere.length ? `Am Hub steckt gar kein ${name}.`
+    : elsewhere.length === 1 ? `Ein ${name} steckt an ${elsewhere[0]} – stell die Blöcke darauf um oder steck ihn um.`
+    : `${KIND_PLURAL[expected.kind]} stecken an ${list(elsewhere)} – stell die Blöcke darauf um oder steck einen um.`;
+  return `Das Programm erwartet einen ${name} an ${expected.port}${found ? ';' + found : '.'} ${where}`;
 }
 
 /** Ob sich an den Vorgaben etwas ändert – der Werkzeugkasten soll nicht bei jeder Meldung neu entstehen. */
