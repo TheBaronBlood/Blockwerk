@@ -11,7 +11,7 @@ import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
 import { HubConnection } from './hub/connection';
 import { initConnectDialog, type Transport } from './hub/devicePicker';
-import { Hub, HubConnectionError, type HubListener } from './hub/hub';
+import { Hub, HubConnectionError, sleep, type HubListener } from './hub/hub';
 import { SerialHub } from './hub/serial';
 import { TestHub } from './hub/testHub';
 import { initAboutDialog } from './about';
@@ -31,6 +31,8 @@ import { hasWord, initHelp } from './help';
 import { highlight } from './highlight';
 import { initLayout } from './layout';
 import { installSnapSound } from './sound';
+import { FIXED_FLYOUT, START_SCALE } from './flyout';
+import { allPortsSeen, describePorts, foundPorts, samePorts, withFoundPorts, type FoundPorts } from './ports';
 import { isTablet, tabletSystem } from './platform';
 import { saveFile } from './files';
 import { toolboxWith } from './toolbox';
@@ -58,11 +60,15 @@ const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 loadStoredExtensions();
 loadSettings({extensions:extensions().length > 0});
 // (Die Erweiterungen sind schon angemeldet – ihre Blöcke müssen bekannt sein, bevor das gespeicherte Programm geladen wird.)
-const currentToolbox = () => toolboxWith(extensions().map(toolboxCategory) as Blockly.utils.toolbox.ToolboxItemInfo[]);
+/** Was am verbundenen Hub steckt (ports.ts) – daraus entstehen die Vorgaben in der Blockliste; null ohne Hub. */
+let detectedPorts: FoundPorts | null = null;
+const currentToolbox = () => withFoundPorts(toolboxWith(extensions().map(toolboxCategory) as Blockly.utils.toolbox.ToolboxItemInfo[]), detectedPorts);
 Blockly.Scrollbar.scrollbarThickness = 10;   // schmaler als Blocklys Standard
 const ws = Blockly.inject('blocklyDiv', {
   toolbox:currentToolbox(), theme: isDark() ? THEME_DARK : THEME_LIGHT, renderer:'zelos', media:BLOCKLY_MEDIA, sounds:false, trashcan:false, comments:false,
-  zoom:{controls:false, wheel:true, startScale:0.72, maxScale:2, minScale:0.35, scaleSpeed:1.15},
+  // die Blockliste zoomt nicht mit (flyout.ts)
+  plugins:{flyoutsVerticalToolbox:FIXED_FLYOUT},
+  zoom:{controls:false, wheel:true, startScale:START_SCALE, maxScale:2, minScale:0.35, scaleSpeed:1.15},
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
@@ -353,6 +359,7 @@ $('btnAbout').addEventListener('click', () => aboutDialog.open());
 onSettings((s) => {
   applyTheme();
   $('btnExt').classList.toggle('hidden', !s.extensions);
+  if (!s.autoPorts) setDetectedPorts(null);
   // Entwickler: Protokoll im Terminal, und in der Konsole ein Zugang zu den Innereien
   Hub.trace = s.dev && s.devTrace ? (dir, bytes) => {
     const hex = [...bytes.subarray(0, 24)].map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -480,7 +487,7 @@ function updateHubUi(){
   btnStop.disabled = btnStopWs.disabled = !hub || hubBusy || !hub.isRunning;
   btnRunWs.classList.toggle('busy', hubBusy);
   hubState.classList.toggle('on', !!hub); wsHub.classList.toggle('on', !!hub);
-  hubState.textContent = !hub ? 'kein Hub' : monitor ? `${hub.name} – Hub-Ansicht`
+  hubState.textContent = !hub ? 'kein Hub' : scanning ? `${hub.name} – sieht nach, was angeschlossen ist …` : monitor ? `${hub.name} – Hub-Ansicht`
     : hub.isRunning ? `${hub.name} – läuft${remoteState ? ' · ' + remoteState : ''}` : `${hub.name} – bereit`;
   // an der Arbeitsfläche ist wenig Platz: Dort steht während der Suche nur der Stand des Controllers
   wsHub.textContent = hub?.isRunning && remoteState ? remoteState : hubState.textContent;
@@ -522,6 +529,7 @@ async function connectHub(){
         if (!hub) return;
         hub = null; hubBusy = false; lastProgram = null; btnRun.textContent = RUN_LABEL; termWrite('— Hub getrennt —\n', 't-info');
         clearInterval(monitorBeat); monitor = monitorSink = null; monitorLoaded = false; hubView.close();
+        scanWake?.(); setDetectedPorts(null);
         updateHubUi();
       }
     });
@@ -600,6 +608,8 @@ const strayLines = new StrayFilter();
 let monitorPayload: Uint8Array | null = null;   // das Anzeige-Programm, übersetzt
 let monitorLoaded = false;                      // auf dem Hub liegt gerade das Anzeige-Programm
 let monitorClosePending = false;                // geschlossen, während noch geladen wurde
+let scanning = false;                           // das Anzeige-Programm läuft gerade nur, um die Anschlüsse zu erkennen
+let scanWake: (() => void) | null = null;       // beendet das Warten der Erkennung: alles gesehen, Programm zu Ende, Hub getrennt
 /** Was Blockwerk zuletzt als Programm auf diesen Hub geladen hat – samt dem, was Blockwerk dazu wissen muss. */
 let lastProgram: Uint8Array | null = null;
 let lastRun: {lines: CodeLine[]; usesPad: boolean} = {lines:[], usesPad:false};
@@ -608,6 +618,7 @@ const hubView = initHubView({closed:() => void closeHubView(), restart:() => voi
 /** Das Anzeige-Programm hat aufgehört – am Hub gestoppt oder weil keine Lebenszeichen mehr ankamen. */
 function monitorEnded(){
   clearInterval(monitorBeat); retireMonitor();
+  scanWake?.();
   if (hubView.isOpen()) hubView.status('ended');
 }
 /** Das Anzeige-Programm läuft nicht mehr; was der Hub in den nächsten Sekunden noch von ihm schickt, wird verschluckt. */
@@ -617,16 +628,21 @@ function retireMonitor(){
   const sink = monitorSink = monitor; monitor = null;
   setTimeout(() => { if (monitorSink === sink) monitorSink = null; }, 2000);
 }
+/** Das Anzeige-Programm, übersetzt – beim ersten Mal dauert das einen Moment. */
+async function monitorProgram(): Promise<Uint8Array> {
+  if (!monitorPayload){
+    const { compileProgram } = await import('./hub/compile');
+    const res = await compileProgram(MONITOR_PROGRAM, wasmUrl);
+    if (!res.ok) throw new Error(res.errors.join('\n'));
+    monitorPayload = encodeModules([{name:MAIN_MODULE, mpy:res.mpy}]);
+  }
+  return monitorPayload;
+}
 async function startMonitor(){
   if (!hub || hubBusy || monitor) return;
   hubBusy = true; updateHubUi(); hubView.status('loading');
   try {
-    if (!monitorPayload){
-      const { compileProgram } = await import('./hub/compile');
-      const res = await compileProgram(MONITOR_PROGRAM, wasmUrl);
-      if (!res.ok) throw new Error(res.errors.join('\n'));
-      monitorPayload = encodeModules([{name:MAIN_MODULE, mpy:res.mpy}]);
-    }
+    const payload = await monitorProgram();
     if (!hub) return;
     // Läuft noch etwas – etwa das Anzeige-Programm, am Hub mit der Taste neu gestartet –, zuerst anhalten:
     // Sein Ende darf nicht dem neuen Leser unten zugeschrieben werden.
@@ -635,10 +651,14 @@ async function startMonitor(){
     // Fehlermeldungen des Anzeige-Programms gehören zu keinem Block
     runLines = []; runUsesPad = false; traceback.reset();
     monitorSink = null;
-    const feed = monitor = new MonitorFeed((state) => { hubView.render(state); hubView.status('live'); });
+    const feed = monitor = new MonitorFeed((state) => {
+      hubView.render(state); hubView.status('live');
+      // was die Hub-Ansicht sieht, gilt auch für die Blockliste – etwa nach dem Umstecken
+      if (settings().autoPorts && allPortsSeen(state)) setDetectedPorts(foundPorts(state));
+    });
     // ab dem ersten Schreiben ist das Programm auf dem Hub ersetzt – auch wenn das Laden mittendrin scheitert
     monitorLoaded = true;
-    await hub.run(monitorPayload);
+    await hub.run(payload);
     const beat = () => {
       if (!hub || monitor !== feed) return;
       hub.sendBytes(new Uint8Array([MONITOR_HEARTBEAT])).catch(() => { /* getrennt – das meldet der Hub selbst */ });
@@ -669,21 +689,95 @@ async function closeHubView(){
   const connected = hub;
   if (!connected){ monitor = null; return; }
   hubBusy = true; updateHubUi();
-  try {
-    monitor?.mute();
-    await connected.halt();
-    retireMonitor();
-    // inzwischen getrennt (ausgeschaltet, Kabel gezogen): Dann gibt es nichts zurückzuladen
-    if (hub !== connected) return;
-    if (monitorLoaded && lastProgram){
-      hubState.textContent = wsHub.textContent = 'lade dein Programm zurück …';
-      await connected.load(lastProgram);
-      // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
-      runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
-    }
-    monitorLoaded = false;
-  } catch (err){ hubFailed(err); }
+  try { await endMonitor(connected); }
+  catch (err){ hubFailed(err); }
   finally { retireMonitor(); hubBusy = false; updateHubUi(); }
+}
+/** Hält das Anzeige-Programm an und legt wieder auf den Hub, was Blockwerk zuletzt selbst geladen hatte. */
+async function endMonitor(connected: Hub){
+  monitor?.mute();
+  await connected.halt();
+  retireMonitor();
+  // inzwischen getrennt (ausgeschaltet, Kabel gezogen): Dann gibt es nichts zurückzuladen
+  if (hub !== connected) return;
+  if (monitorLoaded && lastProgram){
+    hubState.textContent = wsHub.textContent = 'lade dein Programm zurück …';
+    await connected.load(lastProgram);
+    // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
+    runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
+  }
+  monitorLoaded = false;
+}
+
+// ---------------------------------------------------------------
+// Anschlüsse erkennen (ports.ts): Nach dem Verbinden läuft das Anzeige-Programm für einen Moment
+// ohne Fenster, bis von jedem Anschluss bekannt ist, was dort steckt. Daraus werden die Vorgaben
+// in der Blockliste; Blöcke auf der Arbeitsfläche bleiben, wie sie sind. Die Hub-Ansicht frischt
+// die Vorgaben auf, solange sie offen ist. Wie dort ersetzt das Anzeige-Programm, was auf dem Hub
+// gespeichert war – abschalten lässt sich die Erkennung in den Einstellungen.
+// ---------------------------------------------------------------
+/** So lange kein neuer Anschluss dazukommt, gilt das Bild als vollständig (Hubs mit weniger als sechs Anschlüssen). */
+const SCAN_SETTLE_MS = 700;
+/** Länger wartet die Erkennung nicht – der Hub soll nicht belegt bleiben. */
+const SCAN_TIMEOUT_MS = 6000;
+
+/** Stellt die Blockliste auf die erkannten Anschlüsse ein (null: wieder die üblichen Vorgaben). */
+function setDetectedPorts(found: FoundPorts | null){
+  if (samePorts(found, detectedPorts)) return;
+  detectedPorts = found;
+  const apply = () => {
+    // nicht mitten in einem Zug: Der gezogene Block hängt an der Liste, die dabei neu entsteht
+    if (ws.isDragging()){ setTimeout(apply, 300); return; }
+    const toolbox = ws.getToolbox();
+    const open = (toolbox?.getSelectedItem() as Blockly.ToolboxCategory | null)?.getName?.();
+    ws.updateToolbox(currentToolbox());
+    // war eine Kategorie aufgeklappt, zeigt sie jetzt die neuen Vorgaben
+    const again = open && toolbox?.getToolboxItems().find(item => (item as Blockly.ToolboxCategory).getName?.() === open);
+    if (again) toolbox!.setSelectedItem(again);
+  };
+  apply();
+}
+async function scanPorts(){
+  if (!settings().autoPorts || !hub || hubBusy || monitor || hubView.isOpen()) return;
+  const connected = hub;
+  hubBusy = scanning = true; updateHubUi();
+  let settle: number | undefined, timeout: number | undefined;
+  try {
+    // Die erste Statusmeldung abwarten: Läuft auf dem Hub schon ein Programm, bleibt es ungestört
+    await sleep(600);
+    if (hub !== connected || connected.isRunning) return;
+    const payload = await monitorProgram();
+    if (hub !== connected || connected.isRunning) return;
+    runLines = []; runUsesPad = false; traceback.reset();
+    monitorSink = null;
+    const done = new Promise<void>((resolve) => { scanWake = resolve; });
+    let seen = 0;
+    const feed = monitor = new MonitorFeed((state) => {
+      if (allPortsSeen(state)){ scanWake?.(); return; }
+      const count = Object.keys(state.ports).length;
+      if (count > seen){ seen = count; clearTimeout(settle); settle = window.setTimeout(() => scanWake?.(), SCAN_SETTLE_MS); }
+    });
+    monitorLoaded = true;
+    await connected.run(payload);
+    timeout = window.setTimeout(() => scanWake?.(), SCAN_TIMEOUT_MS);
+    await done;
+    if (hub !== connected) return;
+    const found = Object.keys(feed.state.ports).length ? foundPorts(feed.state) : null;
+    await endMonitor(connected);
+    if (found && hub === connected){
+      setDetectedPorts(found);
+      termWrite(`— ${describePorts(found)} —\n`, 't-info');
+    }
+  } catch (err){
+    // Die Erkennung ist eine Zugabe: Scheitert sie, bleibt es bei den üblichen Vorgaben – ohne Fehlermeldung
+    console.warn('Anschlüsse nicht erkannt:', err);
+  } finally {
+    clearTimeout(settle); clearTimeout(timeout); scanWake = null; scanning = false;
+    retireMonitor();
+    // (wurde inzwischen neu verbunden, gehört »beschäftigt« der neuen Verbindung)
+    if (!hub || hub === connected) hubBusy = false;
+    updateHubUi();
+  }
 }
 for (const opener of [btnHubView, hubState, wsHub]) opener.addEventListener('click', () => void openHubView());
 
@@ -740,7 +834,8 @@ else window.addEventListener('keydown', (e) => {
 // das Terminal gibt es auch ohne Weg zum Hub – der SPIKE-Import berichtet dort
 $('btnTermClear').addEventListener('click', () => { termPending = []; termOut.textContent = ''; });
 if (transports().length){
-  btnConnect.addEventListener('click', () => { if (hub) hub.disconnect(); else connectHub(); });
+  // (nur hier: Wer mit »Starten« oder der Hub-Ansicht verbindet, will gleich weiter)
+  btnConnect.addEventListener('click', () => { if (hub) hub.disconnect(); else void connectHub().then((ok) => { if (ok) void scanPorts(); }); });
   for (const b of [btnRun, btnRunWs]) b.addEventListener('click', runOnHub);
   for (const b of [btnStop, btnStopWs]) b.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
 } else {

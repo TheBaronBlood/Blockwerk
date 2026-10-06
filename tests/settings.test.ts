@@ -8,8 +8,8 @@ describe('Einstellungen', () => {
   it('nimmt gültige Werte und ersetzt alles andere durch die Vorgabe', () => {
     expect(sanitize(null)).toEqual(DEFAULTS);
     expect(sanitize('kaputt')).toEqual(DEFAULTS);
-    expect(sanitize({theme:'dark', zoom:120, codeSize:16, uiFont:'system', codeFont:'system', sounds:false, extensions:true, dev:true, devTrace:true, devTestHub:true, leader:true}))
-      .toEqual({theme:'dark', zoom:120, codeSize:16, uiFont:'system', codeFont:'system', sounds:false, extensions:true, dev:true, devTrace:true, devTestHub:true, leader:true});
+    expect(sanitize({theme:'dark', zoom:120, codeSize:16, uiFont:'system', codeFont:'system', sounds:false, autoPorts:false, extensions:true, dev:true, devTrace:true, devTestHub:true, leader:true}))
+      .toEqual({theme:'dark', zoom:120, codeSize:16, uiFont:'system', codeFont:'system', sounds:false, autoPorts:false, extensions:true, dev:true, devTrace:true, devTestHub:true, leader:true});
     expect(sanitize({theme:'pink', zoom:900, codeSize:'groß', uiFont:42, extensions:'ja', fremd:1}))
       .toEqual(DEFAULTS);
     // installierte Schriften sind erlaubt – Namen, die in CSS Schaden anrichten könnten, nicht
@@ -18,7 +18,7 @@ describe('Einstellungen', () => {
   });
 
   it('zeigt Erweiterungen und Entwickleroptionen erst nach dem Einschalten', () => {
-    expect(DEFAULTS).toMatchObject({sounds:true, extensions:false, dev:false, devTrace:false, devTestHub:false, leader:false, theme:'system'});
+    expect(DEFAULTS).toMatchObject({sounds:true, autoPorts:true, extensions:false, dev:false, devTrace:false, devTestHub:false, leader:false, theme:'system'});
   });
 });
 

@@ -8,9 +8,31 @@ Die Versionsnummer hat drei Stellen: `0.11.0`.
 - **Erste Stelle**: bleibt `0`, solange Blockwerk nicht an echten Hubs erprobt ist.
   `1.0.0` wird die erste Version, die in der AG mit echten Hubs zuverlässig läuft.
 
-Öffentlich ist Blockwerk seit Version 0.25.0; der Verlauf des Repositorys beginnt dort. Ab
-0.26.0 gehört zu jeder Version ein Git-Tag (`v0.26.0` …) und ein Release mit den fertigen
-Programmen. Die Einträge vor 0.25.0 beschreiben, wie Blockwerk bis dahin entstanden ist.
+Öffentlich ist Blockwerk seit Version 0.25.0; der Verlauf des Repositorys beginnt dort. Die
+Einträge davor beschreiben, wie Blockwerk bis dahin entstanden ist.
+
+Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen zuerst nur in
+die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
+Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
+
+## 0.26.2 – 7. Oktober 2026
+
+- Neu: **Blockwerk erkennt, was am Hub steckt.** Nach »Hub verbinden« sieht es kurz nach – am
+  Kabel rund eine Sekunde, über Bluetooth etwas länger – und stellt die Buchstaben in der
+  Blockliste darauf ein: Steckt der Kraftsensor an F, zeigt sein Block gleich »F«. Zwei Motoren
+  gelten als Fahrbasis, ein dritter ist der Motor für alles andere. Blöcke, die schon auf der
+  Arbeitsfläche liegen, bleiben, wie sie sind; ohne Hub gelten die üblichen Vorgaben. Im
+  Terminal steht, was erkannt wurde. Wer mit »Starten« verbindet, wird nicht aufgehalten – dann
+  sieht Blockwerk nicht nach.
+  Pybricks meldet von sich aus nicht, was angeschlossen ist. Deshalb läuft dafür einen Moment
+  lang das kleine Programm der Hub-Ansicht auf dem Hub, und **es ersetzt, was dort gespeichert
+  war**. Wer das nicht will, schaltet »Anschlüsse erkennen« in den Einstellungen ab. Am echten
+  Hub geprüft, über Kabel und Bluetooth (zwei Motoren, zwei Farbsensoren, ein Kraftsensor).
+- Geändert: Die **Blockliste zoomt nicht mehr mit** der Arbeitsfläche. Wer nah heranzoomte – am
+  Tablet schnell passiert –, hatte riesige Blöcke in der Liste. Sie bleibt jetzt so groß wie
+  beim Start; ein Block nimmt die Größe der Arbeitsfläche an, sobald man ihn herauszieht.
+- Geprüft: Die Bluetooth-Verbindung aus 0.26.1 läuft auch vom Computer aus (Programm am Mac,
+  echter Hub: verbinden, laden, starten, Ausgabe lesen).
 
 ## 0.26.1 – 6. Oktober 2026
 

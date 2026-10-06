@@ -18,6 +18,8 @@ export interface Settings {
   codeFont: string;
   /** Leiser Klang beim Zusammenstecken von Blöcken. */
   sounds: boolean;
+  /** Nach dem Verbinden nachsehen, was am Hub steckt, und die Blockliste darauf einstellen. */
+  autoPorts: boolean;
   /** Knopf »Erweiterungen« zeigen. */
   extensions: boolean;
   /** Entwickleroptionen zeigen. */
@@ -30,7 +32,7 @@ export interface Settings {
   leader: boolean;
 }
 export const DEFAULTS: Settings = {
-  theme:'system', zoom:100, codeSize:13.5, uiFont:'atkinson', codeFont:'jetbrains', sounds:true,
+  theme:'system', zoom:100, codeSize:13.5, uiFont:'atkinson', codeFont:'jetbrains', sounds:true, autoPorts:true,
   extensions:false, dev:false, devTrace:false, devTestHub:false, leader:false
 };
 const FONTS = {
@@ -90,7 +92,7 @@ export function sanitize(raw: unknown): Settings {
   return {
     theme:pick('theme', oneOf('system', 'light', 'dark')), zoom:pick('zoom', between(70, 160)), codeSize:pick('codeSize', between(10, 24)),
     uiFont:pick('uiFont', fontName), codeFont:pick('codeFont', fontName),
-    sounds:pick('sounds', bool), extensions:pick('extensions', bool), dev:pick('dev', bool), devTrace:pick('devTrace', bool), devTestHub:pick('devTestHub', bool), leader:pick('leader', bool)
+    sounds:pick('sounds', bool), autoPorts:pick('autoPorts', bool), extensions:pick('extensions', bool), dev:pick('dev', bool), devTrace:pick('devTrace', bool), devTestHub:pick('devTestHub', bool), leader:pick('leader', bool)
   };
 }
 
@@ -160,6 +162,8 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
 
       <h3>Funktionen</h3>
       <label class="settings-check"><input type="checkbox" name="sounds"><span><b>Klang</b><br>Blöcke klicken leise, wenn sie zusammengesteckt werden.</span></label>
+
+      <label class="settings-check"><input type="checkbox" name="autoPorts"><span><b>Anschlüsse erkennen</b><br>Sieht nach dem Verbinden nach, was am Hub steckt, und stellt die Buchstaben in der Blockliste darauf ein. Dafür läuft auf dem Hub kurz ein kleines Programm von Blockwerk – es ersetzt das Programm, das dort gespeichert war.</span></label>
 
       <label class="settings-check"><input type="checkbox" name="extensions"><span><b>Erweiterungen</b><br>Zeigt den Knopf »Erweiterungen«: eigene Blöcke mit eigenem Python-Code bauen.</span></label>
 
@@ -263,7 +267,7 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
     }
     field<HTMLSelectElement>('uiFont').value = s.uiFont;
     field<HTMLSelectElement>('codeFont').value = s.codeFont;
-    for (const name of ['sounds', 'extensions', 'leader', 'dev', 'devTestHub', 'devTrace'] as const) field<HTMLInputElement>(name).checked = s[name];
+    for (const name of ['sounds', 'autoPorts', 'extensions', 'leader', 'dev', 'devTestHub', 'devTrace'] as const) field<HTMLInputElement>(name).checked = s[name];
     dialog.querySelector('.settings-dev')!.classList.toggle('hidden', !s.dev);
   }
   onSettings(show);
