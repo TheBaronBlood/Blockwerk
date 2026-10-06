@@ -5,6 +5,7 @@ __pycache__/
 checkdist/
 *.tsbuildinfo
 release/
+.wrangler/
 .DS_Store
 # Schlüssel für die Android-App gehören nie ins Repository (README, »Android-Schlüssel«)
 *.jks
