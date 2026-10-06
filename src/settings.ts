@@ -163,7 +163,7 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
       <h3>Funktionen</h3>
       <label class="settings-check"><input type="checkbox" name="sounds"><span><b>Klang</b><br>Blöcke klicken leise, wenn sie zusammengesteckt werden.</span></label>
 
-      <label class="settings-check"><input type="checkbox" name="autoPorts"><span><b>Anschlüsse erkennen</b><br>Sieht nach dem Verbinden nach, was am Hub steckt, und stellt die Buchstaben in der Blockliste darauf ein. Dafür läuft auf dem Hub kurz ein kleines Programm von Blockwerk – es ersetzt das Programm, das dort gespeichert war.</span></label>
+      <label class="settings-check"><input type="checkbox" name="autoPorts"><span><b>Anschlüsse erkennen</b><br>Sieht nach dem Verbinden nach, was am Hub steckt, und stellt die Buchstaben in der Blockliste darauf ein – und noch einmal, wenn ein Programm scheitert, weil ein Gerät am falschen Anschluss steckt. Dafür läuft auf dem Hub kurz ein kleines Programm von Blockwerk; nach dem Verbinden ersetzt es das Programm, das dort gespeichert war.</span></label>
 
       <label class="settings-check"><input type="checkbox" name="extensions"><span><b>Erweiterungen</b><br>Zeigt den Knopf »Erweiterungen«: eigene Blöcke mit eigenem Python-Code bauen.</span></label>
 
