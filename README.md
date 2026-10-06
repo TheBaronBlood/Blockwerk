@@ -303,26 +303,57 @@ Dieselbe Oberfläche läuft als App auf Tablets – verpackt mit
 
 Android installiert eine neue Fassung nur dann über eine vorhandene, wenn beide mit demselben
 Schlüssel signiert sind. Der Schlüssel kostet nichts und braucht kein Konto: Man erzeugt ihn
-einmal selbst, mit `keytool` aus Java.
+einmal selbst, mit `keytool` aus Java – am Mac im Terminal, unter Windows in der PowerShell.
+
+**1. Schlüssel erzeugen,** in einem Ordner außerhalb des Projekts:
 
 ```
 keytool -genkeypair -v -keystore blockwerk.jks -storetype PKCS12 -keyalg RSA -keysize 4096 -validity 10000 -alias blockwerk
 ```
 
-`keytool` fragt nach einem Passwort und nach einem Namen. Es entsteht die Datei
-`blockwerk.jks`. **Datei und Passwort gehören nicht ins Repository** und an zwei sichere
+`keytool` fragt nach einem Passwort (am besten nur Buchstaben und Ziffern), nach Name und Land
+und zum Schluss, ob alles stimmt – dort `ja` tippen, Enter allein heißt Nein. Es entsteht die
+Datei `blockwerk.jks`. **Datei und Passwort gehören nicht ins Repository** und an zwei sichere
 Orte: Wer beides hat, kann Updates unter diesem Namen signieren; geht eines verloren, müssen
 alle die App einmal deinstallieren, bevor eine neu signierte Fassung läuft.
 
-Damit der Workflow die App damit signiert, vier Secrets im Repository anlegen (GitHub →
-Settings → Secrets and variables → Actions → New repository secret):
+**2. Prüfen,** ob Passwort und Datei zusammenpassen:
+
+```
+keytool -list -keystore blockwerk.jks
+```
+
+Nach dem Passwort erscheint eine Zeile mit `blockwerk, …, PrivateKeyEntry`.
+
+**3. Die Datei als Text in die Zwischenablage legen.** Ein Secret kann nur Text sein, deshalb
+wird die Datei umgewandelt (Base64). Am Mac:
+
+```
+base64 -i blockwerk.jks | pbcopy
+```
+
+Unter Windows (PowerShell):
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\blockwerk.jks")) | Set-Clipboard
+```
+
+Der Befehl gibt nichts aus. In der Zwischenablage liegt danach ein langer Text, der mit `MII`
+beginnt – **dieser Text** kommt ins Secret, nicht der Befehl.
+
+**4. Vier Secrets anlegen** (GitHub → Settings → Secrets and variables → Actions → New
+repository secret):
 
 | Secret | Inhalt |
 |--------|--------|
-| `ANDROID_KEYSTORE` | die Datei als Base64-Text – am Mac `base64 -i blockwerk.jks \| pbcopy`, unter Windows `certutil -encode blockwerk.jks schluessel.txt` und den Inhalt der Textdatei einfügen |
+| `ANDROID_KEYSTORE` | der Text aus der Zwischenablage |
 | `ANDROID_KEYSTORE_PASSWORD` | das Passwort |
 | `ANDROID_KEY_ALIAS` | `blockwerk` |
-| `ANDROID_KEY_PASSWORD` | dasselbe Passwort |
+| `ANDROID_KEY_PASSWORD` | dasselbe Passwort noch einmal |
+
+**5. Ausprobieren:** Actions → Programm bauen → Run workflow. Im Job »Android-App bauen« muss
+der Schritt »App bauen (Release, fester Schlüssel)« laufen. Passt etwas nicht, bricht schon
+»Schlüssel bereitlegen« ab und nennt das Secret, an dem es liegt.
 
 Ab dann baut der Workflow die Release-Fassung mit diesem Schlüssel; ohne die Secrets entsteht
 wie bisher die Debug-Fassung. Am eigenen Rechner: dieselben Angaben als Umgebungsvariablen
