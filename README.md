@@ -413,6 +413,15 @@ Nach einer Änderung am Logo: `npx electron build/render-app-icons.cjs`.
 Fehler gefunden oder eine Idee? Unter
 [Issues](https://github.com/TheBaronBlood/blockwerk/issues) ist der richtige Ort dafür.
 
+## Dank
+
+Blockwerk gäbe es nicht ohne [Pybricks](https://pybricks.com). Die Firmware auf dem Hub, die
+Befehle für Motoren und Sensoren und der Python-Übersetzer stammen vom Team von Pybricks – frei
+verfügbar für alle und ständig weiterentwickelt. Vielen Dank dafür!
+
+Blockwerk ersetzt Pybricks nicht, es baut darauf auf. Wer Blockwerk nützlich findet, kann die
+Arbeit an Pybricks [unterstützen](https://github.com/sponsors/pybricks).
+
 ## Lizenz
 
 Blockwerk steht unter der [MIT-Lizenz](LICENSE): Jeder darf es benutzen, verändern und

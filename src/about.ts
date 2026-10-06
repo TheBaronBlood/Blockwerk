@@ -2,7 +2,7 @@
 // ob es bei Pybricks eine neuere Firmware gibt. Ins Internet geht es nur auf Knopfdruck.
 import {
   apiNote, BUILD, firmwareState, isPrerelease, pickLatest, PYBRICKS_API, PYBRICKS_CODE, PYBRICKS_CODE_BETA,
-  PYBRICKS_MIN, PYBRICKS_RELEASES, PYBRICKS_USB, type Latest, type Release
+  PYBRICKS_HOME, PYBRICKS_MIN, PYBRICKS_RELEASES, PYBRICKS_SPONSOR, PYBRICKS_USB, type Latest, type Release
 } from './versions';
 import { tabletSystem, where } from './platform';
 
@@ -24,6 +24,13 @@ export function initAboutDialog(host: AboutHost): {open(): void} {
     <div class="connect-head"><h2>Über Blockwerk</h2><button type="button" class="btn" data-act="close" aria-label="Schließen">✕</button></div>
     <div class="settings-body">
       <h3>Blockwerk</h3><dl data-list="app"></dl>
+      <h3>Danke an Pybricks</h3>
+      <p class="about-thanks">Blockwerk gäbe es nicht ohne <b>Pybricks</b>. Die Firmware auf dem Hub, die Befehle für Motoren und Sensoren und der Python-Übersetzer stammen vom Team von Pybricks – frei verfügbar für alle und ständig weiterentwickelt. Vielen Dank dafür!</p>
+      <p class="settings-note">Blockwerk ersetzt Pybricks nicht, es baut darauf auf. Wer mag, sieht sich das Projekt an und unterstützt die Arbeit daran.</p>
+      <div class="settings-buttons">
+        <a class="btn" href="${PYBRICKS_HOME}" target="_blank" rel="noopener">pybricks.com</a>
+        <a class="btn" href="${PYBRICKS_SPONSOR}" target="_blank" rel="noopener">Pybricks unterstützen</a>
+      </div>
       <h3>Pybricks</h3><dl data-list="pybricks"></dl>
       <h3>Hub</h3><dl data-list="hub"></dl>
       <div class="settings-buttons">

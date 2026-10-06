@@ -12,6 +12,9 @@ export const PYBRICKS_MIN = '3.3.0';
 /** Hier listet Pybricks seine Firmware-Fassungen; die Abfrage läuft nur auf Knopfdruck. */
 export const PYBRICKS_RELEASES = 'https://api.github.com/repos/pybricks/pybricks-micropython/releases?per_page=30';
 export const PYBRICKS_CODE = 'https://code.pybricks.com';
+/** Das Projekt, auf dem Blockwerk aufbaut – und wo man seine Arbeit unterstützen kann. */
+export const PYBRICKS_HOME = 'https://pybricks.com';
+export const PYBRICKS_SPONSOR = 'https://github.com/sponsors/pybricks';
 export const PYBRICKS_CODE_BETA = 'https://beta.pybricks.com';
 
 /** Versionen der Pakete, aus denen Blockwerk gebaut ist; setzt Vite beim Bauen ein. */
