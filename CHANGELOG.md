@@ -8,12 +8,18 @@ Die Versionsnummer hat drei Stellen: `0.11.0`.
 - **Erste Stelle**: bleibt `0`, solange Blockwerk nicht an echten Hubs erprobt ist.
   `1.0.0` wird die erste Version, die in der AG mit echten Hubs zuverlässig läuft.
 
-Öffentlich ist Blockwerk seit Version 0.25.0. Der Verlauf des Repositorys beginnt dort, und
-ab da gehört zu jeder Version ein Git-Tag (`v0.25.0` …). Die Einträge davor beschreiben, wie
-Blockwerk bis dahin entstanden ist.
+Öffentlich ist Blockwerk seit Version 0.25.0; der Verlauf des Repositorys beginnt dort. Ab
+0.26.0 gehört zu jeder Version ein Git-Tag (`v0.26.0` …) und ein Release mit den fertigen
+Programmen. Die Einträge vor 0.25.0 beschreiben, wie Blockwerk bis dahin entstanden ist.
 
 ## 0.26.0 – 6. Oktober 2026
 
+Die erste Version mit fertigen Programmen zum Herunterladen. Was Blockwerk kann, steht im
+README; wie es bis hierhin entstanden ist, in `CHANGELOG.md`.
+
+- Neu: Blockwerk lässt sich **im Netz bereitstellen** – als Link für die ganze AG, ohne
+  Installation. Die Anleitung für Cloudflare Pages steht im README (»Im Netz bereitstellen«);
+  die Regeln, die nur Skripte der Seite selbst zulassen, gelten dort wie im Programm.
 - Neu: Blöcke **klicken leise**, wenn sie zusammengesteckt werden. Wen das stört – etwa in
   einem Raum mit vielen Rechnern –, schaltet es in den Einstellungen unter »Klang« ab.
 
