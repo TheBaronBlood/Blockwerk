@@ -3,6 +3,7 @@
 // Zeigt den fertigen Build aus dist/ in einem eigenen Fenster.
 // ---------------------------------------------------------------
 const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell } = require('electron');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const dataDirs = require('./dataDir.cjs');
@@ -199,9 +200,16 @@ function registerDataHandlers(){
   ipcMain.handle('data-reset', (event) => move(event, defaultDataDir));
 }
 
+// Der Selbsttest probiert selbst aus, ob die Inhaltsrichtlinie Skripttext sperrt. Chromium meldet das je
+// nach System zusätzlich in der Konsole, mit der Prüfsumme des gesperrten Skripts (unter Linux, nicht
+// unter macOS). Genau diese eine Meldung ist kein Fehler; jeder andere gesperrte Text hat eine andere
+// Prüfsumme und fällt weiter auf.
+const CSP_PROBE = 'return 1';
+const CSP_PROBE_HASH = 'eval-sha256-' + crypto.createHash('sha256').update(`(function anonymous(\n) {\n${CSP_PROBE}\n})`).digest('base64');
+
 function runSmokeTest(win){
   const errors = [];
-  win.webContents.on('console-message', (event) => { if (event.level === 'error') errors.push(event.message); });
+  win.webContents.on('console-message', (event) => { if (event.level === 'error' && !event.message.includes(CSP_PROBE_HASH)) errors.push(event.message); });
   win.webContents.on('did-fail-load', (_e, code, text) => errors.push(`Laden fehlgeschlagen: ${code} ${text}`));
   win.webContents.once('did-finish-load', () => setTimeout(async () => {
     let result = {};
@@ -219,7 +227,7 @@ function runSmokeTest(win){
         // die Lizenztexte der eingebauten Software müssen dem Programm beiliegen (build/lizenzen.mjs)
         licenses: await fetch('lizenzen.txt').then(r => r.ok ? r.text() : '').then(t => t.startsWith('Blockwerk') ? t.length : 0, () => 0),
         // die Inhaltsrichtlinie gilt: Skripttext wird nicht ausgeführt
-        csp: (() => { try { new Function('return 1')(); return false; } catch { return true; } })()
+        csp: (() => { try { new Function(${JSON.stringify(CSP_PROBE)})(); return false; } catch { return true; } })()
       }))()`);
       // (Lädt die Seite etwas aus dem Netz – etwa Blocklys Symbole –, meldet die Richtlinie das in der
       // Konsole als Fehler, und der Selbsttest schlägt fehl.)

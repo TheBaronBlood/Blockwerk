@@ -99,14 +99,26 @@ jobs:
         id: key
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          if [ -n "$KEYSTORE" ]; then
-            echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/blockwerk.jks"
-            echo "fest=ja" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$KEYSTORE" ]; then
             echo "::notice::Kein fester Schlüssel hinterlegt – es entsteht die Debug-Fassung."
             echo "fest=nein" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # Beim Einfügen geraten leicht Zeilenumbrüche hinein (unter Windows mit Wagenrücklauf) oder die
+          # Rahmenzeilen von certutil – »base64« bricht daran ab, zum Schlüssel gehört beides nicht
+          if ! printf '%s' "$KEYSTORE" | sed '/^-----/d' | tr -d ' \t\r\n' | base64 --decode > "$RUNNER_TEMP/blockwerk.jks"; then
+            echo "::error::Das Secret ANDROID_KEYSTORE ist kein gültiges Base64. Es muss die Schlüsseldatei selbst enthalten, in Base64 umgewandelt (README, »Android-Schlüssel«) – nicht ihren Pfad und nicht das Passwort."
+            exit 1
+          fi
+          # lieber hier eine klare Meldung als später eine von Gradle
+          if ! keytool -list -keystore "$RUNNER_TEMP/blockwerk.jks" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error::Der Schlüssel lässt sich nicht öffnen: Das Passwort (ANDROID_KEYSTORE_PASSWORD) oder der Name (ANDROID_KEY_ALIAS) passt nicht zur Datei aus ANDROID_KEYSTORE."
+            exit 1
+          fi
+          echo "fest=ja" >> "$GITHUB_OUTPUT"
       - name: App bauen (Release, fester Schlüssel)
         if: steps.key.outputs.fest == 'ja'
         working-directory: android
