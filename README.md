@@ -319,7 +319,7 @@ Settings → Secrets and variables → Actions → New repository secret):
 
 | Secret | Inhalt |
 |--------|--------|
-| `ANDROID_KEYSTORE` | die Datei als Base64-Text – am Mac `base64 -i blockwerk.jks \| pbcopy`, unter Windows `certutil -encode blockwerk.jks schluessel.txt` (ohne die beiden Rahmenzeilen) |
+| `ANDROID_KEYSTORE` | die Datei als Base64-Text – am Mac `base64 -i blockwerk.jks \| pbcopy`, unter Windows `certutil -encode blockwerk.jks schluessel.txt` und den Inhalt der Textdatei einfügen |
 | `ANDROID_KEYSTORE_PASSWORD` | das Passwort |
 | `ANDROID_KEY_ALIAS` | `blockwerk` |
 | `ANDROID_KEY_PASSWORD` | dasselbe Passwort |
