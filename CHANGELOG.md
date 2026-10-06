@@ -15,6 +15,11 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.26.4 – 7. Oktober 2026
+
+- Neu: In »Über Blockwerk« steht ein **Dank an Pybricks** – mit Links zum Projekt und dazu, wie
+  man die Arbeit daran unterstützen kann. Blockwerk baut auf Pybricks auf und ersetzt es nicht.
+
 ## 0.26.3 – 7. Oktober 2026
 
 - Neu: Scheitert ein Programm, weil ein Gerät am falschen Anschluss steckt, **sieht Blockwerk von

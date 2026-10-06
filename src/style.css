@@ -327,7 +327,8 @@ details.run a{color:#7CC8FF}
 .about-result{margin:4px 0 0;padding:10px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);font-size:14.5px;line-height:1.45}
 .about-result p{margin:6px 0}
 .about-result a:not(.btn){color:var(--accent)}
-.about-result a.btn{text-decoration:none;color:var(--ink)}
+.about a.btn{text-decoration:none;color:var(--ink)}
+.about-thanks{margin:0 0 6px;font-size:14.5px;line-height:1.5}
 .about-ok{font-weight:700}
 .about-licenses{max-height:44vh;overflow:auto;margin:10px 0 0;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);font-family:var(--mono);font-size:11.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}
 .about-warn{font-weight:700;color:#C2410C}
