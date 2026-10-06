@@ -257,7 +257,12 @@ Bluetooth und Kabel). Die Kinder brauchen Chrome oder Edge.
    Cloudflare, legt es den DNS-Eintrag selbst an.
 
 Jeder Push nach `main` baut danach neu – zu sehen im Projekt unter »Bereitstellungen« →
-»Neueste Builds«. Die Kopfzeilen (Inhaltsrichtlinie, Zugriff auf
+»Neueste Builds«. Kommt dort nach einem Push nichts an, fehlt Cloudflare der Zugriff: Bei GitHub
+unter Settings → Applications → »Cloudflare Workers and Pages« → Configure muss das Repository
+unter »Repository access« ausgewählt sein. Ein öffentliches Repository kann Cloudflare auch ohne
+das lesen – der erste Bau klappt dann, aber von einem Push erfährt es nichts.
+
+Die Kopfzeilen (Inhaltsrichtlinie, Zugriff auf
 Bluetooth und Kabel, Zwischenspeicher) stehen in `public/_headers` und gelten automatisch.
 Wer mag, setzt bei den Build-Variablen `ELECTRON_SKIP_BINARY_DOWNLOAD` = `1`: Electron wird
 zum Bauen der Seite nicht gebraucht, das spart nur Zeit. Die Node-Version steht in
