@@ -60,6 +60,8 @@ aussieht. So wird der Umstieg von Blöcken auf Python ein Schritt, den man mitle
 - **Kurs der Robotik-AG:** die Module 0 bis 8 mit Aufgaben, Hilfekarten zum Aufdecken,
   Bug-Jagd-Programmen und einem Quiz je Modul. Stolpersteine und Lösungen sieht nur, wer in
   den Einstellungen »Kursleitung« einschaltet.
+- **Erkennt, was am Hub steckt:** Nach dem Verbinden zeigen die Blöcke in der Blockliste
+  schon die richtigen Anschlüsse – der Kraftsensor »F«, wenn er an F steckt.
 - **Hub-Ansicht:** zeigt den Hub von oben und für jeden Anschluss, was dort steckt und was
   es gerade misst – bei Motoren den Winkel mit einem Zeiger, der sich mitdreht, beim
   Farbsensor Farbe oder Reflexion, dazu Abstand und Kraft; außerdem Akku, Ladezustand und

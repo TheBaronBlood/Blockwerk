@@ -264,10 +264,19 @@ function runSmokeTest(win){
           const settings = document.querySelector('dialog.settings[open]');
           for (const name of ['dev', 'devTestHub']){ const box = settings.querySelector('input[name=' + name + ']'); if (!box.checked) box.click(); await wait(100); }
           settings.close();
-          document.getElementById('btnHubView').click();
+          // Vorgabe eines Motor-Blocks in der Blockliste: ohne Hub »C«
+          const motorPort = () => window.__blockwerkWorkspace.options.languageTree.contents.find(c => c.name === 'Motoren').contents[0].fields.PORT;
+          const ports = [motorPort()];
+          document.getElementById('btnConnect').click();
           const connect = await until(() => document.querySelector('dialog.connect[open]'), 3000);
           if (!connect) return {failed:'Fenster »Hub verbinden« fehlt'};
           connect.querySelector('[data-kind=test]').click();
+          // Nach dem Verbinden sieht Blockwerk nach, was steckt (am Test-Hub: ein Motor an A), und stellt die Liste darauf ein
+          await until(() => motorPort() === 'A' && document.getElementById('hubState').textContent.includes('bereit'), 10000);
+          ports.push(motorPort());
+          await wait(150);   // das Terminal schreibt mit kurzer Verzögerung
+          const told = document.getElementById('termOut').textContent.includes('Am Hub erkannt: Motor an A, Farbsensor an C, Abstandssensor an D, Kraftsensor an E.');
+          document.getElementById('btnHubView').click();
           const view = await until(() => document.querySelector('dialog.hubv[open]'), 5000);
           if (!view) return {failed:'Hub-Ansicht öffnet sich nicht'};
           const live = await until(() => view.querySelector('.hubv-port[data-kind=motor]') && view.querySelector('.hubv-port[data-kind=color]'), 8000);
@@ -277,10 +286,13 @@ function runSmokeTest(win){
           const idle = await until(() => document.getElementById('hubState').textContent.includes('bereit'), 5000);
           const terminal = document.getElementById('termOut').textContent;
           window.blockwerk.hub().disconnect();
-          return {live:!!live, kinds, battery, idle:!!idle, clean:!terminal.includes('\\x1e') && !terminal.includes('Programm beendet')};
+          // ohne Hub gelten wieder die üblichen Vorgaben
+          await until(() => motorPort() === 'C', 2000);
+          ports.push(motorPort());
+          return {live:!!live, kinds, battery, idle:!!idle, clean:!terminal.includes('\\x1e') && !terminal.includes('Programm beendet'), ports:ports.join('>'), told};
         })()`, true);
         result.hubOk = !!result.hub.live && result.hub.kinds === 'A:motor C:color E:force B:none D:ultra F:none' && / V$/.test(result.hub.battery)
-          && result.hub.idle && result.hub.clean;
+          && result.hub.idle && result.hub.clean && result.hub.ports === 'C>A>C' && result.hub.told;
         if (!result.hubOk) errors.push('Hub-Ansicht: ' + JSON.stringify(result.hub));
       }
       // »--smoke-matrix« legt den Block »zeige Muster« auf die Fläche und öffnet seinen Editor
