@@ -1,6 +1,6 @@
 {
   "name": "blockwerk",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "Blockeditor im Stil der LEGO-SPIKE-App, der Python-Code für Pybricks erzeugt",
   "private": true,
   "license": "MIT",
