@@ -31,6 +31,7 @@ import { hasWord, initHelp } from './help';
 import { highlight } from './highlight';
 import { initLayout } from './layout';
 import { installSnapSound } from './sound';
+import { FIXED_FLYOUT, START_SCALE } from './flyout';
 import { isTablet, tabletSystem } from './platform';
 import { saveFile } from './files';
 import { toolboxWith } from './toolbox';
@@ -62,7 +63,9 @@ const currentToolbox = () => toolboxWith(extensions().map(toolboxCategory) as Bl
 Blockly.Scrollbar.scrollbarThickness = 10;   // schmaler als Blocklys Standard
 const ws = Blockly.inject('blocklyDiv', {
   toolbox:currentToolbox(), theme: isDark() ? THEME_DARK : THEME_LIGHT, renderer:'zelos', media:BLOCKLY_MEDIA, sounds:false, trashcan:false, comments:false,
-  zoom:{controls:false, wheel:true, startScale:0.72, maxScale:2, minScale:0.35, scaleSpeed:1.15},
+  // die Blockliste zoomt nicht mit (flyout.ts)
+  plugins:{flyoutsVerticalToolbox:FIXED_FLYOUT},
+  zoom:{controls:false, wheel:true, startScale:START_SCALE, maxScale:2, minScale:0.35, scaleSpeed:1.15},
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
