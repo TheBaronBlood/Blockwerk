@@ -16,8 +16,9 @@ Programmen. Die Einträge vor 0.25.0 beschreiben, wie Blockwerk bis dahin entsta
 
 - Behoben: »Hub verbinden« scheiterte in Browsern, die dem iPad Bluetooth beibringen (Bluefy),
   noch bevor die Liste der Hubs erschien. Blockwerk nannte dem Browser einen Dienst des Hubs als
-  Zahl – Chrome und Edge nehmen das an, Bluefy nicht. Am iPad in Bluefy bestätigt. Safari und
-  Chrome können am iPad weiterhin kein Bluetooth; für die Programme am Computer ändert sich nichts.
+  Zahl – Chrome und Edge nehmen das an, Bluefy nicht. Am iPad in Bluefy erprobt: verbinden und
+  ein Programm mit dem Steuerfeld. Safari und Chrome können am iPad weiterhin kein Bluetooth; für
+  die Programme am Computer ändert sich nichts.
 
 ## 0.26.0 – 6. Oktober 2026
 

@@ -188,7 +188,8 @@ nicht erprobt.
 **iPad:** Eine App gibt es nicht, aber einen Weg über den Browser: Wer Blockwerk im Netz
 bereitstellt ([siehe unten](#im-netz-bereitstellen-cloudflare)), kann es am iPad im Browser
 »Bluefy« aus dem App Store öffnen. Der bringt Bluetooth mit; Safari und Chrome können das am
-iPad nicht. Bestätigt ist dort das Verbinden mit dem Hub (ab 0.26.1).
+iPad nicht. Erprobt sind dort das Verbinden mit dem Hub und ein Programm mit dem Steuerfeld
+(ab 0.26.1).
 
 Die eigene iPad-App ist zurückgestellt. Das Projekt liegt im Ordner `ios/` bei und läuft im Simulator, ist aber an keinem Hub
 erprobt und wird derzeit nicht gepflegt. Ein Kabel ginge dort ohnehin nicht – iPadOS lässt
