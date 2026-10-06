@@ -12,6 +12,11 @@ Die Versionsnummer hat drei Stellen: `0.11.0`.
 ab da gehört zu jeder Version ein Git-Tag (`v0.25.0` …). Die Einträge davor beschreiben, wie
 Blockwerk bis dahin entstanden ist.
 
+## 0.26.0 – 6. Oktober 2026
+
+- Neu: Blöcke **klicken leise**, wenn sie zusammengesteckt werden. Wen das stört – etwa in
+  einem Raum mit vielen Rechnern –, schaltet es in den Einstellungen unter »Klang« ab.
+
 ## 0.25.0 – 6. Oktober 2026
 
 Durchsicht vor der Veröffentlichung: Sicherheit, Datenschutz und Lizenzen. Blockwerk steht

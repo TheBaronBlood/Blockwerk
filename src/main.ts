@@ -30,6 +30,7 @@ import { TracebackParser } from './hub/traceback';
 import { hasWord, initHelp } from './help';
 import { highlight } from './highlight';
 import { initLayout } from './layout';
+import { installSnapSound } from './sound';
 import { isTablet, tabletSystem } from './platform';
 import { saveFile } from './files';
 import { toolboxWith } from './toolbox';
@@ -65,6 +66,7 @@ const ws = Blockly.inject('blocklyDiv', {
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
+installSnapSound(ws, () => settings().sounds);
 // für den Selbsttest des Programms (electron/main.cjs), der Blöcke anlegen und anklicken muss
 (window as unknown as {__blockwerkWorkspace?: Blockly.WorkspaceSvg}).__blockwerkWorkspace = ws;
 function applyTheme(){

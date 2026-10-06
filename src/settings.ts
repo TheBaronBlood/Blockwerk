@@ -16,6 +16,8 @@ export interface Settings {
   uiFont: string;
   /** »jetbrains«, »system« oder der Name einer installierten Schrift. */
   codeFont: string;
+  /** Leiser Klang beim Zusammenstecken von Blöcken. */
+  sounds: boolean;
   /** Knopf »Erweiterungen« zeigen. */
   extensions: boolean;
   /** Entwickleroptionen zeigen. */
@@ -28,7 +30,7 @@ export interface Settings {
   leader: boolean;
 }
 export const DEFAULTS: Settings = {
-  theme:'system', zoom:100, codeSize:13.5, uiFont:'atkinson', codeFont:'jetbrains',
+  theme:'system', zoom:100, codeSize:13.5, uiFont:'atkinson', codeFont:'jetbrains', sounds:true,
   extensions:false, dev:false, devTrace:false, devTestHub:false, leader:false
 };
 const FONTS = {
@@ -88,7 +90,7 @@ export function sanitize(raw: unknown): Settings {
   return {
     theme:pick('theme', oneOf('system', 'light', 'dark')), zoom:pick('zoom', between(70, 160)), codeSize:pick('codeSize', between(10, 24)),
     uiFont:pick('uiFont', fontName), codeFont:pick('codeFont', fontName),
-    extensions:pick('extensions', bool), dev:pick('dev', bool), devTrace:pick('devTrace', bool), devTestHub:pick('devTestHub', bool), leader:pick('leader', bool)
+    sounds:pick('sounds', bool), extensions:pick('extensions', bool), dev:pick('dev', bool), devTrace:pick('devTrace', bool), devTestHub:pick('devTestHub', bool), leader:pick('leader', bool)
   };
 }
 
@@ -157,6 +159,8 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
       <div class="settings-buttons" data-fonts><button type="button" class="btn" data-act="fonts">Schriften dieses Computers anzeigen</button><span class="settings-note" data-fonts-state></span></div>
 
       <h3>Funktionen</h3>
+      <label class="settings-check"><input type="checkbox" name="sounds"><span><b>Klang</b><br>Blöcke klicken leise, wenn sie zusammengesteckt werden.</span></label>
+
       <label class="settings-check"><input type="checkbox" name="extensions"><span><b>Erweiterungen</b><br>Zeigt den Knopf »Erweiterungen«: eigene Blöcke mit eigenem Python-Code bauen.</span></label>
 
       <label class="settings-check"><input type="checkbox" name="leader"><span><b>Kursleitung</b><br>Zeigt im Kurs der Robotik-AG die Stolpersteine und die Lösungen. Für die Teilnehmenden ausgeschaltet lassen.</span></label>
@@ -259,7 +263,7 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
     }
     field<HTMLSelectElement>('uiFont').value = s.uiFont;
     field<HTMLSelectElement>('codeFont').value = s.codeFont;
-    for (const name of ['extensions', 'leader', 'dev', 'devTestHub', 'devTrace'] as const) field<HTMLInputElement>(name).checked = s[name];
+    for (const name of ['sounds', 'extensions', 'leader', 'dev', 'devTestHub', 'devTrace'] as const) field<HTMLInputElement>(name).checked = s[name];
     dialog.querySelector('.settings-dev')!.classList.toggle('hidden', !s.dev);
   }
   onSettings(show);
