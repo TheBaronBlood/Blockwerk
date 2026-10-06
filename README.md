@@ -98,7 +98,7 @@ Internet und ohne Browser.
 | Linux | `.deb` | Ubuntu und Verwandte – der zuverlässigste Weg |
 | Linux | `.AppImage` | ohne Installation |
 | Android | `…-android.apk` | Tablets und Handys |
-| iPad | – | derzeit nicht unterstützt, siehe [Tablets](#tablets) |
+| iPad | – | keine App; im Browser »Bluefy« geht die Fassung im Netz, siehe [Tablets](#tablets) |
 
 <details>
 <summary><b>Hinweise zum ersten Start je System</b></summary>
@@ -185,8 +185,12 @@ Meldung ohne Hub am Kabel, Speichern, Steuerfeld mit Berührungen, Kurs, Python-
 Bluetooth lief mit der App auf einem echten Handy; das Kabel ist an einem echten Gerät noch
 nicht erprobt.
 
-**iPad:** zurückgestellt. Blockwerk gibt es vorerst für Windows, macOS, Linux und Android.
-Das iPad-Projekt liegt im Ordner `ios/` bei und läuft im Simulator, ist aber an keinem Hub
+**iPad:** Eine App gibt es nicht, aber einen Weg über den Browser: Wer Blockwerk im Netz
+bereitstellt ([siehe unten](#im-netz-bereitstellen-cloudflare)), kann es am iPad im Browser
+»Bluefy« aus dem App Store öffnen. Der bringt Bluetooth mit; Safari und Chrome können das am
+iPad nicht. Bestätigt ist dort das Verbinden mit dem Hub (ab 0.26.1).
+
+Die eigene iPad-App ist zurückgestellt. Das Projekt liegt im Ordner `ios/` bei und läuft im Simulator, ist aber an keinem Hub
 erprobt und wird derzeit nicht gepflegt. Ein Kabel ginge dort ohnehin nicht – iPadOS lässt
 Apps nicht an beliebige USB-Geräte –, und die Verteilung an mehrere iPads braucht das Apple
 Developer Program.
