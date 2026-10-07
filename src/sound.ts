@@ -13,7 +13,7 @@ import whooshUrl from './assets/wosh.wav?url&no-inline';
 /** Die Klänge unter dem Namen, unter dem Blockly sie abspielt; `volume`: 1 = wie aufgenommen. */
 export const SOUNDS: Record<string, {url: string; volume: number}> = {
   click:{url:snapUrl, volume:0.25},
-  delete:{url:whooshUrl, volume:0.35}
+  delete:{url:whooshUrl, volume:0.18}
 };
 
 /** Lässt die Arbeitsfläche beim Zusammenstecken klicken und beim Löschen wischen, solange `enabled()` gilt. */

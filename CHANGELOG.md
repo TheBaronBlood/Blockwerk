@@ -62,6 +62,8 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   Einstellungen).
 - Behoben: Der Klang beim Zusammenstecken blieb in manchen Browsern (Edge) stumm, obwohl er
   eingeschaltet war. Die Klänge laufen jetzt über einen anderen Weg des Browsers.
+- Neu: Zwischen den Lupen der Arbeitsfläche steht der **Zoom in Prozent**; ein Klick darauf setzt
+  ihn auf 100 % zurück.
 - Geändert: Der Controller-Knopf über dem Startknopf blendet das Steuerfeld unter dem Code ein
   und aus (mit dem Finger oder bei eingeklapptem Code öffnet er weiter die große Ansicht).
 - Am Test-Hub geprüft; am echten Hub ist »Hub trennen« mit dem Zurücklegen noch nicht erprobt.

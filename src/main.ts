@@ -302,6 +302,12 @@ $('btnNew').addEventListener('click', () => {
 });
 $('zoomIn').addEventListener('click', () => ws.zoomCenter(1));
 $('zoomOut').addEventListener('click', () => ws.zoomCenter(-1));
+// Zoom in Prozent zwischen den Lupen: 100 % ist die Größe, mit der Blockwerk beginnt. Ein Klick setzt zurück.
+const zoomLevel = $('zoomLevel');
+const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + ' %'; };
+ws.addChangeListener((e) => { if (e.type === Blockly.Events.VIEWPORT_CHANGE) showZoom(); });
+zoomLevel.addEventListener('click', () => { ws.setScale(START_SCALE); ws.scrollCenter(); showZoom(); });
+showZoom();
 // Aufräumen ordnet die Blöcke und holt sie zurück in die Mitte – sonst wirkt der Knopf wirkungslos,
 // sobald schon alles geordnet ist und man nur die Ansicht verschoben hat
 $('tidy').addEventListener('click', () => { ws.cleanUp(); requestAnimationFrame(() => ws.scrollCenter()); });
