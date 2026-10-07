@@ -60,6 +60,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   **Zeile frei**, damit man sieht, wo er endet.
 - Neu: Beim **Löschen eines Blocks** ist ein kurzes Wischen zu hören (abschaltbar mit »Klang« in den
   Einstellungen).
+- Neu: Leise **Töne für die Bedienung**: ein kurzes Tippen bei Knöpfen und Kategorien, je ein Ton für
+  Start, Stopp, »Hub verbunden« und einen Fehler im Programm (aus dem gemeinfreien Paket
+  »Interface Sounds« von Kenney). Alles hängt an der Einstellung »Klang«.
 - Behoben: Der Klang beim Zusammenstecken blieb in manchen Browsern (Edge) stumm, obwohl er
   eingeschaltet war. Die Klänge laufen jetzt über einen anderen Weg des Browsers.
 - Neu: Zwischen den Lupen der Arbeitsfläche steht der **Zoom in Prozent**; ein Klick darauf setzt

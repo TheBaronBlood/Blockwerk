@@ -70,6 +70,7 @@ const PLATFORMS = [
   'App für Android: enthält außerdem die AndroidX-Bibliotheken und die Kotlin-Laufzeit (Apache License 2.0 – der Text steht oben bei Blockly) sowie die Dateisystem-Bibliothek von Ionic (MIT).',
   'App für iPadOS: enthält außerdem die Dateisystem-Bibliothek von Ionic (MIT).',
   'Der Klang beim Zusammenstecken der Blöcke (snap.mp3) stammt von Pixabay und steht unter der Pixabay-Inhaltslizenz (https://pixabay.com/service/license-summary/), nicht unter der MIT-Lizenz: Er darf als Teil von Blockwerk benutzt und weitergegeben, aber nicht für sich allein angeboten oder verkauft werden.',
+  'Die Klänge für Knöpfe, Start, Stopp, »Hub verbunden« und Fehler (tap.wav, start.wav, stop.wav, connected.wav, error.wav) stammen aus dem Paket »Interface Sounds« von Kenney (https://kenney.nl/assets/interface-sounds) und sind gemeinfrei (Creative Commons Zero, CC0).',
   'LEGO und SPIKE sind Marken der LEGO Gruppe. Blockwerk ist kein Produkt von LEGO oder Pybricks und wird von beiden weder unterstützt noch geprüft.'
 ].join('\n\n');
 

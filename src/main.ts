@@ -73,7 +73,12 @@ const ws = Blockly.inject('blocklyDiv', {
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
-installSounds(ws, () => settings().sounds);
+const playSound = installSounds(ws, () => settings().sounds);
+// Leises Tippen für Knöpfe, Auswahllisten und die Kategorien der Blockliste. Start und Stopp haben eigene Klänge.
+document.addEventListener('click', (e) => {
+  const hit = (e.target as Element).closest?.('button, [role=tab], .blocklyToolboxCategory') as HTMLButtonElement | null;
+  if (hit && !hit.disabled && hit.id !== 'btnRunWs' && hit.id !== 'btnStopWs') playSound('tap');
+}, true);
 // für den Selbsttest des Programms (electron/main.cjs), der Blöcke anlegen und anklicken muss
 (window as unknown as {__blockwerkWorkspace?: Blockly.WorkspaceSvg}).__blockwerkWorkspace = ws;
 function applyTheme(){
@@ -607,6 +612,7 @@ const traceback = new TracebackParser((e) => {
   if (hints) setTimeout(() => termWrite(hints, 't-hint'), 250);
   if (block){ Blockly.common.setSelected(block); ws.centerOnBlock(block.id); }
   toast(block ? 'Fehler im Programm – der Block ist markiert.' : 'Fehler im Programm – siehe Terminal.');
+  playSound('error');
   // … und Blockwerk sieht nach, was wirklich am Hub steckt
   if (noDevice) void recheckPorts(missing);
 });
@@ -675,7 +681,7 @@ async function connectHub(){
         updateHubUi();
       }
     });
-    if (hub){ lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
+    if (hub){ playSound('connected'); lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
     // Im Browser zeigt dessen eigenes Fenster nur eine leere Liste – hier steht, woran es meist liegt
     else if (kind === 'usb' && !tablet && !window.blockwerkDesktop){ terminal.showCode(); termWrite(usbHint(lastFirmware()) + '\n', 't-hint'); }
   } catch (err){ hubFailed(err); }
@@ -1061,8 +1067,8 @@ else window.addEventListener('keydown', (e) => {
 $('btnTermClear').addEventListener('click', () => { termPending = []; termOut.textContent = ''; });
 if (transports().length){
   for (const b of [btnConnect, wsHub]) b.addEventListener('click', () => void connectClicked());
-  btnRunWs.addEventListener('click', runOnHub);
-  btnStopWs.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
+  btnRunWs.addEventListener('click', () => { playSound('start'); void runOnHub(); });
+  btnStopWs.addEventListener('click', () => { playSound('stop'); hub?.stop().catch(hubFailed); });
 } else {
   $('wsConnect').classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
