@@ -368,11 +368,11 @@ export function initHelp(host: HelpHost): Help {
     // die kürzesten Zeilen zuerst – an ihnen sieht man das Wort am deutlichsten
     const samples = [...new Set(usage.blocks.flatMap(b => b.lines))].sort((a, b) => a.length - b.length).slice(0, 3);
     const shown = samples.length ? samples : usage.header;
-    // Steht das Wort hinter einem Punkt und vor einer Klammer, ist es ein Befehl eines Geräts
+    // Steht das Wort hinter einem Punkt und vor einer Klammer, ist es eine Funktion eines Geräts
     const isMethod = wordKind(word) === 'name' && [...shown, context ?? ''].some(l => l.includes(`.${word}(`));
     const head = body.appendChild(el('p', 'help-word'));
     head.appendChild(el('code', undefined, word));
-    head.appendChild(el('span', 'help-kind', isMethod ? 'Befehl von Pybricks' : KIND[wordKind(word)]));
+    head.appendChild(el('span', 'help-kind', isMethod ? 'Funktion von Pybricks' : KIND[wordKind(word)]));
 
     section('Was es bedeutet');
     paragraphs(body, doc.text);

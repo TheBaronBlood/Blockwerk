@@ -57,10 +57,10 @@ export const BLOCK_DOCS: Record<string, BlockDoc> = {
     title:'wenn …',
     text:'Die Blöcke darunter laufen jedes Mal, wenn die Bedingung wahr wird: wenn die Taste gedrückt wird, der Sensor Rot sieht oder etwas näher als 100 mm kommt. In das Feld passt jeder sechseckige Block.\n\nDas Ereignis läuft gleichzeitig mit dem übrigen Programm. Der Roboter kann also fahren und trotzdem auf eine Taste reagieren.\n\nAusgelöst wird nur beim Wechsel von falsch auf wahr. Bleibt die Taste gedrückt, läuft der Stapel einmal – erst nach dem Loslassen kann er wieder starten.',
     fields:[['Bedingung', 'Ein sechseckiger Block aus »Sensoren« oder »Operatoren«.']],
-    python:'Gibt es mehr als ein Ereignis, wird jedes zu einer eigenen Funktion mit `async def`. Die letzte Zeile `run_task(multitask(...))` startet alle gleichzeitig. Vor jedem Befehl, der wartet oder einen Sensor abfragt, steht dann `await` – an diesen Stellen kommen die anderen Programmteile an die Reihe.\n\nDas Ereignis selbst ist eine Endlosschleife: warten, bis die Bedingung wahr ist, den Stapel ausführen, warten, bis sie wieder falsch ist.\n\nGibt es nur ein einziges Ereignis, bleibt das Programm ohne `async` und `await`.',
+    python:'Gibt es mehr als ein Ereignis, wird jedes zu einer eigenen Funktion mit `async def`. Die letzte Zeile `run_task(multitask(...))` startet alle gleichzeitig. Vor jeder Funktion, die wartet oder einen Sensor abfragt, steht dann `await` – an diesen Stellen kommen die anderen Programmteile an die Reihe.\n\nDas Ereignis selbst ist eine Endlosschleife: warten, bis die Bedingung wahr ist, den Stapel ausführen, warten, bis sie wieder falsch ist.\n\nGibt es nur ein einziges Ereignis, bleibt das Programm ohne `async` und `await`.',
     tips:['Zwei Programmteile sollten nicht dieselben Motoren steuern – sie kommen sich sonst in die Quere.',
       'Läuft der Stapel noch, wird ein neues Auslösen übersehen.',
-      'Eine Schleife ohne wartenden Befehl bekommt bei mehreren Ereignissen die Zeile `await wait(0)`. Ohne sie kämen die anderen Programmteile nie dran.',
+      'Eine Schleife ohne wartende Funktion bekommt bei mehreren Ereignissen die Zeile `await wait(0)`. Ohne sie kämen die anderen Programmteile nie dran.',
       'Die mittlere Taste beendet das ganze Programm und eignet sich deshalb nicht als Ereignis.'],
     example:() => ws_([
       at(seq(B('pb_start'), setup(), forever(straight(200), turn(90))), 40, 40),

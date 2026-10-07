@@ -25,7 +25,7 @@ export function initAboutDialog(host: AboutHost): {open(): void} {
     <div class="settings-body">
       <h3>Blockwerk</h3><dl data-list="app"></dl>
       <h3>Danke an Pybricks</h3>
-      <p class="about-thanks">Blockwerk gäbe es nicht ohne <b>Pybricks</b>. Die Firmware auf dem Hub, die Befehle für Motoren und Sensoren und der Python-Übersetzer stammen vom Team von Pybricks – frei verfügbar für alle und ständig weiterentwickelt. Vielen Dank dafür!</p>
+      <p class="about-thanks">Blockwerk gäbe es nicht ohne <b>Pybricks</b>. Die Firmware auf dem Hub, die Klassen und Funktionen für Motoren und Sensoren und der Python-Übersetzer stammen vom Team von Pybricks – frei verfügbar für alle und ständig weiterentwickelt. Vielen Dank dafür!</p>
       <p class="settings-note">Blockwerk ersetzt Pybricks nicht, es baut darauf auf. Wer mag, sieht sich das Projekt an und unterstützt die Arbeit daran.</p>
       <div class="settings-buttons">
         <a class="btn" href="${PYBRICKS_HOME}" target="_blank" rel="noopener">pybricks.com</a>

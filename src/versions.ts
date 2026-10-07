@@ -98,5 +98,5 @@ export function apiNote(latest: Latest): string {
   if (now[0] === checked[0] && now[1] === checked[1])
     return `Blockwerk ist gegen Pybricks ${PYBRICKS_API} geprüft; ${latest.stable.version} gehört zur selben Reihe und passt dazu.`;
   return `Pybricks ${latest.stable.version} ist neuer als der Stand, gegen den Blockwerk geprüft ist (${PYBRICKS_API}). ` +
-    'Die Blöcke laufen meist weiter – neue Befehle kennt Blockwerk aber erst nach einem Update von Blockwerk.';
+    'Die Blöcke laufen meist weiter – neue Funktionen kennt Blockwerk aber erst nach einem Update von Blockwerk.';
 }
