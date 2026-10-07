@@ -40,7 +40,7 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   Ziehen breiter und schmaler machen (Doppelklick: Standard), und ein Knopf oben rechts schaltet
   auf Vollbild. Beides merkt sich Blockwerk.
 - Neu: **Der Code zeigt den ganzen Abschnitt eines Blocks.** Wer eine Schleife oder Bedingung
-  anklickt, sieht im Python-Code die Kopfzeile samt Inhalt umrahmt, nicht mehr nur die erste Zeile.
+  anklickt, sieht im Python-Code die Form des Blocks: Kopfzeile, links ein Steg, unten ein Balken.
   Ein Klick auf einen **Parameter** – eine Zahl, einen Sensor, eine Rechnung – hebt genau diesen
   Ausdruck in seiner Zeile hervor.
 - Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine

@@ -159,12 +159,20 @@ function markSelection(id: string | null, scroll = true){
   const rows = [...codeEl.querySelectorAll<HTMLElement>('.ln')];
   const hits = rows.map((r, i) => r.dataset.id && ids.has(r.dataset.id) ? i : -1).filter(i => i >= 0);
   const from = hits.length ? hits[0] : -1, to = hits.length ? hits[hits.length - 1] : -1;
+  // Hat der Block einen Inhalt (Schleife, Bedingung), sieht die Markierung aus wie der Block selbst: die
+  // Kopfzeile, links ein Steg neben dem Inhalt, darunter ein Balken – der Inhalt bleibt frei.
+  const own = (i: number) => rows[i].dataset.id === stmt?.id;
+  const shaped = !param && hits.some(i => !own(i));
+  const head = from >= 0 ? rows[from].querySelector('.tx')?.textContent ?? '' : '';
+  const depth = head.length - head.trimStart().length;
+  // der Balken unten ist die Leerzeile nach dem Abschnitt (fehlt am Ende des Programms)
+  const foot = shaped && to + 1 < rows.length && !rows[to + 1].querySelector('.tx')?.textContent?.trim() ? to + 1 : -1;
   rows.forEach((r, i) => {
-    // Leerzeilen mitten im Abschnitt gehören zum Rahmen
-    const on = i >= from && i <= to && (!param || hits.includes(i));
-    r.classList.toggle('sel', on);
-    r.classList.toggle('sel-top', on && i === from);
-    r.classList.toggle('sel-end', on && i === to);
+    const inside = i >= from && i <= to;
+    r.classList.toggle('sel', !shaped && inside && hits.includes(i));
+    r.classList.toggle('blk-head', shaped && ((inside && own(i)) || i === foot));
+    r.classList.toggle('blk-arm', shaped && inside && !own(i));
+    if (shaped && (inside || i === foot)) r.style.setProperty('--depth', String(depth)); else r.style.removeProperty('--depth');
   });
   // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
   paramMarks?.delete('bw-param');
