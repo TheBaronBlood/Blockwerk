@@ -63,7 +63,19 @@ export interface GenerateResult {
   usesPad: boolean;
   /** Module aus Erweiterungen, die mit auf den Hub müssen. */
   modules: ProgramModule[];
+  /** Der Ausdruck, den ein Wertblock (Zahl, Sensor, Rechnung) erzeugt hat – zum Hervorheben im Code. */
+  exprs: Record<string, string>;
 }
+
+// Was jeder Wertblock erzeugt, merkt sich der Generator beim Übersetzen. Blockly ruft scrub_ für jeden
+// Block mit seinem Code auf; bei Wertblöcken ist das der Ausdruck, noch ohne Klammern des Elternblocks.
+let exprs: Record<string, string> = {};
+const scrubber = py as unknown as {scrub_(block: Blockly.Block, code: string, thisOnly?: boolean): string};
+const scrub = scrubber.scrub_;
+scrubber.scrub_ = function(block, code, thisOnly){
+  if (block.outputConnection) exprs[block.id] = code;
+  return scrub.call(this, block, code, thisOnly);
+};
 
 const KIND: Record<Kind, {cls: string; pre: string; label: string}> = {
   motor:{cls:'Motor', pre:'motor', label:'Motor'},
@@ -243,6 +255,7 @@ F['math_change'] = (b) => {
 // ---------------------------------------------------------------
 export function generate(ws: Blockly.Workspace): GenerateResult {
   G = newCtx();
+  exprs = {};
   py.init(ws);
   let main = '', starts = 0, orphans = 0;
   const HATS = ['pb_start', 'pb_when', 'pb_when_message'];
@@ -462,9 +475,19 @@ export function generate(ws: Blockly.Workspace): GenerateResult {
     while (j < lines.length && (!lines[j].text.trim() || lines[j].text.trimStart().startsWith('#'))) j++;
     if (j >= lines.length || indentOf(lines[j].text) <= indentOf(t)) lines.splice(i + 1, 0, {text:' '.repeat(indentOf(t)) + py.PASS.trimEnd(), id:lines[i].id});
   }
+  // Nach einem eingerückten Abschnitt (Schleife, Bedingung) bleibt eine Zeile frei – so sieht man, wo er
+  // endet. Maßgeblich ist die Zeile, unter der es weitergeht: Endet sie mit »:«, war es ein Abschnitt
+  // (und kein umbrochener Ausdruck). »else« und »elif« gehören noch dazu.
+  for (let i = H.length + 1; i < lines.length; i++){
+    const t = lines[i].text, prev = lines[i - 1].text;
+    if (!t.trim() || !prev.trim() || indentOf(t) >= indentOf(prev) || /^\s*(else|elif|except|finally)\b/.test(t)) continue;
+    let j = i - 1;
+    while (j > H.length && (!lines[j].text.trim() || indentOf(lines[j].text) > indentOf(t))) j--;
+    if (/:\s*(#.*)?$/.test(lines[j].text) && !lines[j].text.trimStart().startsWith('#')) lines.splice(i++, 0, {text:'', id:null});
+  }
   if (!starts && !hats.length){
     lines.push({text:'', id:null});
     lines.push({text:'# Zieh den Block »wenn Programm startet« aus »Ereignisse« auf die Fläche.', id:null});
   }
-  return {lines, warnings: G.warnings, usesPad: G.pad, usesXbox: G.xbox, modules: parts.flatMap(p => p.modules)};
+  return {lines, warnings: G.warnings, usesPad: G.pad, usesXbox: G.xbox, modules: parts.flatMap(p => p.modules), exprs};
 }

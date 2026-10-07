@@ -108,6 +108,7 @@ roboter.use_gyro(True)
 
 for count in range(4):
     roboter.straight(200)
+
 roboter.turn(90)
 "
 `;
@@ -224,9 +225,11 @@ roboter.use_gyro(True)
 roboter.settings(straight_speed=145, turn_rate=150)
 while not kraft_E.pressed():
     wait(10)
+
 roboter.drive(145, 0)
 while not (abstand_D.distance() < 100):
     wait(10)
+
 roboter.brake()
 "
 `;
@@ -278,6 +281,7 @@ roboter.settings(straight_speed=145, turn_rate=150)
 while True:
     if farbe_C.color() == Color.RED:
         roboter.brake()
+
     if farbe_C.color() == Color.GREEN:
         roboter.drive(145, 0)
 "
@@ -314,6 +318,7 @@ roboter.drive(120, 0)
 while True:
     while not (farbe_C.color() == Color.BLACK):
         wait(10)
+
     Linien = Linien + 1
     hub.display.text(str(Linien))
 "
@@ -350,6 +355,7 @@ roboter.drive(120, 0)
 while True:
     while not (farbe_C.color() == Color.BLACK):
         wait(10)
+
     Linien = Linien + 1
     hub.display.text(str(Linien))
     while not (not farbe_C.color() == Color.BLACK):
@@ -381,6 +387,7 @@ for count in range(4):
     roboter.drive(0, 100)
     while not (abs(hub.imu.heading()) > 88):
         wait(10)
+
     roboter.brake()
 "
 `;
@@ -407,6 +414,7 @@ hub.imu.reset_heading(0)
 roboter.drive(0, 100)
 while not (abs(hub.imu.heading()) > 88):
     wait(10)
+
 roboter.brake()
 "
 `;
@@ -482,6 +490,7 @@ def drehe(Winkel):
     roboter.drive(0, 100)
     while not (abs(hub.imu.heading()) > 88):
         wait(10)
+
     roboter.brake()
 
 roboter.settings(straight_speed=100, turn_rate=100)
@@ -513,6 +522,7 @@ def drehe(Winkel):
     roboter.drive(0, 100)
     while not (abs(hub.imu.heading()) > Winkel - 2):
         wait(10)
+
     roboter.brake()
 
 roboter.settings(straight_speed=100, turn_rate=100)
@@ -548,6 +558,7 @@ def fahre_bis_Linie():
     roboter.drive(120, 0)
     while not (farbe_C.color() == Color.BLACK):
         wait(10)
+
     roboter.brake()
 
 roboter.settings(straight_speed=120, turn_rate=125)
