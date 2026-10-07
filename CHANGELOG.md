@@ -34,6 +34,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
     Vierteldrehung gedreht und dreht einfach das Handy – auch wenn die Anzeige nicht mitdreht.
   - **Erweiterungen sind auf dem Handy gesperrt** (der Editor braucht mehr Platz); auf Tablets und
     am Computer bleibt alles wie bisher.
+- Neu: **Klänge für die Bedienung** – ein Ton für Knöpfe, einer für die Kategorien der Blockliste, je
+  einer für »Hub verbunden« und »Hub getrennt«; dazu ein neuer Klang beim Zusammenstecken. Alles
+  hängt an der Einstellung »Klang«; welcher Anlass welchen Klang bekommt, steht in
+  `public/klang/klang.json`.
 - Geändert: Mit dem Finger wählt erst das Antippen eine Kategorie – nicht mehr schon das Aufsetzen.
   So lassen sich die Kategorien rollen, ohne dass dabei eine aufgeht (auch auf Tablets).
 - Geändert: Die Blockliste liegt über den Rollbalken der Arbeitsfläche; vorher schien der
