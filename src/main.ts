@@ -73,7 +73,14 @@ const ws = Blockly.inject('blocklyDiv', {
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
-installSounds(ws, () => settings().sounds);
+const playSound = installSounds(ws, () => settings().sounds);
+// Knöpfe und Kategorien der Blockliste melden sich als Anlass – ob dazu ein Klang kommt, steht in public/klang/klang.json
+document.addEventListener('click', (e) => {
+  const target = e.target as Element;
+  if (target.closest?.('.blocklyToolboxCategory')){ playSound('kategorie'); return; }
+  const button = target.closest?.('button, [role=tab]') as HTMLButtonElement | null;
+  if (button && !button.disabled && button.id !== 'btnRunWs' && button.id !== 'btnStopWs') playSound('knopf');
+}, true);
 // für den Selbsttest des Programms (electron/main.cjs), der Blöcke anlegen und anklicken muss
 (window as unknown as {__blockwerkWorkspace?: Blockly.WorkspaceSvg}).__blockwerkWorkspace = ws;
 function applyTheme(){
@@ -607,6 +614,7 @@ const traceback = new TracebackParser((e) => {
   if (hints) setTimeout(() => termWrite(hints, 't-hint'), 250);
   if (block){ Blockly.common.setSelected(block); ws.centerOnBlock(block.id); }
   toast(block ? 'Fehler im Programm – der Block ist markiert.' : 'Fehler im Programm – siehe Terminal.');
+  playSound('fehler');
   // … und Blockwerk sieht nach, was wirklich am Hub steckt
   if (noDevice) void recheckPorts(missing);
 });
@@ -669,13 +677,13 @@ async function connectHub(){
       },
       onDisconnect: () => {
         if (!hub) return;
-        hub = null; hubBusy = false; hubNote = null; lastProgram = null; termWrite('— Hub getrennt —\n', 't-info');
+        hub = null; hubBusy = false; hubNote = null; lastProgram = null; termWrite('— Hub getrennt —\n', 't-info'); playSound('getrennt');
         clearInterval(monitorBeat); monitor = monitorSink = null; monitorLoaded = false; hubView.close();
         scanWake?.(); setDetectedPorts(null);
         updateHubUi();
       }
     });
-    if (hub){ lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
+    if (hub){ playSound('verbunden'); lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
     // Im Browser zeigt dessen eigenes Fenster nur eine leere Liste – hier steht, woran es meist liegt
     else if (kind === 'usb' && !tablet && !window.blockwerkDesktop){ terminal.showCode(); termWrite(usbHint(lastFirmware()) + '\n', 't-hint'); }
   } catch (err){ hubFailed(err); }
@@ -1061,8 +1069,8 @@ else window.addEventListener('keydown', (e) => {
 $('btnTermClear').addEventListener('click', () => { termPending = []; termOut.textContent = ''; });
 if (transports().length){
   for (const b of [btnConnect, wsHub]) b.addEventListener('click', () => void connectClicked());
-  btnRunWs.addEventListener('click', runOnHub);
-  btnStopWs.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
+  btnRunWs.addEventListener('click', () => { playSound('start'); void runOnHub(); });
+  btnStopWs.addEventListener('click', () => { playSound('stopp'); hub?.stop().catch(hubFailed); });
 } else {
   $('wsConnect').classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');

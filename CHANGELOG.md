@@ -60,6 +60,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   **Zeile frei**, damit man sieht, wo er endet.
 - Neu: Beim **Löschen eines Blocks** ist ein kurzes Wischen zu hören (abschaltbar mit »Klang« in den
   Einstellungen).
+- Geändert: Welcher Anlass welchen Klang bekommt, steht jetzt in `public/klang/klang.json` –
+  Datei in den Ordner legen, Namen eintragen, neu laden. Vorbereitet sind auch Knöpfe, Kategorien,
+  Start, Stopp, »verbunden«, »getrennt« und Fehler; sie sind von Haus aus stumm.
 - Behoben: Der Klang beim Zusammenstecken blieb in manchen Browsern (Edge) stumm, obwohl er
   eingeschaltet war. Die Klänge laufen jetzt über einen anderen Weg des Browsers.
 - Neu: Zwischen den Lupen der Arbeitsfläche steht der **Zoom in Prozent**; ein Klick darauf setzt

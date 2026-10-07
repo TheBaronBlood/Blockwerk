@@ -1,0 +1,14 @@
+{
+  "_hinweis": "Welcher Anlass welchen Klang bekommt. 'datei' ist eine Datei in diesem Ordner (mp3, wav oder ogg), 'lautstaerke' eine Zahl von 0 bis 1. Ein leerer Dateiname bedeutet: kein Ton. Nach dem Ändern die Seite neu laden.",
+
+  "zusammenstecken": { "datei": "snap.mp3", "lautstaerke": 0.25 },
+  "loeschen":        { "datei": "wosh.wav", "lautstaerke": 0.18 },
+
+  "knopf":           { "datei": "", "lautstaerke": 0.2 },
+  "kategorie":       { "datei": "", "lautstaerke": 0.2 },
+  "start":           { "datei": "", "lautstaerke": 0.2 },
+  "stopp":           { "datei": "", "lautstaerke": 0.2 },
+  "verbunden":       { "datei": "", "lautstaerke": 0.2 },
+  "getrennt":        { "datei": "", "lautstaerke": 0.2 },
+  "fehler":          { "datei": "", "lautstaerke": 0.2 }
+}
