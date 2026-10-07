@@ -61,16 +61,17 @@ select.btn{padding-right:28px}
 /* Hauptbereich */
 main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{position:relative;flex:1 1 auto;min-width:0}
-/* Rechts bleibt ein schmaler Streifen für den Griff des Python-Bereichs frei – so liegt der Griff nicht
-   auf dem Rollbalken der Arbeitsfläche, der jetzt links daneben seine eigene Spur hat. */
-.ws-wrap{--rail:24px;background:var(--bg)}
-#blocklyDiv{position:absolute;inset:0 var(--rail) 0 0}
-.ws-tools{position:absolute;right:calc(var(--rail) + 172px);bottom:38px;display:flex;gap:8px;z-index:5}
+/* Ganz rechts hat der Rollbalken der Arbeitsfläche seine eigene Spur (--lane); der Griff des
+   Python-Bereichs sitzt links davon, damit keiner den anderen verdeckt. */
+.ws-wrap{--lane:11px;--grip:24px}
+#blocklyDiv{position:absolute;inset:0}
+.blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
+.ws-tools{position:absolute;right:calc(var(--lane) + var(--grip) + 172px);bottom:38px;display:flex;gap:8px;z-index:5}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
 
 /* Start und Stopp: nur hier, unten rechts. Der Controller-Knopf sitzt über dem Startknopf. */
-.ws-run{position:absolute;right:calc(var(--rail) + 24px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
+.ws-run{position:absolute;right:calc(var(--lane) + var(--grip) + 24px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
 .ws-run button{width:64px;height:64px;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
 .ws-run button svg{width:34px;height:34px;fill:currentColor}
 .ws-run button.play{background:#00B94D}
@@ -84,7 +85,7 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-run button.busy{animation:run-busy 1s ease-in-out infinite}
 @keyframes run-busy{50%{opacity:.55}}
 /* Verbinden, oben rechts: graue Wellen ohne Hub, grüne mit Hub. Daneben steht, was der Hub gerade tut. */
-.ws-connect{position:absolute;right:calc(var(--rail) + 24px);top:16px;display:flex;align-items:center;gap:10px;z-index:5}
+.ws-connect{position:absolute;right:calc(var(--lane) + var(--grip) + 24px);top:16px;display:flex;align-items:center;gap:10px;z-index:5}
 .connect-btn{width:64px;height:64px;flex:0 0 auto;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;background:#FFBB00;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
 .connect-btn svg{width:46px;height:46px}
 .connect-btn .waves{stroke:#A5A9B1}
@@ -100,7 +101,7 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-hub{white-space:nowrap;font-size:13px;padding:4px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-hub.on{color:#0EAA7E;border-color:#0EAA7E}
 /* Griff am rechten Rand, auf halber Höhe: klappt den Python-Bereich ein und aus */
-.code-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:6;width:var(--rail);height:132px;padding:0;border:0;border-radius:14px 0 0 14px;background:var(--code-bg);color:#fff;cursor:pointer;
+.code-toggle{position:absolute;right:var(--lane);top:50%;transform:translateY(-50%);z-index:6;width:var(--grip);height:132px;padding:0;border:0;border-radius:14px 0 0 14px;background:var(--code-bg);color:#fff;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:-2px 0 8px rgba(0,0,0,.2)}
 .code-toggle svg{width:22px;height:22px;flex:0 0 auto}
 .code-toggle span{display:none;writing-mode:vertical-rl;font-size:13px;font-weight:700;letter-spacing:.05em}
@@ -120,6 +121,12 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .code-head .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
 .code-head .btn:hover{border-color:#fff}
 .code-head a.btn{text-decoration:none}
+/* Schrift im Code kleiner und größer */
+.code-zoom{display:flex}
+.code-zoom .btn{min-width:34px;padding-left:0;padding-right:0;font-size:17px;line-height:1;font-weight:700}
+.code-zoom .btn:first-child{border-radius:8px 0 0 8px;border-right-width:0}
+.code-zoom .btn:last-child{border-radius:0 8px 8px 0}
+.code-zoom .btn:disabled{opacity:.4;cursor:default;border-color:rgba(255,255,255,.22)}
 .warnings{margin:10px 14px 0;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:13.5px;line-height:1.4}
 .warnings ul{margin:0;padding-left:18px}
 .code-scroll{flex:1 1 auto;overflow:auto;padding:10px 0 16px}
@@ -580,7 +587,7 @@ details.run a{color:#7CC8FF}
   main[data-view="blocks"] aside.code{display:none}
   main[data-view="code"] .ws-wrap{visibility:hidden}
   .split,.code-toggle{display:none}
-  .ws-wrap{--rail:0px}
+  .ws-wrap{--grip:0px}
   main.code-closed aside.code{display:flex}
   .ws-tools{right:14px;bottom:106px}   /* über den runden Knöpfen */
   .ws-run{right:14px;bottom:20px}
@@ -660,4 +667,4 @@ html.tablet .code-lines,html.tablet .term-out,html.tablet .help,html.tablet .abo
 html.tablet input,html.tablet textarea{-webkit-user-select:text;user-select:text}
 html.tablet .ln .no{-webkit-user-select:none;user-select:none}
 /* Tablets: der Griff des Python-Bereichs breiter, damit der Finger ihn trifft */
-@media (pointer:coarse) and (min-width:821px){.ws-wrap{--rail:32px}}
+@media (pointer:coarse) and (min-width:821px){.ws-wrap{--grip:32px}}

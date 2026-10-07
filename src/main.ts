@@ -226,6 +226,11 @@ async function copyCode(){
   }
 }
 $('btnCopy').addEventListener('click', copyCode);
+// Schrift im Code kleiner und größer: dieselbe Einstellung wie »Schriftgröße im Code« (10 bis 24 px)
+const codeSmaller = $<HTMLButtonElement>('codeSmaller'), codeBigger = $<HTMLButtonElement>('codeBigger');
+const stepCodeSize = (by: number) => updateSettings({codeSize:Math.max(10, Math.min(24, settings().codeSize + by))});
+codeSmaller.addEventListener('click', () => stepCodeSize(-1));
+codeBigger.addEventListener('click', () => stepCodeSize(1));
 
 // Projekt öffnen
 const fileInput = $<HTMLInputElement>('fileInput');
@@ -359,6 +364,7 @@ const aboutDialog = initAboutDialog({hub:() => hub, toast});
 $('btnAbout').addEventListener('click', () => aboutDialog.open());
 onSettings((s) => {
   applyTheme();
+  codeSmaller.disabled = s.codeSize <= 10; codeBigger.disabled = s.codeSize >= 24;
   $('btnExt').classList.toggle('hidden', !s.extensions);
   if (!s.autoPorts) setDetectedPorts(null);
   // Entwickler: Protokoll im Terminal, und in der Konsole ein Zugang zu den Innereien
