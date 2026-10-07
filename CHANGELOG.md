@@ -15,6 +15,12 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.27.1 – 7. Oktober 2026
+
+- Behoben: Die Zoom-Anzeige an der Arbeitsfläche änderte ihre Breite, wenn aus zwei Ziffern drei
+  wurden; Plus und Minus der Lupen saßen nicht in der Mitte. Die Anzeige ist jetzt fest breit, die
+  Lupen sind gezeichnet statt geschrieben.
+
 ## 0.27.0 – 7. Oktober 2026
 
 - Neu: **Die Oberfläche ist aufgeräumt** – nach einem Entwurf des Autors. Start und Stopp gibt
