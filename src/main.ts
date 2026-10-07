@@ -6,6 +6,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import './style.css';
 import './blocks';
+import './category';
 import { BLOCKLY_MEDIA, THEME_DARK, THEME_LIGHT } from './theme';
 import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
@@ -398,9 +399,7 @@ Blockly.ContextMenuRegistry.registry.register({
 // ---------------------------------------------------------------
 // Hub: verbinden, Programm laden, Terminal
 // ---------------------------------------------------------------
-const btnConnect = $<HTMLButtonElement>('btnConnect'), btnRun = $<HTMLButtonElement>('btnRun'), btnStop = $<HTMLButtonElement>('btnStop');
-const hubState = $('hubState'), termOut = $('termOut');
-const RUN_LABEL = '▶ Starten';
+const btnConnect = $<HTMLButtonElement>('btnConnect'), termOut = $('termOut');
 const connectDialog = initConnectDialog({ownBleList:isTablet()});
 // Was hier geht: Bluetooth, USB-Kabel, beides oder nichts davon. In der App auf dem Tablet
 // laufen beide über die nativen Wege des Geräts (am iPad gibt es kein Kabel); die Module dafür
@@ -483,23 +482,31 @@ const traceback = new TracebackParser((e) => {
   if (noDevice) void recheckPorts(missing);
 });
 
-// dieselben Knöpfe noch einmal an der Arbeitsfläche
+// Verbinden oben rechts an der Arbeitsfläche, Start und Stopp unten rechts
 const btnRunWs = $<HTMLButtonElement>('btnRunWs'), btnStopWs = $<HTMLButtonElement>('btnStopWs'), wsHub = $('wsHub');
-const btnHubView = $<HTMLButtonElement>('btnHubView');
+/** Zwischenstand, der die Anzeige neben dem Verbinden-Knopf kurz ersetzt (»verbinde …«, »lade … 40 %«). */
+let hubNote: string | null = null;
+function setHubNote(note: string | null){ hubNote = note; updateHubUi(); }
 function updateHubUi(){
-  btnConnect.textContent = hub ? 'Trennen' : 'Hub verbinden';
-  btnConnect.disabled = btnHubView.disabled = hubBusy;
-  btnRun.disabled = btnRunWs.disabled = hubBusy;
-  btnStop.disabled = btnStopWs.disabled = !hub || hubBusy || !hub.isRunning;
+  // der Knopf zeigt, ob ein Hub verbunden ist: ohne Hub verbindet er, mit Hub öffnet er die Hub-Ansicht
+  btnConnect.classList.toggle('on', !!hub);
+  btnConnect.classList.toggle('busy', hubBusy && (!hub || scanning));
+  btnConnect.disabled = hubBusy;
+  btnConnect.title = hub ? `${hub.name} – Hub-Ansicht öffnen, dort lässt sich der Hub auch trennen` : 'Hub verbinden';
+  btnConnect.setAttribute('aria-label', hub ? 'Hub-Ansicht öffnen' : 'Hub verbinden');
+  btnRunWs.disabled = hubBusy;
+  btnStopWs.disabled = !hub || hubBusy || !hub.isRunning;
   btnRunWs.classList.toggle('busy', hubBusy);
-  hubState.classList.toggle('on', !!hub); wsHub.classList.toggle('on', !!hub);
-  hubState.textContent = !hub ? 'kein Hub' : scanning ? `${hub.name} – sieht nach, was angeschlossen ist …` : monitor ? `${hub.name} – Hub-Ansicht`
+  wsHub.classList.toggle('on', !!hub);
+  // ohne Hub sagt der Knopf schon alles – der Text erscheint erst, wenn es etwas zu melden gibt
+  wsHub.classList.toggle('hidden', !hub && !hubNote);
+  const hubText = !hub ? 'kein Hub' : scanning ? `${hub.name} – sieht nach, was angeschlossen ist …` : monitor ? `${hub.name} – Hub-Ansicht`
     : hub.isRunning ? `${hub.name} – läuft${remoteState ? ' · ' + remoteState : ''}` : `${hub.name} – bereit`;
-  // an der Arbeitsfläche ist wenig Platz: Dort steht während der Suche nur der Stand des Controllers
-  wsHub.textContent = hub?.isRunning && remoteState ? remoteState : hubState.textContent;
-  hubState.title = wsHub.title = `${hubState.textContent} – anklicken öffnet die Hub-Ansicht`;
+  // neben dem Knopf ist wenig Platz: Dort steht während der Suche nur der Stand des Controllers
+  wsHub.textContent = hubNote ?? (hub?.isRunning && remoteState ? remoteState : hubText);
+  wsHub.title = hubText;
   // die Controller-Ansicht zeigt denselben Stand (beim ersten Aufruf gibt es sie noch nicht)
-  padViewRef?.update({hubText:hubState.textContent!, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, gamepad:deviceGamepad});
+  padViewRef?.update({hubText:hubNote ?? hubText, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, gamepad:deviceGamepad});
 }
 function hubFailed(err: unknown){
   console.error(err);
@@ -513,7 +520,7 @@ async function connectHub(){
   const available = transports();
   const kind = available.length > 1 ? await connectDialog.choose(available) : available[0];
   if (!kind) return false;
-  hubBusy = true; updateHubUi(); hubState.textContent = wsHub.textContent = 'verbinde …';
+  hubBusy = true; setHubNote('verbinde …');
   connectDialog.searching(kind);
   try {
     hub = await CONNECT[kind]({
@@ -533,7 +540,7 @@ async function connectHub(){
       },
       onDisconnect: () => {
         if (!hub) return;
-        hub = null; hubBusy = false; lastProgram = null; btnRun.textContent = RUN_LABEL; termWrite('— Hub getrennt —\n', 't-info');
+        hub = null; hubBusy = false; hubNote = null; lastProgram = null; termWrite('— Hub getrennt —\n', 't-info');
         clearInterval(monitorBeat); monitor = monitorSink = null; monitorLoaded = false; hubView.close();
         scanWake?.(); setDetectedPorts(null);
         updateHubUi();
@@ -544,7 +551,7 @@ async function connectHub(){
     else if (kind === 'usb' && !tablet && !window.blockwerkDesktop){ terminal.showCode(); termWrite(usbHint(lastFirmware()) + '\n', 't-hint'); }
   } catch (err){ hubFailed(err); }
   connectDialog.close();
-  hubBusy = false; updateHubUi();
+  hubBusy = false; setHubNote(null);
   return !!hub;
 }
 /** Entwickleroption (Konsole: `blockwerk.runPython('print(1)')`): eigenes Python auf dem verbundenen Hub ausführen. */
@@ -558,6 +565,29 @@ async function runPython(code: string){
   await hub.run(payload, () => {});
   lastProgram = payload; lastRun = {lines:[], usesPad:false};
 }
+/**
+ * Übersetzt ein Programm samt den Modulen aus Erweiterungen. Liefert null, wenn es sich nicht übersetzen
+ * lässt – die Fehler stehen dann im Terminal, außer mit `quiet`.
+ */
+async function buildProgram(code: string, modules: GenerateResult['modules'], quiet = false){
+  const { compileProgram } = await import('./hub/compile');
+  const res = await compileProgram(code, wasmUrl);
+  if (!res.ok){
+    if (!quiet){ termWrite(res.errors.join('\n') + '\n', 't-err'); toast('Das Programm lässt sich nicht übersetzen – siehe Terminal.'); }
+    return null;
+  }
+  // Module aus Erweiterungen kommen hinter das Programm; der Hub startet das erste
+  const compiled = [{name:MAIN_MODULE, mpy:res.mpy}];
+  for (const m of modules){
+    const mod = await compileProgram(m.source, wasmUrl, m.name + '.py');
+    if (!mod.ok){
+      if (!quiet){ termWrite(`Modul ${m.name} (aus einer Erweiterung):\n${mod.errors.join('\n')}\n`, 't-err'); toast('Eine Erweiterung lässt sich nicht übersetzen – siehe Terminal.'); }
+      return null;
+    }
+    compiled.push({name:m.name, mpy:mod.mpy});
+  }
+  return compiled;
+}
 async function runOnHub(){
   if (hubView.isOpen()) return;   // erst die Hub-Ansicht schließen – sie belegt den Hub
   if (!hub && !(await connectHub())) return;
@@ -565,25 +595,9 @@ async function runOnHub(){
   const code = currentCode, lines = currentLines, usesPad = currentUsesPad, usesXbox = currentUsesXbox, modules = currentModules;
   hubBusy = true; updateHubUi();
   try {
-    btnRun.textContent = 'Übersetze …';
-    const { compileProgram } = await import('./hub/compile');
-    const res = await compileProgram(code, wasmUrl);
-    if (!res.ok){
-      termWrite(res.errors.join('\n') + '\n', 't-err');
-      toast('Das Programm lässt sich nicht übersetzen – siehe Terminal.');
-      return;
-    }
-    // Module aus Erweiterungen kommen hinter das Programm; der Hub startet das erste
-    const compiled = [{name:MAIN_MODULE, mpy:res.mpy}];
-    for (const m of modules){
-      const mod = await compileProgram(m.source, wasmUrl, m.name + '.py');
-      if (!mod.ok){
-        termWrite(`Modul ${m.name} (aus einer Erweiterung):\n${mod.errors.join('\n')}\n`, 't-err');
-        toast('Eine Erweiterung lässt sich nicht übersetzen – siehe Terminal.');
-        return;
-      }
-      compiled.push({name:m.name, mpy:mod.mpy});
-    }
+    setHubNote('übersetze …');
+    const compiled = await buildProgram(code, modules);
+    if (!compiled) return;
     // Das Übersetzen dauert einen Moment – inzwischen kann der Hub getrennt worden sein
     if (!hub) return;
     runLines = lines; runUsesPad = usesPad; traceback.reset();
@@ -595,17 +609,19 @@ async function runOnHub(){
       termWrite('→ ' + hint + '\n', 't-hint'); toast(hint);
     }
     const payload = encodeModules(compiled);
-    await hub.run(payload, (f) => { btnRun.textContent = `Lade … ${Math.round(f * 100)} %`; });
+    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)} %`));
     lastProgram = payload; lastRun = {lines, usesPad};
     if (usesPad){ showPad(true); pad.reset(); }
   } catch (err){ hubFailed(err); }
-  finally { hubBusy = false; btnRun.textContent = RUN_LABEL; updateHubUi(); }
+  finally { hubBusy = false; setHubNote(null); }
 }
 
 // ---------------------------------------------------------------
 // Hub-Ansicht: was an den Anschlüssen hängt, Messwerte, Akku (hub/monitor.ts, hub/monitorView.ts).
 // Dafür läuft auf dem Hub ein kleines Anzeige-Programm; es ersetzt dort das zuletzt geladene.
-// Beim Schließen lädt Blockwerk deshalb wieder auf den Hub, was es zuletzt selbst geladen hatte.
+// Beim Schließen lädt Blockwerk deshalb wieder auf den Hub, was es zuletzt selbst geladen hatte –
+// und hat es noch nichts geladen, das Programm der Arbeitsfläche. Das Anzeige-Programm bleibt
+// also nie als letztes auf dem Hub liegen, auch nicht nach »Hub trennen« in der Hub-Ansicht.
 // ---------------------------------------------------------------
 let monitor: MonitorFeed | null = null;         // gesetzt, solange das Anzeige-Programm auf dem Hub läuft
 let monitorSink: MonitorFeed | null = null;     // liest kurz nach dessen Ende noch mit: letzte Zeilen gehören nicht ins Terminal
@@ -614,18 +630,19 @@ const strayLines = new StrayFilter();
 let monitorPayload: Uint8Array | null = null;   // das Anzeige-Programm, übersetzt
 let monitorLoaded = false;                      // auf dem Hub liegt gerade das Anzeige-Programm
 let monitorClosePending = false;                // geschlossen, während noch geladen wurde
+let disconnecting = false;                      // »Hub trennen« läuft: Das Ende des Anzeige-Programms ist gewollt
 let scanning = false;                           // das Anzeige-Programm läuft gerade nur, um die Anschlüsse zu erkennen
 let scanWake: (() => void) | null = null;       // beendet das Warten der Erkennung: alles gesehen, Programm zu Ende, Hub getrennt
 /** Was Blockwerk zuletzt als Programm auf diesen Hub geladen hat – samt dem, was Blockwerk dazu wissen muss. */
 let lastProgram: Uint8Array | null = null;
 let lastRun: {lines: CodeLine[]; usesPad: boolean} = {lines:[], usesPad:false};
-const hubView = initHubView({closed:() => void closeHubView(), restart:() => void startMonitor()});
+const hubView = initHubView({closed:() => void closeHubView(), restart:() => void startMonitor(), disconnect:() => void disconnectHub()});
 
 /** Das Anzeige-Programm hat aufgehört – am Hub gestoppt oder weil keine Lebenszeichen mehr ankamen. */
 function monitorEnded(){
   clearInterval(monitorBeat); retireMonitor();
   scanWake?.();
-  if (hubView.isOpen()) hubView.status('ended');
+  if (hubView.isOpen() && !disconnecting) hubView.status('ended');
 }
 /** Das Anzeige-Programm läuft nicht mehr; was der Hub in den nächsten Sekunden noch von ihm schickt, wird verschluckt. */
 function retireMonitor(){
@@ -680,13 +697,47 @@ async function startMonitor(){
     if (monitorClosePending){ monitorClosePending = false; void closeHubView(); }
   }
 }
-async function openHubView(){
+/** `stopFirst`: Ein laufendes Programm wird angehalten (das hat der Nutzer dann schon bestätigt). */
+async function openHubView(stopFirst = false){
   if (hubView.isOpen() || hubBusy) return;
   if (!hub && !(await connectHub())) return;
   if (!hub) return;
-  if (hub.isRunning){ toast('Auf dem Hub läuft gerade ein Programm. Stoppe es – dann zeigt die Hub-Ansicht, was an den Anschlüssen hängt.'); return; }
+  if (hub.isRunning && !stopFirst){ toast('Auf dem Hub läuft gerade ein Programm. Stoppe es – dann zeigt die Hub-Ansicht, was an den Anschlüssen hängt.'); return; }
   hubView.open(hub.name);
   await startMonitor();
+}
+/** Der Verbinden-Knopf: ohne Hub verbinden, mit Hub die Hub-Ansicht öffnen – dort steht auch »Hub trennen«. */
+async function connectClicked(){
+  if (hubBusy) return;
+  // (die Anschlüsse nur hier erkennen: Wer mit dem Startknopf verbindet, will gleich weiter)
+  if (!hub){ if (await connectHub()) void scanPorts(); return; }
+  if (!hub.isRunning){ void openHubView(); return; }
+  // Die Hub-Ansicht braucht den Hub für sich. Läuft ein Programm, entscheidet der Nutzer, ob es anhalten soll.
+  const answer = await ask({
+    title:'Auf dem Hub läuft ein Programm',
+    text:['Die Hub-Ansicht zeigt, was an den Anschlüssen hängt, die Messwerte und den Akku. Dafür muss das laufende Programm anhalten.'],
+    buttons:[{id:'disconnect', label:'Hub trennen'}, {id:'view', label:'Anhalten und Hub-Ansicht öffnen', primary:true}]
+  });
+  if (answer === 'disconnect') void disconnectHub();
+  else if (answer === 'view') void openHubView(true);
+}
+/**
+ * Trennt den Hub. Liegt dort noch das Anzeige-Programm (Hub-Ansicht, Erkennung der Anschlüsse), kommt
+ * vorher das eigene Programm zurück – sonst startete die Taste am Hub später die Anzeige.
+ */
+async function disconnectHub(){
+  const connected = hub;
+  if (!connected) return;
+  // lädt gerade etwas, erst das Ende abwarten
+  for (let i = 0; i < 100 && hubBusy && hub === connected; i++) await sleep(50);
+  if (hub !== connected) return;
+  hubBusy = disconnecting = true; updateHubUi();
+  if (hubView.isOpen()) hubView.status('loading', 'Lege dein Programm zurück auf den Hub und trenne …');
+  try { if (monitor || monitorLoaded){ clearInterval(monitorBeat); await endMonitor(connected); } }
+  catch (err){ console.warn('Programm nicht zurückgelegt:', err); }
+  finally { retireMonitor(); hubBusy = disconnecting = false; monitorClosePending = false; setHubNote(null); }
+  // (schließt über onDisconnect auch die Hub-Ansicht)
+  if (hub === connected) connected.disconnect();
 }
 /** Nach dem Schließen: Anzeige-Programm beenden und das zuletzt geladene Programm wieder auf den Hub legen. */
 async function closeHubView(){
@@ -706,13 +757,23 @@ async function endMonitor(connected: Hub){
   retireMonitor();
   // inzwischen getrennt (ausgeschaltet, Kabel gezogen): Dann gibt es nichts zurückzuladen
   if (hub !== connected) return;
-  if (monitorLoaded && lastProgram){
-    hubState.textContent = wsHub.textContent = 'lade dein Programm zurück …';
-    await connected.load(lastProgram);
-    // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
-    runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
-  }
-  monitorLoaded = false;
+  if (!monitorLoaded) return;
+  setHubNote('lade dein Programm zurück …');
+  try {
+    if (!lastProgram){
+      // Blockwerk hat auf diesen Hub noch nichts geladen: dann das Programm der Arbeitsfläche, sofern es sich übersetzen lässt
+      const lines = currentLines, usesPad = currentUsesPad;
+      const compiled = await buildProgram(currentCode, currentModules, true).catch(() => null);
+      if (hub !== connected) return;
+      if (compiled){ lastProgram = encodeModules(compiled); lastRun = {lines, usesPad}; }
+    }
+    if (lastProgram){
+      await connected.load(lastProgram);
+      // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
+      runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
+      monitorLoaded = false;
+    }
+  } finally { hubNote = null; }
 }
 
 // ---------------------------------------------------------------
@@ -807,10 +868,9 @@ async function recheckPorts(missing: DeviceAt | null){
   if (missing) termWrite('→ ' + missingDeviceHint(missing, state) + '\n', 't-hint');
   termWrite(`— ${describePorts(foundPorts(state))} —\n`, 't-info');
 }
-for (const opener of [btnHubView, hubState, wsHub]) opener.addEventListener('click', () => void openHubView());
 
 // Steuerfeld: schickt Joystick und Tasten an das laufende Programm
-const padEl = $('pad'), btnPad = $('btnPad');
+const padEl = $('pad'), btnPadWs = $('btnPadWs');
 const pad = createPad((byte) => hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve());
 // der schmale Streifen unter dem Code: für Maus und Tastatur
 pad.bindStick(padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-knob')!);
@@ -818,17 +878,21 @@ for (const b of PAD_BUTTONS) pad.bindButton(padEl.querySelector<HTMLElement>(`[d
 pad.bindKeys(padEl);
 padEl.querySelector('.pad-stick')!.addEventListener('pointerdown', () => padEl.focus());
 // die Controller-Ansicht: bildschirmfüllend, zum Anordnen – auf Geräten mit Fingerbedienung der übliche Weg
-const padView = padViewRef = initPadView(pad, {run:() => btnRun.click(), stop:() => btnStop.click()});
+const padView = padViewRef = initPadView(pad, {run:() => btnRunWs.click(), stop:() => btnStopWs.click()});
 const fingers = () => isTablet() || matchMedia('(pointer:coarse)').matches;
 function showPad(on: boolean){
   if (on && fingers()){ padView.open(); return; }
   padEl.classList.toggle('hidden', !on);
-  btnPad.setAttribute('aria-pressed', String(on));
+  btnPadWs.setAttribute('aria-pressed', String(on));
   if (on) pad.redraw();
 }
-btnPad.addEventListener('click', () => showPad(padEl.classList.contains('hidden')));
 $('btnPadBig').addEventListener('click', () => padView.open());
-$('btnPadWs').addEventListener('click', () => padView.open());
+// Der Controller-Knopf klappt den Streifen unter dem Code auf und zu. Ist der Python-Bereich nicht
+// zu sehen (eingeklappt, schmaler Bildschirm) oder wird mit dem Finger bedient, öffnet er die große Ansicht.
+btnPadWs.addEventListener('click', () => {
+  if (fingers() || mainEl.classList.contains('code-closed') || window.matchMedia('(max-width: 820px)').matches) padView.open();
+  else showPad(padEl.classList.contains('hidden'));
+});
 // Ein Gamepad, das mit diesem Gerät verbunden ist, bedient das Steuerfeld. Der Browser zeigt es
 // erst, nachdem daran eine Taste gedrückt wurde.
 const gamepads = browserGamepads();
@@ -847,9 +911,14 @@ if (gamepads) watchGamepad({
 syncPadButton(); updateHubUi();
 
 // Menü des Programms und Tastenkürzel: lösen dieselben Knöpfe aus wie ein Klick
-const MENU: Record<string, string> = {new:'btnNew', open:'btnOpen', save:'btnSave', settings:'btnSettings', help:'btnHelp', about:'btnAbout',
-  extensions:'btnExt', connect:'btnConnect', run:'btnRun', stop:'btnStop', hubview:'btnHubView', code:'codeToggle', copy:'btnCopy'};
-const menuAction = (action: string) => { const el = MENU[action] && $<HTMLButtonElement>(MENU[action]); if (el && !el.disabled) el.click(); };
+const MENU: Record<string, string | (() => void)> = {new:'btnNew', open:'btnOpen', save:'btnSave', settings:'btnSettings', help:'btnHelp', about:'btnAbout',
+  extensions:'btnExt', connect:'btnConnect', run:'btnRunWs', stop:'btnStopWs', code:'codeToggle', copy:'btnCopy',
+  hubview:() => void openHubView(), disconnect:() => void disconnectHub()};
+const menuAction = (action: string) => {
+  const target = MENU[action];
+  if (typeof target === 'function'){ target(); return; }
+  const el = target && $<HTMLButtonElement>(target); if (el && !el.disabled) el.click();
+};
 const desktopMenu = (window.blockwerkDesktop as {onMenu?(cb: (action: string) => void): void} | undefined)?.onMenu;
 if (desktopMenu) desktopMenu(menuAction);
 else window.addEventListener('keydown', (e) => {
@@ -862,12 +931,11 @@ else window.addEventListener('keydown', (e) => {
 // das Terminal gibt es auch ohne Weg zum Hub – der SPIKE-Import berichtet dort
 $('btnTermClear').addEventListener('click', () => { termPending = []; termOut.textContent = ''; });
 if (transports().length){
-  // (nur hier: Wer mit »Starten« oder der Hub-Ansicht verbindet, will gleich weiter)
-  btnConnect.addEventListener('click', () => { if (hub) hub.disconnect(); else void connectHub().then((ok) => { if (ok) void scanPorts(); }); });
-  for (const b of [btnRun, btnRunWs]) b.addEventListener('click', runOnHub);
-  for (const b of [btnStop, btnStopWs]) b.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
+  for (const b of [btnConnect, wsHub]) b.addEventListener('click', () => void connectClicked());
+  btnRunWs.addEventListener('click', runOnHub);
+  btnStopWs.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
 } else {
-  $('hubBar').classList.add('hidden'); $('wsRun').classList.add('hidden');
+  $('wsConnect').classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
 }
 

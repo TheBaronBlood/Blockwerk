@@ -11,6 +11,8 @@ export interface HubViewHost {
   closed(): void;
   /** »Wieder anzeigen« nach einem Ende am Hub. */
   restart(): void;
+  /** »Hub trennen«: Programm zurücklegen, dann trennen – das Fenster schließt sich danach von selbst. */
+  disconnect(): void;
 }
 export type HubViewStatus = 'loading' | 'live' | 'stale' | 'ended' | 'error';
 export interface HubView {
@@ -77,7 +79,7 @@ export function initHubView(host: HubViewHost): HubView {
   const dialog = document.createElement('dialog');
   dialog.className = 'hubv';
   dialog.innerHTML = `
-    <div class="connect-head"><h2>Hub-Ansicht</h2><button type="button" class="btn" data-act="close" aria-label="Schließen">✕</button></div>
+    <div class="connect-head"><h2>Hub-Ansicht</h2><button type="button" class="btn hubv-disconnect" data-act="disconnect" title="Legt dein Programm zurück auf den Hub und trennt die Verbindung">Hub trennen</button><button type="button" class="btn" data-act="close" aria-label="Schließen">✕</button></div>
     <div class="hubv-body">
       <p class="hubv-status" data-status role="status"><span></span><button type="button" class="btn hidden" data-act="restart">Wieder anzeigen</button></p>
       <div class="hubv-grid">
@@ -217,6 +219,7 @@ export function initHubView(host: HubViewHost): HubView {
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     if (act === 'close' || e.target === dialog) close();
     else if (act === 'restart') host.restart();
+    else if (act === 'disconnect') host.disconnect();
   });
   // jedes Schließen – Knopf, Esc, Klick daneben – beendet das Anzeige-Programm
   dialog.addEventListener('close', () => host.closed());
