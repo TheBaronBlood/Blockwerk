@@ -776,7 +776,7 @@ html[data-layout^="phone"].pad-open .toast{top:auto;bottom:calc(env(safe-area-in
 /* --- Handy hochkant --- */
 /* Kopfleiste in zwei Zeilen: oben Name, Zahnrad und Hilfe, darunter Speichern, Öffnen, Neu und die Beispiele.
    Rechts bleibt über beide Zeilen Platz für den Verbinden-Knopf. */
-html[data-layout="phone-portrait"] .bar{flex-wrap:wrap;align-items:center;gap:4px 3px;padding:8px 78px 6px 10px}
+html[data-layout="phone-portrait"] .bar{flex-wrap:wrap;align-items:center;gap:5px 4px;padding:8px 78px 7px 10px}
 html[data-layout="phone-portrait"] .actions{display:contents}
 html[data-layout="phone-portrait"] .brand{order:1;flex:1 1 0;min-width:0;gap:8px}
 html[data-layout="phone-portrait"] .brand-mark{width:32px;height:32px}
@@ -791,11 +791,14 @@ html[data-layout="phone-portrait"] #btnOpen{order:6}
 html[data-layout="phone-portrait"] #btnNew{order:7}
 html[data-layout="phone-portrait"] #btnSave,
 html[data-layout="phone-portrait"] #btnOpen,
-html[data-layout="phone-portrait"] #btnNew{border-color:transparent;background:none;padding:4px 5px;gap:5px;font-size:13.5px;min-height:36px}
-html[data-layout="phone-portrait"] #btnNew{min-width:34px;justify-content:center}
+html[data-layout="phone-portrait"] #btnNew{padding:4px 7px;gap:5px;font-size:13px;min-height:36px}
+html[data-layout="phone-portrait"] #btnSave .ico,
+html[data-layout="phone-portrait"] #btnOpen .ico,
+html[data-layout="phone-portrait"] #btnNew .ico{width:20px;height:20px}
+html[data-layout="phone-portrait"] #btnNew{min-width:36px;justify-content:center}
 /* die Beispiele als Zeichen (Glühbirne); die Liste selbst zeigt das Gerät */
-html[data-layout="phone-portrait"] .bar select.examples{order:8;flex:0 0 34px;width:34px;min-width:0;max-width:34px;min-height:36px;padding:0;color:transparent;border-color:transparent;
-  background-color:transparent;background-position:center;background-size:24px 24px;
+html[data-layout="phone-portrait"] .bar select.examples{order:8;flex:0 0 36px;width:36px;min-width:0;max-width:36px;min-height:36px;padding:0;color:transparent;
+  background-position:center;background-size:22px 22px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFB515' d='M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z'/%3E%3Cpath fill='%238F97A6' d='M9 18.5h6V20a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/%3E%3C/svg%3E")}
 html[data-layout="phone-portrait"] .bar select.examples option{color:var(--ink);background:var(--surface)}
 html[data-layout="phone-portrait"] .connect-btn{width:58px;height:58px}
@@ -823,7 +826,7 @@ html[data-layout="phone-landscape"] .ws-connect{top:calc(env(safe-area-inset-top
 html[data-layout="phone-landscape"] .connect-btn{width:44px;height:44px}
 html[data-layout="phone-landscape"] .connect-btn svg{width:32px;height:32px}
 html[data-layout="phone-landscape"] .ws-hub{left:auto;right:calc(env(safe-area-inset-right,0px) + 24px)}
-html[data-layout="phone-landscape"] .code-toggle{height:88px;top:40%}
+html[data-layout="phone-landscape"] .code-toggle{height:118px;top:42%;gap:10px}
 html[data-layout="phone-landscape"] .ws-run{bottom:12px;right:calc(var(--lane) + var(--grip) + 8px)}
 html[data-layout="phone-landscape"] .ws-run button.gamepad{bottom:calc(100% + 10px);top:auto}
 /* Kategorien etwas dichter – trotzdem rollt die Liste, wenn die Höhe nicht reicht */
