@@ -120,8 +120,10 @@ function render(){
     // der Zeile fort, mit der es danach weitergeht.
     const level = (text: string) => Math.floor((text.length - text.trimStart().length) / 4);
     const guides: number[] = [];
-    for (let i = res.lines.length - 1, below = 0; i >= 0; i--) guides[i] = below = res.lines[i].text.trim() ? level(res.lines[i].text) : below;
-    res.lines.forEach((l, i) => {
+    // ganz unten bleibt eine Zeile frei – nur in der Anzeige (dort endet auch der Rahmen des letzten Blocks)
+    const shownLines: CodeLine[] = [...res.lines, {text:'', id:null}];
+    for (let i = shownLines.length - 1, below = 0; i >= 0; i--) guides[i] = below = shownLines[i].text.trim() ? level(shownLines[i].text) : below;
+    shownLines.forEach((l, i) => {
       const row = document.createElement('div'); row.className = 'ln';
       if (guides[i]) row.style.setProperty('--ind', String(guides[i]));
       // Passt eine Zeile nicht in die Breite, bricht sie nur in der Anzeige um (das Programm bleibt, wie es ist):
