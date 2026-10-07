@@ -130,7 +130,7 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .warnings{margin:10px 14px 0;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:13.5px;line-height:1.4}
 .warnings ul{margin:0;padding-left:18px}
 .code-scroll{flex:1 1 auto;overflow:auto;padding:10px 0 16px}
-.code-lines{font-family:var(--mono);font-size:var(--code-size,13.5px);line-height:1.6;min-width:max-content}
+.code-lines{font-family:var(--mono);font-size:var(--code-size,13.5px);line-height:1.6}
 .ln{display:flex;padding-right:16px;border-left:3px solid transparent;cursor:default}
 .ln[data-id]{cursor:pointer}
 /* Hilfslinien der Einrückung: je Stufe (--ind, vier Zeichen) ein feiner Strich, immer zu sehen */
@@ -138,16 +138,19 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .code-lines .ln::after{content:"";position:absolute;left:3.2em;top:0;bottom:0;width:calc(var(--ind,0) * 4ch);pointer-events:none;
   background:repeating-linear-gradient(to right,rgba(255,255,255,.13) 0,rgba(255,255,255,.13) 1px,transparent 1px,transparent 4ch)}
 .ln.sel{background:var(--code-sel);border-left-color:var(--code-sel-bar)}
-/* Gewählter Block mit Inhalt (Schleife, Bedingung): markiert wie der Block selbst – Kopfzeile, links ein
-   Steg neben dem Inhalt, unten ein Balken; am linken Rand läuft der kräftige gelbe Strich der einzelnen Zeile über die ganze Höhe. --depth ist die Einrückung der Kopfzeile in Zeichen; die
-   Zeilennummern davor sind 3.2em breit. */
-.ln.blk-head,.ln.blk-arm{--x:calc(3.2em - 6px + var(--depth,0) * 1ch);--fill:rgba(255,217,69,.22);--bar:var(--code-sel-bar);background-repeat:no-repeat!important}
-.ln.blk-head{background:linear-gradient(to right,transparent var(--x),var(--bar) 0,var(--bar) calc(var(--x) + 3px),var(--fill) 0)}
-.ln.blk-arm{background:linear-gradient(to right,transparent var(--x),var(--bar) 0,var(--bar) calc(var(--x) + 3px),var(--fill) 0,var(--fill) calc(var(--x) + 3ch),transparent 0)}
+/* Gewählter Block mit Inhalt (Schleife, Bedingung, eigener Block): markiert wie der Block selbst. Wie bei
+   einer einzelnen Zeile beginnt die Markierung ganz links – kräftiger Strich, Zeilennummer –, die Kopfzeile
+   ist ganz hinterlegt, neben dem Inhalt reicht sie nur bis zu dessen Einrückung (--depth: Einrückung der
+   Kopfzeile in Zeichen; die Zeilennummern sind 3.2em breit), darunter liegt ein Balken. */
+.ln.blk-head,.ln.blk-arm{border-left-color:var(--code-sel-bar);background-repeat:no-repeat!important}
+.ln.blk-head{background:var(--code-sel)}
+.ln.blk-arm{background:linear-gradient(to right,var(--code-sel) calc(3.2em + (var(--depth,0) + 3) * 1ch),transparent 0)}
 /* der gewählte Parameter in seiner Zeile */
 ::highlight(bw-param){background-color:rgba(255,217,69,.5);color:#fff}
 .ln .no{flex:0 0 3.2em;text-align:right;padding-right:14px;color:var(--code-gutter);user-select:none}
 .ln .tx{white-space:pre}
+/* Zu lange Zeilen brechen in der Anzeige um; die Folgezeilen hängen hinter der öffnenden Klammer (--hang) */
+.code-lines .ln .tx{flex:1 1 0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;padding-left:calc(var(--hang,4) * 1ch);text-indent:calc(var(--hang,4) * -1ch)}
 .tk-kw{color:#FF3F4F}
 .tk-cls{color:#19D1E5}
 .tk-fn{color:#81F900}

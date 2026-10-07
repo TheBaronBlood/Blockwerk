@@ -44,6 +44,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   auch für eigene Blöcke (`def …`) und Ereignisse mit eigener Zeile. Ein Klick auf einen
   **Parameter** – eine Zahl, eine Variable, einen Sensor, eine Rechnung – hebt nur diesen Ausdruck
   hervor, nicht die ganze Zeile.
+- Neu: **Zu lange Zeilen brechen in der Anzeige um**, statt aus dem Bild zu laufen: Die Folgezeilen
+  stehen hinter der öffnenden Klammer, wie man es von Hand einrücken würde. Das Programm selbst und
+  die Zeilennummern bleiben dabei, wie sie sind.
 - Neu: Der Code zeigt **Hilfslinien für die Einrückung** – je Stufe ein feiner senkrechter Strich.
 - Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine
   **Zeile frei**, damit man sieht, wo er endet.

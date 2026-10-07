@@ -124,6 +124,10 @@ function render(){
     res.lines.forEach((l, i) => {
       const row = document.createElement('div'); row.className = 'ln';
       if (guides[i]) row.style.setProperty('--ind', String(guides[i]));
+      // Passt eine Zeile nicht in die Breite, bricht sie nur in der Anzeige um (das Programm bleibt, wie es ist):
+      // Die Folgezeilen beginnen hinter der öffnenden Klammer – wie man es von Hand einrücken würde.
+      const indent = l.text.length - l.text.trimStart().length, paren = l.text.indexOf('(');
+      row.style.setProperty('--hang', String(l.text.trimStart().startsWith('#') ? indent + 2 : paren >= 0 && paren < 28 ? paren + 1 : indent + 4));
       if (l.id) row.dataset.id = l.id;
       const no = document.createElement('span'); no.className = 'no'; no.textContent = String(i + 1);
       const tx = document.createElement('span'); tx.className = 'tx'; highlight(l.text, tx, hasWord);
