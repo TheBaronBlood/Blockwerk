@@ -382,6 +382,9 @@ details.run a{color:#7CC8FF}
 .ext-full{align-self:center;display:inline-grid;place-items:center;padding:7px 8px}
 .ext-full[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .ext-list{display:flex;flex-direction:column;gap:6px;padding:12px;border-right:1px solid var(--rule);overflow:auto}
+/* schmal gezogen: Die Knöpfe kürzen ihren Text, statt unter den Quelltext zu ragen */
+.ext-list{min-width:0}
+.ext-list > .btn{flex:0 0 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ext-list ul{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:4px}
 .ext-list li button{width:100%;text-align:left;padding:8px 10px;border:1.5px solid var(--rule);border-left:6px solid var(--ext-colour,var(--accent));border-radius:8px;background:var(--bg);cursor:pointer;font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .ext-list li button:hover,.ext-list li button[aria-current="true"]{border-color:var(--ext-colour,var(--accent))}

@@ -26,6 +26,19 @@ export interface EditorHost {
 
 const PREVIEW = 'extprev';
 
+/**
+ * Die Vorschau rollt wie eine Liste: Sie beginnt oben links und lässt sich nur so weit nach unten und nach
+ * rechts schieben, wie die Blöcke reichen. Blockly ließe sonst in jede Richtung ins Leere rollen.
+ */
+class ListMetrics extends Blockly.MetricsManager {
+  override getScrollMetrics(workspaceCoordinates?: boolean, view?: Blockly.MetricsManager.ContainerRegion, content?: Blockly.MetricsManager.ContainerRegion){
+    const scale = workspaceCoordinates ? this.workspace_.scale : 1;
+    const v = view || this.getViewMetrics(false), c = content || this.getContentMetrics(false);
+    const pad = 16 * this.workspace_.scale;
+    return {left:0, top:0, width:Math.max(v.width, c.left + c.width + pad) / scale, height:Math.max(v.height, c.top + c.height + pad) / scale};
+  }
+}
+
 export function initExtensionEditor(host: EditorHost): {open(): void} {
   const dialog = document.createElement('dialog');
   dialog.className = 'ext';
@@ -292,7 +305,8 @@ export function initExtensionEditor(host: EditorHost): {open(): void} {
       if (!preview){
         preview = Blockly.inject(q('.ext-preview'), {
           readOnly:true, renderer:'zelos', theme:host.theme(), media:BLOCKLY_MEDIA, sounds:false, trashcan:false, comments:false,
-          zoom:{controls:false, wheel:false, startScale:0.8}, move:{scrollbars:true, drag:true, wheel:true}
+          zoom:{controls:false, wheel:false, startScale:0.8}, move:{scrollbars:true, drag:true, wheel:true},
+          plugins:{metricsManager:ListMetrics}
         });
       } else { preview.setTheme(host.theme()); Blockly.svgResize(preview); }
       const first = editingId ? getExtension(editingId) : extensions()[0];
