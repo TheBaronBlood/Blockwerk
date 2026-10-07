@@ -181,16 +181,18 @@ function markSelection(id: string | null, scroll = true){
   if (!param && from >= 0) for (let i = to + 1; i < rows.length && (!textOf(i).trim() ? i + 1 < rows.length && !!textOf(i + 1).trim() && indentOf(i + 1) > depth : indentOf(i) > depth); i++) to = i;
   // Hat der Block einen Inhalt (Schleife, Bedingung, eigener Block), sieht die Markierung aus wie der Block
   // selbst: die Kopfzeile, links ein Steg neben dem Inhalt, darunter ein Balken – der Inhalt bleibt frei.
+  // (Maßgeblich ist die Einrückung, nicht der Block: Auch »warte bis« erzeugt eine Schleife mit Inhalt.)
+  const deeper = (i: number) => !textOf(i).trim() || indentOf(i) > depth;
   let shaped = false;
-  if (!param) for (let i = from; i >= 0 && i <= to; i++) if (!own(i) && textOf(i).trim()) shaped = true;
+  if (!param && from >= 0 && /:\s*(#.*)?$/.test(textOf(from))) for (let i = from + 1; i <= to; i++) if (textOf(i).trim() && deeper(i)) shaped = true;
   // der Balken unten ist die Leerzeile nach dem Abschnitt (fehlt am Ende des Programms)
   const foot = shaped && to + 1 < rows.length && !textOf(to + 1).trim() ? to + 1 : -1;
   rows.forEach((r, i) => {
     const inside = i >= from && i <= to;
     // ein Parameter färbt nur sich selbst (unten) – die ganze Zeile gibt es für den Block
     r.classList.toggle('sel', !shaped && !param && inside && hits.includes(i));
-    r.classList.toggle('blk-head', shaped && ((inside && own(i)) || i === foot));
-    r.classList.toggle('blk-arm', shaped && inside && !own(i));
+    r.classList.toggle('blk-head', shaped && ((inside && !deeper(i)) || i === foot));
+    r.classList.toggle('blk-arm', shaped && inside && deeper(i));
     if (shaped && (inside || i === foot)) r.style.setProperty('--depth', String(depth)); else r.style.removeProperty('--depth');
   });  // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
   paramMarks?.delete('bw-param');
