@@ -44,7 +44,8 @@ export interface TerminalPanel {
   showCode(): void;
 }
 
-export function initLayout(): TerminalPanel {
+/** @param phoneToggle wird beim Griff des Python-Bereichs zuerst gefragt; liefert es true, ist der Klick erledigt (Handy-Ansicht). */
+export function initLayout(phoneToggle?: () => boolean): TerminalPanel {
   const main = document.getElementById('main')!, code = document.querySelector<HTMLElement>('aside.code')!;
   const term = document.getElementById('term')!, toggle = document.getElementById('termToggle')!;
   const stored = read();
@@ -86,6 +87,7 @@ export function initLayout(): TerminalPanel {
   };
   setCodeOpen(stored.codeOpen !== false);
   codeToggle.addEventListener('click', () => {
+    if (phoneToggle?.()) return;
     const open = main.classList.contains('code-closed');
     setCodeOpen(open); save({codeOpen:open});
   });

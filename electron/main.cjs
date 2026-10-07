@@ -103,10 +103,10 @@ function menu(){
 }
 
 function createWindow(){
-  // »--smoke-size=1280x800« gibt dem Fenster des Selbsttests eine andere Größe (Fotos im Tablet-Format)
+  // »--smoke-size=1280x800« gibt dem Fenster des Selbsttests eine andere Größe (Fotos im Tablet- oder Handy-Format, etwa 390x844)
   const [smokeW, smokeH] = ((process.argv.find(a => a.startsWith('--smoke-size=')) || '').slice('--smoke-size='.length) || '1400x900').split('x').map(Number);
   const win = new BrowserWindow({
-    width:smokeW || 1400, height:smokeH || 900, minWidth:Math.min(700, smokeW || 700), minHeight:500, title:'Blockwerk', backgroundColor:'#16171D', show:!smokeTest,
+    width:smokeW || 1400, height:smokeH || 900, minWidth:Math.min(700, smokeW || 700), minHeight:Math.min(500, smokeH || 500), title:'Blockwerk', backgroundColor:'#16171D', show:!smokeTest,
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     // Rechtschreibprüfung aus: Unter Windows und Linux lüde Electron dafür Wörterbücher von einem Google-Server
     webPreferences:{preload:path.join(__dirname, 'preload.cjs'), contextIsolation:true, nodeIntegration:false, sandbox:true, spellcheck:false}
