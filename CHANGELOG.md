@@ -58,6 +58,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Neu: Der Code zeigt **Hilfslinien für die Einrückung** – je Stufe ein feiner senkrechter Strich.
 - Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine
   **Zeile frei**, damit man sieht, wo er endet.
+- Neu: Beim **Löschen eines Blocks** ist ein kurzes Wischen zu hören (abschaltbar mit »Klang« in den
+  Einstellungen).
+- Behoben: Der Klang beim Zusammenstecken blieb in manchen Browsern (Edge) stumm, obwohl er
+  eingeschaltet war. Die Klänge laufen jetzt über einen anderen Weg des Browsers.
 - Geändert: Der Controller-Knopf über dem Startknopf blendet das Steuerfeld unter dem Code ein
   und aus (mit dem Finger oder bei eingeklapptem Code öffnet er weiter die große Ansicht).
 - Am Test-Hub geprüft; am echten Hub ist »Hub trennen« mit dem Zurücklegen noch nicht erprobt.
