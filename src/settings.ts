@@ -161,7 +161,7 @@ export function initSettingsDialog(host: SettingsHost): {open(): void} {
       <div class="settings-buttons" data-fonts><button type="button" class="btn" data-act="fonts">Schriften dieses Computers anzeigen</button><span class="settings-note" data-fonts-state></span></div>
 
       <h3>Funktionen</h3>
-      <label class="settings-check"><input type="checkbox" name="sounds"><span><b>Klang</b><br>Blöcke klicken leise beim Zusammenstecken und wischen beim Löschen; Knöpfe, Start, Stopp, »Hub verbunden« und Fehler haben einen kurzen Ton.</span></label>
+      <label class="settings-check"><input type="checkbox" name="sounds"><span><b>Klang</b><br>Blöcke klicken leise, wenn sie zusammengesteckt werden, und wischen, wenn sie gelöscht werden.</span></label>
 
       <label class="settings-check"><input type="checkbox" name="autoPorts"><span><b>Anschlüsse erkennen</b><br>Sieht nach dem Verbinden nach, was am Hub steckt, und stellt die Buchstaben in der Blockliste darauf ein – und noch einmal, wenn ein Programm scheitert, weil ein Gerät am falschen Anschluss steckt. Dafür läuft auf dem Hub kurz ein kleines Programm von Blockwerk; nach dem Verbinden ersetzt es das Programm, das dort gespeichert war.</span></label>
 
