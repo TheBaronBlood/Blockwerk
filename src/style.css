@@ -546,6 +546,9 @@ details.run a{color:#7CC8FF}
   border-left:10px solid var(--cat);border-radius:0 5px 5px 0;background:color-mix(in srgb,var(--cat) 15%,transparent);cursor:pointer}
 .blocklyToolboxCategory:not(.blocklyToolboxSelected):hover{background:color-mix(in srgb,var(--cat) 30%,transparent)!important}
 .blocklyToolboxCategory.blocklyToolboxSelected{background:var(--cat)}
+/* Blockly gibt der angeklickten Kategorie den Fokus; der blaue Fokusrahmen der Seite wäre dort nur als
+   abgeschnittene Linie zu sehen. Welche Kategorie gewählt ist, zeigt schon die ausgefüllte Zeile. */
+.blocklyToolbox:focus-visible,.blocklyToolboxCategoryGroup:focus-visible,.blocklyToolboxCategoryContainer:focus-visible{outline:none}
 .blocklyToolboxCategoryIcon{display:none!important}
 .blocklyToolboxCategoryLabel{font-family:var(--ui)!important;font-size:16px!important;font-weight:700;padding:0!important;cursor:pointer!important;
   color:color-mix(in srgb,var(--cat) 84%,var(--cat-mix))}
