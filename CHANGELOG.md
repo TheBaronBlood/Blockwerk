@@ -30,14 +30,16 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   - **Python-Code, Hilfe, Einstellungen, »Hub verbinden« und die Hub-Ansicht füllen den
     Bildschirm.** Den Code öffnet der Griff am rechten Rand; zurück geht es mit »‹ Blöcke«.
   - Wird das Handy gedreht, zieht der Werkzeugkasten um, ohne dass die Verbindung zum Hub abreißt.
+  - Die **Controller-Ansicht liegt immer quer**: Wer das Handy hochkant hält, bekommt sie um eine
+    Vierteldrehung gedreht und dreht einfach das Handy – auch wenn die Anzeige nicht mitdreht.
   - **Erweiterungen sind auf dem Handy gesperrt** (der Editor braucht mehr Platz); auf Tablets und
     am Computer bleibt alles wie bisher.
 - Geändert: Mit dem Finger wählt erst das Antippen eine Kategorie – nicht mehr schon das Aufsetzen.
   So lassen sich die Kategorien rollen, ohne dass dabei eine aufgeht (auch auf Tablets).
 - Geändert: Die Blockliste liegt über den Rollbalken der Arbeitsfläche; vorher schien der
   waagerechte Balken durch sie hindurch.
-- Geprüft im Programm mit Fenstern im Handy-Format und nachgestellten Fingertipps; an echten Handys
-  noch nicht erprobt.
+- Geprüft mit Fenstern im Handy-Format und den Berührungsereignissen des Browsers (wie in dessen
+  Geräte-Ansicht); an echten Handys noch nicht erprobt.
 ## 0.27.1 – 7. Oktober 2026
 
 - Behoben: Die Zoom-Anzeige an der Arbeitsfläche änderte ihre Breite, wenn aus zwei Ziffern drei

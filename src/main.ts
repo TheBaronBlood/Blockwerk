@@ -274,8 +274,8 @@ function loadState(state: WorkspaceState){
   checkState(state);
   ws.clear();
   Blockly.serialization.workspaces.load(state, ws);
-  if (window.matchMedia('(max-width: 820px)').matches){
-    // schmale Bildschirme: alles zeigen – aber nicht größer als normal (ein kleines Programm füllte sonst ein Tablet hochkant aus)
+  if (isPhone() || window.matchMedia('(max-width: 820px)').matches){
+    // schmale Bildschirme und Handys (auch quer): alles zeigen – aber nicht größer als normal (ein kleines Programm füllte sonst ein Tablet hochkant aus)
     ws.zoomToFit();
     if (ws.scale > 1){ ws.setScale(1); ws.scrollCenter(); }
   } else ws.scrollCenter();
@@ -1028,7 +1028,7 @@ padEl.querySelector('.pad-stick')!.addEventListener('pointerdown', () => padEl.f
 const padView = padViewRef = initPadView(pad, {run:() => btnRunWs.click(), stop:() => btnStopWs.click()});
 const fingers = () => isTablet() || matchMedia('(pointer:coarse)').matches;
 function showPad(on: boolean){
-  if (on && fingers()){ padView.open(); return; }
+  if (on && (fingers() || isPhone())){ padView.open(); return; }
   padEl.classList.toggle('hidden', !on);
   btnPadWs.setAttribute('aria-pressed', String(on));
   if (on) pad.redraw();
@@ -1037,7 +1037,7 @@ $('btnPadBig').addEventListener('click', () => padView.open());
 // Der Controller-Knopf klappt den Streifen unter dem Code auf und zu. Ist der Python-Bereich nicht
 // zu sehen (eingeklappt, schmaler Bildschirm) oder wird mit dem Finger bedient, öffnet er die große Ansicht.
 btnPadWs.addEventListener('click', () => {
-  if (fingers() || mainEl.classList.contains('code-closed') || window.matchMedia('(max-width: 820px)').matches) padView.open();
+  if (fingers() || isPhone() || mainEl.classList.contains('code-closed') || window.matchMedia('(max-width: 820px)').matches) padView.open();
   else showPad(padEl.classList.contains('hidden'));
 });
 // Ein Gamepad, das mit diesem Gerät verbunden ist, bedient das Steuerfeld. Der Browser zeigt es
@@ -1082,7 +1082,7 @@ if (transports().length){
   btnRunWs.addEventListener('click', () => { playSound('start'); void runOnHub(); });
   btnStopWs.addEventListener('click', () => { playSound('stopp'); hub?.stop().catch(hubFailed); });
 } else {
-  $('wsConnect').classList.add('hidden'); $('wsRun').classList.add('hidden');
+  $('wsConnect').classList.add('hidden'); btnConnect.classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
 }
 
@@ -1104,17 +1104,15 @@ new ResizeObserver(() => Blockly.svgResize(ws)).observe(document.querySelector('
 
 // Wechsel der Ansicht (Handy gedreht, Fenster schmal gezogen): Der Werkzeugkasten zieht um – hochkant als
 // Leiste nach unten, sonst an den linken Rand –, und was nur zu einer Ansicht gehört, wird zurückgesetzt.
+/** Der Verbinden-Knopf sitzt auf dem Handy in der Kopfleiste, sonst oben rechts an der Arbeitsfläche. */
+function placeConnect(){ (isPhone() ? document.querySelector<HTMLElement>('header.bar')! : $('wsConnect')).appendChild(btnConnect); }
+placeConnect();
 onViewMode((mode) => {
   setToolboxHorizontal(ws, mode === 'phone-portrait');
-  setView('blocks');
+  placeConnect();
   syncExtButton();
   if (mode !== 'wide') document.querySelector<HTMLDialogElement>('dialog.ext[open]')?.close();
 });
-// Die Unterkante der Kopfleiste: Auf dem Handy sitzt die Anzeige des Hubs direkt darunter (style.css, --bar-bottom)
-const barEl = document.querySelector<HTMLElement>('header.bar')!;
-const reportBar = () => document.documentElement.style.setProperty('--bar-bottom', Math.round(barEl.getBoundingClientRect().bottom) + 'px');
-new ResizeObserver(reportBar).observe(barEl);
-reportBar();
 
 // Ladebildschirm ausblenden: Hier steht die Arbeitsfläche; es fehlen höchstens noch die Schriften
 const splash = $('splash');

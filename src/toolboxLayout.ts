@@ -29,6 +29,9 @@ class Toolbox extends Blockly.Toolbox {
     this.boundEvents_.push(conditionalBind(container, 'pointerdown', this, (e: PointerEvent) => {
       if (!tapSelects()){ this.onClick_(e); return; }
       own.mouseDown = true; this.selectedAtPress = this.getSelectedItem();
+      // Blockly merkt sich den Finger, der gerade etwas bedient, und weist bis zur Freigabe jeden anderen ab
+      // (jede Berührung hat eine neue Kennung). Ohne Freigabe ließe sich danach kein Block mehr anfassen.
+      Blockly.Touch.clearTouchIdentifier();
     }, false));
     for (const type of ['pointerup', 'pointercancel']) this.boundEvents_.push(bind(container, type, this, () => { own.mouseDown = false; }));
     this.boundEvents_.push(bind(container, 'click', this, (e: Event) => { if (tapSelects()) this.tapped(e); }));

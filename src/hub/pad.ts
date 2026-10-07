@@ -11,8 +11,10 @@ export interface Pad {
   /**
    * Bindet einen Joystick an: `area` nimmt Finger oder Maus an, `ring` ist der Kreis, in dem sich
    * `knob` bewegt. Liefert `active` false, bleibt die Eingabe wirkungslos (beim Anordnen).
+   * `turned`: Die Ansicht ist um eine Vierteldrehung im Uhrzeigersinn gedreht (Controller-Ansicht auf dem
+   * hochkant gehaltenen Handy) – dann zeigen die Richtungen des Fingers entsprechend gedreht.
    */
-  bindStick(area: HTMLElement, ring: HTMLElement, knob: HTMLElement, active?: () => boolean): void;
+  bindStick(area: HTMLElement, ring: HTMLElement, knob: HTMLElement, active?: () => boolean, turned?: () => boolean): void;
   bindButton(el: HTMLElement, button: PadButton, active?: () => boolean): void;
   /** Tastatur: Pfeiltasten oder W A S D für den Joystick, 1 bis 4 für die Tasten – solange `root` den Fokus hat. */
   bindKeys(root: HTMLElement, active?: () => boolean): void;
@@ -31,7 +33,7 @@ const KEY_AXIS: Record<string, [PadAxis, number]> = {
   w:['y', 100], s:['y', -100], a:['x', -100], d:['x', 100]
 };
 const KEY_BUTTON: Record<string, PadButton> = {'1':'A', '2':'B', '3':'C', '4':'D'};
-const always = () => true;
+const always = () => true, never = () => false;
 /** Bindet den Finger an das Element, damit es auch außerhalb weiter Ereignisse bekommt. Scheitert das, geht es ohne. */
 export function capture(el: HTMLElement, pointerId: number){
   try { el.setPointerCapture(pointerId); } catch { /* Zeiger gibt es nicht mehr */ }
@@ -99,13 +101,15 @@ export function createPad(send: (byte: number) => Promise<void>): Pad {
     setStick,
     setButton,
     redraw: drawStick,
-    bindStick(area, ring, knob, active = always){
+    bindStick(area, ring, knob, active = always, turned = never){
       sticks.push({ring, knob});
       // nur der Finger, der den Joystick zuerst berührt hat, bewegt ihn
       let pointer: number | null = null;
       const fromPointer = (e: PointerEvent) => {
         const r = ring.getBoundingClientRect(), radius = r.width / 2;
         let x = (e.clientX - r.left - radius) / radius, y = -(e.clientY - r.top - radius) / radius;
+        // Ansicht um eine Vierteldrehung gedreht: »oben« liegt am rechten Rand des Bildschirms
+        if (turned()) [x, y] = [-y, x];
         const len = Math.hypot(x, y);
         if (len > 1){ x /= len; y /= len; }
         setStick(x * 100, y * 100);

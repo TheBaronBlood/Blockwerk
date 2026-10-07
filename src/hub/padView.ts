@@ -3,7 +3,10 @@
 // Raster und lassen sich dort verschieben und in der Größe ändern (»Anordnen«).
 // Gedacht für Tablets: große Flächen für die Daumen, mehrere Finger zugleich.
 // Die Anordnung selbst (Raster, Regeln, Ausgangslage) steht in padLayout.ts.
+// Auf dem hochkant gehaltenen Handy liegt die Ansicht quer (um eine Vierteldrehung gedreht, style.css):
+// Ein Controller gehört ins Querformat – man dreht das Handy, auch wenn es die Anzeige nicht mitdreht.
 // ---------------------------------------------------------------
+import { onViewMode, viewMode } from '../viewMode';
 import { capture, type Pad } from './pad';
 import {
   defaultLayout, fits, GRIDS, moveTile, orientationFor, resizeTile, sanitizeLayouts, sizeRange, TILE_IDS,
@@ -43,6 +46,10 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
   let layouts = loadLayouts();
   let orientation: Orientation = 'quer';
   let editing = false, open = false;
+  /** Die Ansicht liegt gedreht auf dem hochkant gehaltenen Handy. */
+  let turned = false;
+  /** Bewegung des Fingers auf dem Bildschirm → Bewegung in der (vielleicht gedrehten) Ansicht. */
+  const local = (dx: number, dy: number): [number, number] => turned ? [dy, -dx] : [dx, dy];
   let selected: TileId = 'stick';   // beim Anordnen: das Teil, auf das − und + wirken
   const live = () => open && !editing;
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(layouts)); } catch { /* kein Speicher verfügbar */ } };
@@ -87,7 +94,7 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
       const knob = el('div', 'padv-knob');
       round.append(knob);
       round.setAttribute('aria-label', 'Joystick');
-      pad.bindStick(tile, round, knob, live);
+      pad.bindStick(tile, round, knob, live, () => turned);
     } else {
       round.textContent = id;
       round.dataset.pad = id;
@@ -177,7 +184,7 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
     tile.addEventListener('pointermove', (e) => {
       if (!drag || e.pointerId !== drag.pointer) return;
       const t = current(), c = cell(), g = GRIDS[orientation];
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      const [dx, dy] = local(e.clientX - drag.x, e.clientY - drag.y);
       tile.style.transform = `translate(${dx}px, ${dy}px)`;
       drag.col = Math.max(0, Math.min(g.cols - t.size, Math.round(t.col + dx / c.w)));
       drag.row = Math.max(0, Math.min(g.rows - t.size, Math.round(t.row + dy / c.h)));
@@ -243,6 +250,7 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
       open = true;
       root.classList.remove('hidden');
       document.documentElement.classList.add('pad-open');   // Meldungen wandern nach unten, siehe style.css
+      syncTurn();
       setEditing(false);
       measure();
       try { history.pushState({blockwerkPad:true}, ''); } catch { /* ohne Verlauf schließt nur der Knopf */ }
@@ -258,6 +266,14 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
     pad.release();
     root.classList.add('hidden');
     document.documentElement.classList.remove('pad-open');
+    syncTurn();
   }
+  /** Hochkant gehaltenes Handy: die Ansicht quer legen. Dreht das Gerät die Anzeige selbst mit, entfällt das wieder. */
+  function syncTurn(){
+    turned = open && viewMode() === 'phone-portrait';
+    root.classList.toggle('turned', turned);
+    document.documentElement.classList.toggle('pad-turned', turned);
+  }
+  onViewMode(() => { if (open){ pad.release(); syncTurn(); measure(); } });
   return view;
 }
