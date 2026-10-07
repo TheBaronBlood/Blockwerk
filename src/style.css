@@ -66,12 +66,12 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{--lane:11px;--grip:24px}
 #blocklyDiv{position:absolute;inset:0}
 .blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
-.ws-tools{position:absolute;right:calc(var(--lane) + var(--grip) + 172px);bottom:38px;display:flex;gap:8px;z-index:5}
+.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
 
 /* Start und Stopp: nur hier, unten rechts. Der Controller-Knopf sitzt über dem Startknopf. */
-.ws-run{position:absolute;right:calc(var(--lane) + var(--grip) + 24px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
+.ws-run{position:absolute;right:calc(var(--lane) + 14px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
 .ws-run button{width:64px;height:64px;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
 .ws-run button svg{width:34px;height:34px;fill:currentColor}
 .ws-run button.play{background:#00B94D}
@@ -85,7 +85,7 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-run button.busy{animation:run-busy 1s ease-in-out infinite}
 @keyframes run-busy{50%{opacity:.55}}
 /* Verbinden, oben rechts: graue Wellen ohne Hub, grüne mit Hub. Daneben steht, was der Hub gerade tut. */
-.ws-connect{position:absolute;right:calc(var(--lane) + var(--grip) + 24px);top:16px;display:flex;align-items:center;gap:10px;z-index:5}
+.ws-connect{position:absolute;right:calc(var(--lane) + 14px);top:16px;display:flex;align-items:center;gap:10px;z-index:5}
 .connect-btn{width:64px;height:64px;flex:0 0 auto;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;background:#FFBB00;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
 .connect-btn svg{width:46px;height:46px}
 .connect-btn .waves{stroke:#A5A9B1}
