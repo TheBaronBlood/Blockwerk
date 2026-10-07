@@ -133,13 +133,17 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .code-lines{font-family:var(--mono);font-size:var(--code-size,13.5px);line-height:1.6;min-width:max-content}
 .ln{display:flex;padding-right:16px;border-left:3px solid transparent;cursor:default}
 .ln[data-id]{cursor:pointer}
+/* Hilfslinien der Einrückung: je Stufe (--ind, vier Zeichen) ein feiner Strich, immer zu sehen */
+.code-lines .ln{position:relative}
+.code-lines .ln::after{content:"";position:absolute;left:3.2em;top:0;bottom:0;width:calc(var(--ind,0) * 4ch);pointer-events:none;
+  background:repeating-linear-gradient(to right,rgba(255,255,255,.13) 0,rgba(255,255,255,.13) 1px,transparent 1px,transparent 4ch)}
 .ln.sel{background:var(--code-sel);border-left-color:var(--code-sel-bar)}
 /* Gewählter Block mit Inhalt (Schleife, Bedingung): markiert wie der Block selbst – Kopfzeile, links ein
-   Steg neben dem Inhalt, unten ein Balken. --depth ist die Einrückung der Kopfzeile in Zeichen; die
+   Steg neben dem Inhalt, unten ein Balken; am linken Rand läuft der kräftige gelbe Strich der einzelnen Zeile über die ganze Höhe. --depth ist die Einrückung der Kopfzeile in Zeichen; die
    Zeilennummern davor sind 3.2em breit. */
-.ln.blk-head,.ln.blk-arm{--x:calc(3.2em - 6px + var(--depth,0) * 1ch);--fill:rgba(255,217,69,.22);background-repeat:no-repeat!important}
-.ln.blk-head{background:linear-gradient(to right,transparent var(--x),var(--fill) 0)}
-.ln.blk-arm{background:linear-gradient(to right,transparent var(--x),var(--fill) 0,var(--fill) calc(var(--x) + 3ch),transparent 0)}
+.ln.blk-head,.ln.blk-arm{--x:calc(3.2em - 6px + var(--depth,0) * 1ch);--fill:rgba(255,217,69,.22);--bar:var(--code-sel-bar);background-repeat:no-repeat!important}
+.ln.blk-head{background:linear-gradient(to right,transparent var(--x),var(--bar) 0,var(--bar) calc(var(--x) + 3px),var(--fill) 0)}
+.ln.blk-arm{background:linear-gradient(to right,transparent var(--x),var(--bar) 0,var(--bar) calc(var(--x) + 3px),var(--fill) 0,var(--fill) calc(var(--x) + 3ch),transparent 0)}
 /* der gewählte Parameter in seiner Zeile */
 ::highlight(bw-param){background-color:rgba(255,217,69,.5);color:#fff}
 .ln .no{flex:0 0 3.2em;text-align:right;padding-right:14px;color:var(--code-gutter);user-select:none}

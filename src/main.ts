@@ -116,8 +116,14 @@ function render(){
     shownCode = shown;
     codeEl.textContent = '';
     const frag = document.createDocumentFragment();
+    // Hilfslinien für die Einrückung: je Stufe ein feiner Strich (style.css). Eine Leerzeile führt die Linien
+    // der Zeile fort, mit der es danach weitergeht.
+    const level = (text: string) => Math.floor((text.length - text.trimStart().length) / 4);
+    const guides: number[] = [];
+    for (let i = res.lines.length - 1, below = 0; i >= 0; i--) guides[i] = below = res.lines[i].text.trim() ? level(res.lines[i].text) : below;
     res.lines.forEach((l, i) => {
       const row = document.createElement('div'); row.className = 'ln';
+      if (guides[i]) row.style.setProperty('--ind', String(guides[i]));
       if (l.id) row.dataset.id = l.id;
       const no = document.createElement('span'); no.className = 'no'; no.textContent = String(i + 1);
       const tx = document.createElement('span'); tx.className = 'tx'; highlight(l.text, tx, hasWord);
@@ -150,31 +156,39 @@ function markSelection(id: string | null, scroll = true){
   // gedrückter Wertblock: gilt nur, wenn er zur gewählten Anweisung gehört
   const pressed = pressedValue ? ws.getBlockById(pressedValue) : null;
   const param = pressed && stmt && statementOf(pressed) === stmt ? pressed : block?.outputConnection ? block : null;
+  const rows = [...codeEl.querySelectorAll<HTMLElement>('.ln')];
+  const textOf = (i: number) => rows[i].querySelector('.tx')?.textContent ?? '';
+  const indentOf = (i: number) => textOf(i).length - textOf(i).trimStart().length;
+  const own = (i: number) => rows[i].dataset.id === stmt?.id;
   const ids = new Set<string>();
   if (stmt){
     ids.add(stmt.id);
     // ohne Parameter gehört der Inhalt dazu: alles, was in den Eingängen des Blocks steckt (nicht, was darunter hängt)
     if (!param) for (const input of stmt.inputList) for (const inner of input.connection?.targetBlock()?.getDescendants(false) ?? []) ids.add(inner.id);
+    // ein Ereignisblock mit eigener Zeile (»while True:«, »async def …«) umschließt den Stapel, der an ihm hängt
+    const hat = !stmt.previousConnection && !stmt.outputConnection && !!stmt.nextConnection;
+    if (!param && hat && rows.some((_, i) => own(i))) for (const inner of stmt.getNextBlock()?.getDescendants(false) ?? []) ids.add(inner.id);
   }
-  const rows = [...codeEl.querySelectorAll<HTMLElement>('.ln')];
   const hits = rows.map((r, i) => r.dataset.id && ids.has(r.dataset.id) ? i : -1).filter(i => i >= 0);
-  const from = hits.length ? hits[0] : -1, to = hits.length ? hits[hits.length - 1] : -1;
-  // Hat der Block einen Inhalt (Schleife, Bedingung), sieht die Markierung aus wie der Block selbst: die
-  // Kopfzeile, links ein Steg neben dem Inhalt, darunter ein Balken – der Inhalt bleibt frei.
-  const own = (i: number) => rows[i].dataset.id === stmt?.id;
-  const shaped = !param && hits.some(i => !own(i));
-  const head = from >= 0 ? rows[from].querySelector('.tx')?.textContent ?? '' : '';
-  const depth = head.length - head.trimStart().length;
+  const from = hits.length ? hits[0] : -1;
+  let to = hits.length ? hits[hits.length - 1] : -1;
+  const depth = from >= 0 ? indentOf(from) : 0;
+  // alles, was unter der Kopfzeile tiefer eingerückt weitergeht, gehört noch dazu (»return«, »pass«)
+  if (!param && from >= 0) for (let i = to + 1; i < rows.length && (!textOf(i).trim() ? i + 1 < rows.length && !!textOf(i + 1).trim() && indentOf(i + 1) > depth : indentOf(i) > depth); i++) to = i;
+  // Hat der Block einen Inhalt (Schleife, Bedingung, eigener Block), sieht die Markierung aus wie der Block
+  // selbst: die Kopfzeile, links ein Steg neben dem Inhalt, darunter ein Balken – der Inhalt bleibt frei.
+  let shaped = false;
+  if (!param) for (let i = from; i >= 0 && i <= to; i++) if (!own(i) && textOf(i).trim()) shaped = true;
   // der Balken unten ist die Leerzeile nach dem Abschnitt (fehlt am Ende des Programms)
-  const foot = shaped && to + 1 < rows.length && !rows[to + 1].querySelector('.tx')?.textContent?.trim() ? to + 1 : -1;
+  const foot = shaped && to + 1 < rows.length && !textOf(to + 1).trim() ? to + 1 : -1;
   rows.forEach((r, i) => {
     const inside = i >= from && i <= to;
-    r.classList.toggle('sel', !shaped && inside && hits.includes(i));
+    // ein Parameter färbt nur sich selbst (unten) – die ganze Zeile gibt es für den Block
+    r.classList.toggle('sel', !shaped && !param && inside && hits.includes(i));
     r.classList.toggle('blk-head', shaped && ((inside && own(i)) || i === foot));
     r.classList.toggle('blk-arm', shaped && inside && !own(i));
     if (shaped && (inside || i === foot)) r.style.setProperty('--depth', String(depth)); else r.style.removeProperty('--depth');
-  });
-  // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
+  });  // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
   paramMarks?.delete('bw-param');
   const expr = param ? currentExprs[param.id] : undefined;
   if (paramMarks && expr) for (const i of hits){
@@ -192,6 +206,8 @@ function markSelection(id: string | null, scroll = true){
     paramMarks.set('bw-param', new Highlight(range));
     break;
   }
+  // lässt sich der Ausdruck nicht einzeln zeigen (älterer Browser, umgeformter Code), dann wenigstens die Zeile
+  if (param && !paramMarks?.has('bw-param')) for (const i of hits) rows[i].classList.add('sel');
   if (scroll && from >= 0) rows[from].scrollIntoView({block:'nearest'});
 }
 // Welcher Block unter dem Zeiger liegt, steht an seinem Element – auch bei Zahlen, die Blockly nicht selbst auswählt

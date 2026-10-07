@@ -475,6 +475,12 @@ export function generate(ws: Blockly.Workspace): GenerateResult {
     while (j < lines.length && (!lines[j].text.trim() || lines[j].text.trimStart().startsWith('#'))) j++;
     if (j >= lines.length || indentOf(lines[j].text) <= indentOf(t)) lines.splice(i + 1, 0, {text:' '.repeat(indentOf(t)) + py.PASS.trimEnd(), id:lines[i].id});
   }
+  // Die Zeile »def …« eines eigenen Blocks hat keine Markerzeile; sie gehört zu seinem Definitionsblock
+  for (const def of defs){
+    const head = new RegExp('^(async )?def ' + py.getProcedureName(def.getFieldValue('NAME')) + '\\(');
+    const line = lines.find((l, i) => i >= H.length && head.test(l.text));
+    if (line) line.id = def.id;
+  }
   // Nach einem eingerückten Abschnitt (Schleife, Bedingung) bleibt eine Zeile frei – so sieht man, wo er
   // endet. Maßgeblich ist die Zeile, unter der es weitergeht: Endet sie mit »:«, war es ein Abschnitt
   // (und kein umbrochener Ausdruck). »else« und »elif« gehören noch dazu.
