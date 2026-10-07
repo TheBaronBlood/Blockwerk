@@ -15,6 +15,27 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.27.0 – 7. Oktober 2026
+
+- Neu: **Die Oberfläche ist aufgeräumt** – nach einem Entwurf des Autors. Start und Stopp gibt
+  es nur noch einmal, als runde Knöpfe unten rechts an der Arbeitsfläche; die zweite Knopfleiste
+  über dem Python-Code ist weg.
+- Neu: **Verbinden ist ein eigener Knopf** oben rechts an der Arbeitsfläche. Er zeigt, ob ein
+  Hub verbunden ist: graue Wellen ohne Hub, grüne mit Hub. Ohne Hub öffnet er »Hub verbinden«,
+  mit Hub die Hub-Ansicht mit den Anschlüssen. Daneben steht, was der Hub gerade tut.
+- Neu: **»Hub trennen« steht in der Hub-Ansicht.** Vorher legt Blockwerk dein Programm zurück
+  auf den Hub – das Anzeige-Programm der Hub-Ansicht bleibt nie als letztes dort liegen. Das
+  gilt jetzt auch, wenn du noch gar nichts gestartet hattest: Dann kommt das Programm der
+  Arbeitsfläche auf den Hub, und die Taste am Hub startet es. Läuft ein Programm, fragt der
+  Verbinden-Knopf, ob es für die Hub-Ansicht anhalten oder der Hub getrennt werden soll.
+- Geändert: Der Werkzeugkasten zeigt jede Kategorie mit einem Balken und der Schrift in ihrer
+  Farbe; die gewählte ist ganz ausgefüllt. Die Knöpfe der Kopfleiste haben farbige Zeichen,
+  die Liste der Beispiele füllt die Mitte, der Python-Bereich klappt über einen Griff auf
+  halber Höhe ein und aus.
+- Geändert: Der Controller-Knopf über dem Startknopf blendet das Steuerfeld unter dem Code ein
+  und aus (mit dem Finger oder bei eingeklapptem Code öffnet er weiter die große Ansicht).
+- Am Test-Hub geprüft; am echten Hub ist »Hub trennen« mit dem Zurücklegen noch nicht erprobt.
+
 ## 0.26.4 – 7. Oktober 2026
 
 - Neu: In »Über Blockwerk« steht ein **Dank an Pybricks** – mit Links zum Projekt und dazu, wie
