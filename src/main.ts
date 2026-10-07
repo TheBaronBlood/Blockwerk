@@ -32,7 +32,9 @@ import { hasWord, initHelp } from './help';
 import { highlight } from './highlight';
 import { initLayout } from './layout';
 import { installSounds } from './sound';
-import { FIXED_FLYOUT, START_SCALE } from './flyout';
+import { BOTTOM_FLYOUT, FIXED_FLYOUT, START_SCALE } from './flyout';
+import { BW_TOOLBOX, setToolboxHorizontal } from './toolboxLayout';
+import { initViewMode, isPhone, onViewMode } from './viewMode';
 import { allPortsSeen, describePorts, deviceLine, foundPorts, missingDeviceHint, PORT_BLOCKS, samePorts, withFoundPorts, type DeviceAt, type FoundPorts } from './ports';
 import { isTablet, tabletSystem } from './platform';
 import { saveFile } from './files';
@@ -65,10 +67,13 @@ loadSettings({extensions:extensions().length > 0});
 let detectedPorts: FoundPorts | null = null;
 const currentToolbox = () => withFoundPorts(toolboxWith(extensions().map(toolboxCategory) as Blockly.utils.toolbox.ToolboxItemInfo[]), detectedPorts);
 Blockly.Scrollbar.scrollbarThickness = 10;   // schmaler als Blocklys Standard
+// Ansicht nach dem Format des Fensters (viewMode.ts): Auf dem Handy hochkant liegt der Werkzeugkasten als Leiste unten
+const startMode = initViewMode();
 const ws = Blockly.inject('blocklyDiv', {
   toolbox:currentToolbox(), theme: isDark() ? THEME_DARK : THEME_LIGHT, renderer:'zelos', media:BLOCKLY_MEDIA, sounds:false, trashcan:false, comments:false,
-  // die Blockliste zoomt nicht mit (flyout.ts)
-  plugins:{flyoutsVerticalToolbox:FIXED_FLYOUT},
+  horizontalLayout:startMode === 'phone-portrait', toolboxPosition:startMode === 'phone-portrait' ? 'end' : 'start',
+  // die Blockliste zoomt nicht mit (flyout.ts); der Werkzeugkasten lässt sich später umstellen (toolboxLayout.ts)
+  plugins:{flyoutsVerticalToolbox:FIXED_FLYOUT, flyoutsHorizontalToolbox:BOTTOM_FLYOUT, toolbox:BW_TOOLBOX},
   zoom:{controls:false, wheel:true, startScale:START_SCALE, maxScale:2, minScale:0.35, scaleSpeed:1.15},
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
@@ -469,10 +474,12 @@ const settingsDialog = initSettingsDialog({
 $('btnSettings').addEventListener('click', () => settingsDialog.open());
 const aboutDialog = initAboutDialog({hub:() => hub, toast});
 $('btnAbout').addEventListener('click', () => aboutDialog.open());
+/** Der Knopf »Erweiterungen«: nur wenn eingeschaltet – und nicht auf dem Handy, dort ist der Editor gesperrt (zu wenig Platz). */
+function syncExtButton(){ $('btnExt').classList.toggle('hidden', !settings().extensions || isPhone()); }
 onSettings((s) => {
   applyTheme();
   codeSmaller.disabled = s.codeSize <= 10; codeBigger.disabled = s.codeSize >= 24;
-  $('btnExt').classList.toggle('hidden', !s.extensions);
+  syncExtButton();
   if (!s.autoPorts) setDetectedPorts(null);
   // Entwickler: Protokoll im Terminal, und in der Konsole ein Zugang zu den Innereien
   Hub.trace = s.dev && s.devTrace ? (dir, bytes) => {
@@ -513,6 +520,8 @@ const help = initHelp({
     const end = (up: Event) => {
       for (const type of ['pointerup', 'pointercancel']) window.removeEventListener(type, end, true);
       helpEl.classList.remove('dragging');
+      // Auf dem Handy füllt die Hilfe den ganzen Bildschirm: Nach dem Ablegen macht sie Platz, damit der Block zu sehen ist
+      if (isPhone() && up.type !== 'pointercancel'){ helpEl.classList.add('hidden'); return; }
       // über der Hilfe losgelassen: Dort läge der Block unsichtbar unter dem Fenster – er verschwindet wieder
       const r = helpEl.getBoundingClientRect(), p = up as PointerEvent;
       const overHelp = !helpEl.classList.contains('hidden') && p.clientX >= r.left && p.clientX <= r.right && p.clientY >= r.top && p.clientY <= r.bottom;
@@ -576,7 +585,8 @@ function watchRemoteStatus(text: string){
 /** Name eines Gamepads, das mit diesem Gerät verbunden ist (nicht mit dem Hub). */
 let deviceGamepad: string | null = null;
 
-const terminal = initLayout();
+// (Auf dem Handy klappt der Griff des Python-Bereichs nichts auf: Dort öffnet er den Code bildschirmfüllend.)
+const terminal = initLayout(() => { if (!isPhone()) return false; setView('code'); return true; });
 // Ausgaben sammeln und höchstens alle 30 ms in die Seite schreiben: Ein Programm, das in einer
 // Schleife druckt, schickt viele kleine Stücke je Sekunde, und jedes würde die Seite neu vermessen.
 // (Zeitgeber statt requestAnimationFrame – der läuft auch im unsichtbaren Fenster des Selbsttests.)
@@ -1087,8 +1097,24 @@ function setView(view: 'blocks' | 'code'){
 }
 tabBlocks.addEventListener('click', () => setView('blocks'));
 tabCode.addEventListener('click', () => setView('code'));
+// Handy: Der Code füllt den Bildschirm; zurück geht es mit dem Knopf im Kopf des Python-Bereichs
+$('codeBack').addEventListener('click', () => setView('blocks'));
 
 new ResizeObserver(() => Blockly.svgResize(ws)).observe(document.querySelector('.ws-wrap')!);
+
+// Wechsel der Ansicht (Handy gedreht, Fenster schmal gezogen): Der Werkzeugkasten zieht um – hochkant als
+// Leiste nach unten, sonst an den linken Rand –, und was nur zu einer Ansicht gehört, wird zurückgesetzt.
+onViewMode((mode) => {
+  setToolboxHorizontal(ws, mode === 'phone-portrait');
+  setView('blocks');
+  syncExtButton();
+  if (mode !== 'wide') document.querySelector<HTMLDialogElement>('dialog.ext[open]')?.close();
+});
+// Die Unterkante der Kopfleiste: Auf dem Handy sitzt die Anzeige des Hubs direkt darunter (style.css, --bar-bottom)
+const barEl = document.querySelector<HTMLElement>('header.bar')!;
+const reportBar = () => document.documentElement.style.setProperty('--bar-bottom', Math.round(barEl.getBoundingClientRect().bottom) + 'px');
+new ResizeObserver(reportBar).observe(barEl);
+reportBar();
 
 // Ladebildschirm ausblenden: Hier steht die Arbeitsfläche; es fehlen höchstens noch die Schriften
 const splash = $('splash');

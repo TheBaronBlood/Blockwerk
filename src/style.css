@@ -700,3 +700,133 @@ html.tablet input,html.tablet textarea{-webkit-user-select:text;user-select:text
 html.tablet .ln .no{-webkit-user-select:none;user-select:none}
 /* Tablets: der Griff des Python-Bereichs breiter, damit der Finger ihn trifft */
 @media (pointer:coarse) and (min-width:821px){.ws-wrap{--grip:32px}}
+
+/* ---------------------------------------------------------------
+   Handy-Ansicht. viewMode.ts schreibt das Format des Fensters als data-layout ans <html>:
+   »phone-portrait« (hochkant) und »phone-landscape« (quer); alles andere ist »wide«.
+   Hochkant liegt der Werkzeugkasten als Leiste unten, und die Kopfleiste hat zwei Zeilen; quer bleibt
+   er links, und die Kopfleiste ist flach. In beiden sitzt der Verbinden-Knopf in der Kopfleiste,
+   der Python-Bereich und die Fenster (Hilfe, Einstellungen, Hub verbinden …) füllen den Bildschirm.
+   --------------------------------------------------------------- */
+.code-back{display:none}
+
+/* Leiste der Kategorien (Blockly: layout="h"): eine Zeile zum Wischen. Ist eine Kategorie gewählt, rückt
+   die Leiste um die Höhe der Blockliste nach oben (--fly-h, aus flyout.ts) – die Liste liegt darunter. */
+.blocklyToolbox[layout="h"]{padding:6px!important;overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x;scrollbar-width:none;
+  transform:translateY(calc(-1 * var(--fly-h,0px)));transition:transform .16s ease-out}
+.blocklyToolbox[layout="h"]::-webkit-scrollbar{display:none}
+.blocklyToolbox[layout="h"] .blocklyToolboxCategoryGroup{flex-wrap:nowrap!important}
+.blocklyToolbox[layout="h"] .blocklyToolboxCategoryContainer{flex:0 0 auto;margin:0 6px 0 0!important}
+.blocklyToolbox[layout="h"] .blocklyToolboxCategory{margin:0!important;line-height:36px!important;padding:0 14px 0 10px!important;border-left-width:8px}
+.blocklyToolbox[layout="h"] .blocklyToolboxCategoryLabel{font-size:15px!important}
+.blocklyToolbox[layout="h"] .blocklyTreeSeparator{flex:0 0 auto;width:0;height:auto!important;padding:0!important;margin:5px 8px 5px 2px!important;
+  border-bottom:0!important;border-right:2px solid var(--muted)!important}
+@media (prefers-reduced-motion: reduce){.blocklyToolbox[layout="h"]{transition:none}}
+/* Die Blockliste liegt über den Rollbalken der Arbeitsfläche (bei Blockly gleichauf – dann schien der Balken durch) */
+.blocklyToolboxFlyout{z-index:25}
+
+/* --- beide Handy-Ansichten --- */
+html[data-layout^="phone"] .tabs,
+html[data-layout^="phone"] .split,
+html[data-layout^="phone"] .ws-tools{display:none}
+
+/* Python-Bereich: bildschirmfüllend, geöffnet über den Griff, zurück mit »‹ Blöcke« */
+html[data-layout^="phone"] aside.code{position:fixed;inset:0;z-index:60;flex:none;display:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+html[data-layout^="phone"] main[data-view="code"] aside.code{display:flex}
+html[data-layout^="phone"] .code-back{display:inline-block}
+html[data-layout^="phone"] .code-head h2 .long{display:none}
+html[data-layout^="phone"] .ws-wrap{--grip:26px}
+html[data-layout^="phone"] .code-toggle{display:flex;height:104px;background:var(--accent)}
+html[data-layout^="phone"] .code-toggle svg{transform:rotate(180deg)}
+html[data-layout^="phone"] .code-toggle span{display:block}
+
+/* Verbinden sitzt in der Kopfleiste (die rechts dafür Platz lässt); was der Hub tut, steht darunter an der Arbeitsfläche */
+html[data-layout^="phone"] .ws-connect{position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 8px);right:calc(env(safe-area-inset-right,0px) + 10px)}
+html[data-layout^="phone"] .ws-hub{position:fixed;top:calc(var(--bar-bottom,64px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);max-width:calc(100vw - 150px)}
+
+/* Start und Stopp: etwas kleiner; der Controller-Knopf hängt am Startknopf */
+html[data-layout^="phone"] .ws-run{gap:10px}
+html[data-layout^="phone"] .ws-run button{width:54px;height:54px}
+html[data-layout^="phone"] .ws-run button svg{width:28px;height:28px}
+html[data-layout^="phone"] .ws-run button.stop{width:42px;height:42px}
+html[data-layout^="phone"] .ws-run button.stop svg{width:24px;height:24px}
+html[data-layout^="phone"] .ws-run button.gamepad{position:absolute;right:7px;width:40px;height:40px}
+html[data-layout^="phone"] .ws-run button.gamepad svg{width:25px;height:25px}
+
+/* Kopfleiste: kompakte Knöpfe; »Neu« nur als Zeichen, »Hilfe« nur als Wort */
+html[data-layout^="phone"] .bar .btn{min-height:38px;padding:5px 10px;font-size:14.5px;gap:6px;border-radius:10px}
+html[data-layout^="phone"] .bar .btn .ico{width:22px;height:22px}
+html[data-layout^="phone"] .bar .btn span{position:static;width:auto;height:auto;overflow:visible;clip-path:none}
+html[data-layout^="phone"] #btnNew span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+html[data-layout^="phone"] #btnHelp .ico{display:none}
+html[data-layout^="phone"] #btnSettings{padding:5px 7px}
+
+/* Fenster füllen den Bildschirm: Hilfe, Einstellungen, Hub verbinden, Hub-Ansicht, Rückfragen */
+html[data-layout^="phone"] dialog{width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:none;margin:0;border:0;border-radius:0;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html[data-layout^="phone"] .help{position:fixed;inset:0;width:auto;z-index:50;border-left:0;box-shadow:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+/* Erweiterungen sind auf dem Handy gesperrt – der Editor braucht mehr Platz */
+html[data-layout^="phone"] .settings-check:has(input[name="extensions"]){display:none}
+/* Meldungen oben: Unten säßen sie auf der Blockliste oder auf Start und Stopp. In der Controller-Ansicht umgekehrt. */
+html[data-layout^="phone"] .toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 10px)}
+html[data-layout^="phone"].pad-open .toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 22px)}
+
+/* --- Handy hochkant --- */
+/* Kopfleiste in zwei Zeilen: oben Name, Zahnrad und Hilfe, darunter Speichern, Öffnen, Neu und die Beispiele.
+   Rechts bleibt über beide Zeilen Platz für den Verbinden-Knopf. */
+html[data-layout="phone-portrait"] .bar{flex-wrap:wrap;align-items:center;gap:4px 3px;padding:8px 78px 6px 10px}
+html[data-layout="phone-portrait"] .actions{display:contents}
+html[data-layout="phone-portrait"] .brand{order:1;flex:1 1 0;min-width:0;gap:8px}
+html[data-layout="phone-portrait"] .brand-mark{width:32px;height:32px}
+html[data-layout="phone-portrait"] .brand h1{font-size:17px;white-space:nowrap}
+html[data-layout="phone-portrait"] .brand .version{font-size:11px;padding:1px 2px}
+html[data-layout="phone-portrait"] .brand p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:9.5px;line-height:1.2;white-space:normal;overflow:hidden}
+html[data-layout="phone-portrait"] .btn-group{order:2;margin-right:3px}
+html[data-layout="phone-portrait"] #btnHelp{order:3}
+html[data-layout="phone-portrait"] .bar::after{content:"";order:4;flex:0 0 100%;height:0}
+html[data-layout="phone-portrait"] #btnSave{order:5}
+html[data-layout="phone-portrait"] #btnOpen{order:6}
+html[data-layout="phone-portrait"] #btnNew{order:7}
+html[data-layout="phone-portrait"] #btnSave,
+html[data-layout="phone-portrait"] #btnOpen,
+html[data-layout="phone-portrait"] #btnNew{border-color:transparent;background:none;padding:4px 5px;gap:5px;font-size:13.5px;min-height:36px}
+html[data-layout="phone-portrait"] #btnNew{min-width:34px;justify-content:center}
+/* die Beispiele als Zeichen (Glühbirne); die Liste selbst zeigt das Gerät */
+html[data-layout="phone-portrait"] .bar select.examples{order:8;flex:0 0 34px;width:34px;min-width:0;max-width:34px;min-height:36px;padding:0;color:transparent;border-color:transparent;
+  background-color:transparent;background-position:center;background-size:24px 24px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFB515' d='M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z'/%3E%3Cpath fill='%238F97A6' d='M9 18.5h6V20a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/%3E%3C/svg%3E")}
+html[data-layout="phone-portrait"] .bar select.examples option{color:var(--ink);background:var(--surface)}
+html[data-layout="phone-portrait"] .connect-btn{width:58px;height:58px}
+html[data-layout="phone-portrait"] .connect-btn svg{width:42px;height:42px}
+/* Start und Stopp oben rechts – unten liegt die Leiste der Kategorien */
+html[data-layout="phone-portrait"] .ws-run{top:10px;bottom:auto;right:calc(var(--lane) + 10px)}
+html[data-layout="phone-portrait"] .ws-run button.gamepad{top:calc(100% + 10px);bottom:auto}
+
+/* --- Handy quer --- */
+/* flache Kopfleiste in einer Zeile; die Höhe ist hier knapp */
+html[data-layout="phone-landscape"] .bar{flex-wrap:nowrap;gap:8px;padding:5px calc(env(safe-area-inset-right,0px) + 66px) 5px calc(env(safe-area-inset-left,0px) + 10px)}
+html[data-layout="phone-landscape"] .brand{flex:0 0 auto;gap:8px}
+html[data-layout="phone-landscape"] .brand-mark{width:32px;height:32px}
+html[data-layout="phone-landscape"] .brand h1{font-size:16px;line-height:1.05;display:flex;flex-direction:column;align-items:flex-start}
+html[data-layout="phone-landscape"] .brand .version{font-size:10.5px;padding:0}
+html[data-layout="phone-landscape"] .brand p{display:none}
+html[data-layout="phone-landscape"] .actions{flex:1 1 0;min-width:0;flex-wrap:nowrap;justify-content:flex-start;gap:6px}
+html[data-layout="phone-landscape"] #btnSave{order:1}
+html[data-layout="phone-landscape"] #btnOpen{order:2}
+html[data-layout="phone-landscape"] #btnNew{order:3}
+html[data-layout="phone-landscape"] .bar select.examples{order:4;flex:1 1 60px;min-width:60px;max-width:240px;margin-right:auto}
+html[data-layout="phone-landscape"] #btnHelp{order:5}
+html[data-layout="phone-landscape"] .btn-group{order:6}
+html[data-layout="phone-landscape"] .ws-connect{top:calc(env(safe-area-inset-top,0px) + 3px)}
+html[data-layout="phone-landscape"] .connect-btn{width:44px;height:44px}
+html[data-layout="phone-landscape"] .connect-btn svg{width:32px;height:32px}
+html[data-layout="phone-landscape"] .ws-hub{left:auto;right:calc(env(safe-area-inset-right,0px) + 24px)}
+html[data-layout="phone-landscape"] .code-toggle{height:88px;top:40%}
+html[data-layout="phone-landscape"] .ws-run{bottom:12px;right:calc(var(--lane) + var(--grip) + 8px)}
+html[data-layout="phone-landscape"] .ws-run button.gamepad{bottom:calc(100% + 10px);top:auto}
+/* Kategorien etwas dichter – trotzdem rollt die Liste, wenn die Höhe nicht reicht */
+html[data-layout="phone-landscape"] .blocklyToolbox{padding:6px 0!important}
+html[data-layout="phone-landscape"] .blocklyToolboxCategory{line-height:32px!important;margin-bottom:5px!important;padding:0 12px 0 9px!important;border-left-width:8px}
+html[data-layout="phone-landscape"] .blocklyToolboxCategoryLabel{font-size:15px!important}
