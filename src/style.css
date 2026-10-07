@@ -525,6 +525,7 @@ details.run a{color:#7CC8FF}
 .help-quiz-score:empty{display:none}
 .help-word{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px}
 .help-body .help-word code{font-size:17px;padding:4px 10px;border-radius:8px}
+.help-methods b{font-family:var(--mono);font-size:13px;font-weight:600}
 .help-kind{font-size:12.5px;padding:3px 9px;border-radius:10px;border:1px solid var(--rule);color:var(--muted)}
 .help-step-of{margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
 .help-body .help-entries{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:6px}

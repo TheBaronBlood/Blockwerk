@@ -12,6 +12,7 @@ import { HELP_CATEGORIES } from '../src/docs/index';
 import { LESSONS } from '../src/docs/lessons';
 import { METHODS, MODULES, courseFiles } from '../src/docs/kurs';
 import { summary } from '../src/docs/summary';
+import { PY_CLASSES, methodInLine, methodText, methodUsage } from '../src/docs/classes';
 import { wordUsage, wordsOf } from '../src/docs/words';
 
 // Python 3 muss es sein: Auf manchen Rechnern ist »python« noch Python 2 und kennt kein async
@@ -178,5 +179,28 @@ describe('Python-Hilfe', () => {
     // Namen, die keine Erklärung brauchen: Geräte, Variablen, Konstanten, benannte Parameter, Modulpfade
     const skip = /^(motor|farbe|abstand|kraft)_[A-F]$|^[A-F]$|^[A-Z_]{2,}$|^(count|pybricks|hubs|parameters|pupdevices|robotics|tools|iodevices|urandom|byte|name|Strecken|Strecke|update|x|y|straight_speed|turn_rate|wheel_diameter|axle_track|text|number|icon|on|off|Tempo|Zaehler|gefunden|Ecke|Piep|Abweichung|Linie|nachricht_los|stand)$/;
     expect([...words].filter(w => !PY_DOCS[w] && !skip.test(w)).sort()).toEqual([]);
+  });
+});
+
+describe('Klassen von Pybricks', () => {
+  it.each(PY_CLASSES.map(c => [c.name, c] as const))('%s: Import stimmt mit dem erzeugten Code überein', (_name, c) => {
+    // der Kopf eines echten Beispiels importiert die Klasse aus genau diesem Modul
+    const header = wordUsage(c.name).header;
+    expect(header.some(l => l.startsWith(`from ${c.module} import `) && l.includes(c.name))).toBe(true);
+  });
+  it('jede Funktion hat eine Erklärung, und zu jeder Klasse gibt es Blöcke', () => {
+    for (const c of PY_CLASSES){
+      for (const m of c.methods){ expect(methodText(m), `${c.name}.${m.path}`).not.toBe(''); expect(m.detail).not.toBe(''); }
+      expect(c.methods.some(m => methodUsage(c, m).length > 0), c.name).toBe(true);
+    }
+  });
+  it('ordnet eine Funktion über die Zeile der richtigen Klasse zu', () => {
+    expect(methodInLine('distance', 'while not (abstand_D.distance() < 100):')?.cls.name).toBe('UltrasonicSensor');
+    expect(methodInLine('distance', 'print(roboter.distance())')?.cls.name).toBe('DriveBase');
+    expect(methodInLine('pressed', 'if Button.LEFT in hub.buttons.pressed():')?.method.path).toBe('buttons.pressed');
+    expect(methodInLine('print', 'print(1)')).toBeNull();
+    // die Blöcke einer Funktion kommen aus den Beispielen der Blockhilfe
+    const drive = PY_CLASSES.find(c => c.name === 'DriveBase')!;
+    expect(methodUsage(drive, drive.methods.find(m => m.path === 'straight')!).map(b => b.type)).toEqual(['pb_drive_straight']);
   });
 });

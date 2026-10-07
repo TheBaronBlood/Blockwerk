@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 import { BLOCK_DOCS } from './docs/blocks';
+import { classByName, methodInLine, methodName, methodText, methodUsage, PY_CLASSES, type PyClass, type PyMethod } from './docs/classes';
 import { runExample } from './docs/example';
 import { HELP_CATEGORIES } from './docs/index';
 import { METHODS, MODULES, quizResult, saveQuizResult } from './docs/kurs';
@@ -382,7 +383,81 @@ export function initHelp(host: HelpHost): Help {
     if (toQuiz) quizHeading.scrollIntoView();
   }
 
+  // ----- Klassen von Pybricks: wie eine Python-Dokumentation – Klasse, ihre Funktionen, die Blöcke dazu -----
+  const codeLine = (text: string) => ({text, id:null});
+  const blockEntries = (types: string[]) => entryList(types.map(type => {
+    const cat = categoryOf(type);
+    return {title:BLOCK_DOCS[type].title, text:cat?.name, colour:cat ? categoryColour(cat.name) : undefined, go:() => showBlock(type)};
+  }), 'help-entries blocks compact');
+
+  function showClass(name: string){
+    const i = PY_CLASSES.findIndex(c => c.name === name); if (i < 0) return showIndex();
+    const c = PY_CLASSES[i];
+    open(() => showClass(name), c.name, [['Klassen von Pybricks', showIndex]]);
+    const head = body.appendChild(el('p', 'help-word'));
+    head.appendChild(el('code', undefined, `class ${c.name}`));
+    head.appendChild(el('span', 'help-kind', 'Klasse von Pybricks'));
+    paragraphs(body, c.text);
+
+    section('Import');
+    body.appendChild(codeBox([codeLine(`from ${c.module} import ${c.name}`)]));
+    rich(body.appendChild(el('p', 'help-note')), `Die Klasse kommt aus dem Modul \`${c.module}\`. Blockwerk schreibt diese Zeile selbst in den Kopf des Programms, sobald ein Block sie braucht.`);
+
+    section('Objekt anlegen');
+    body.appendChild(codeBox([codeLine(c.create)]));
+    const space = c.variable.indexOf(' ');
+    rich(body.appendChild(el('p', 'help-note')), `In Programmen von Blockwerk heißt das Objekt \`${space < 0 ? c.variable : c.variable.slice(0, space)}\`${space < 0 ? '' : c.variable.slice(space)}. Alle Funktionen der Klasse ruft man über diesen Namen auf.`);
+
+    section(`Funktionen (${c.methods.length})`);
+    body.appendChild(entryList(c.methods.map(m => ({title:m.call, text:summary(methodText(m)), go:() => showMethod(c.name, m.path)})), 'help-entries compact help-methods'));
+
+    const types = [...new Set(c.methods.flatMap(m => methodUsage(c, m).map(b => b.type)))];
+    if (types.length){
+      section(`Blöcke, die diese Klasse benutzen (${types.length})`);
+      body.appendChild(blockEntries(types));
+    }
+    const link = (cls: PyClass | undefined) => cls ? {title:cls.name, go:() => showClass(cls.name)} : undefined;
+    pager(link(PY_CLASSES[i - 1]), link(PY_CLASSES[i + 1]));
+  }
+
+  function showMethod(className: string, path: string){
+    const c = classByName(className), i = c ? c.methods.findIndex(m => m.path === path) : -1;
+    if (!c || i < 0) return showIndex();
+    const m = c.methods[i];
+    open(() => showMethod(className, path), `${c.name}.${methodName(m)}`, [['Klassen von Pybricks', showIndex], [c.name, () => showClass(c.name)]]);
+    const head = body.appendChild(el('p', 'help-word'));
+    head.appendChild(el('code', undefined, m.call));
+    head.appendChild(el('span', 'help-kind', `Funktion von ${c.name}`));
+
+    section('Was sie macht');
+    paragraphs(body, methodText(m));
+    section('Eingaben und Ergebnis');
+    rich(body.appendChild(el('p')), m.detail);
+
+    const usage = methodUsage(c, m);
+    const samples = [...new Set(usage.flatMap(b => b.lines))].sort((a, b) => a.length - b.length).slice(0, 3);
+    if (samples.length){
+      section('So sieht es im Code aus');
+      body.appendChild(codeBox(samples.map(codeLine)));
+    }
+    if (usage.length){
+      section(usage.length === 1 ? 'Dieser Block benutzt sie' : 'Diese Blöcke benutzen sie');
+      body.appendChild(el('p', 'help-note', 'Die Blöcke lassen sich von hier auf die Arbeitsfläche ziehen.'));
+      blockPicture(usage.slice(0, 3).map(b => b.type));
+      body.appendChild(blockEntries(usage.slice(0, 8).map(b => b.type)));
+      if (usage.length > 8) body.appendChild(el('p', 'help-note', `… und ${usage.length - 8} weitere.`));
+    } else {
+      body.appendChild(el('p', 'help-note', 'Dafür gibt es in Blockwerk keinen eigenen Block (oder nur als Auswahl in einem Block). In Python lässt sich die Funktion trotzdem aufrufen.'));
+    }
+    const link = (method: PyMethod | undefined) => method ? {title:method.call, go:() => showMethod(c.name, method.path)} : undefined;
+    pager(link(c.methods[i - 1]), link(c.methods[i + 1]));
+  }
+
   function showWord(word: string, context?: string){
+    // Klassen und ihre Funktionen haben eigene Seiten; die Zeile sagt, zu welcher Klasse eine Funktion gehört
+    if (classByName(word)) return showClass(word);
+    const method = context ? methodInLine(word, context) : null;
+    if (method) return showMethod(method.cls.name, method.method.path);
     if (!hasWord(word)) return showIndex();
     const doc = PY_DOCS[word];
     open(() => showWord(word, context), doc.title, [['Python-Wörter', showIndex]]);
@@ -473,6 +548,10 @@ export function initHelp(host: HelpHost): Help {
         b.addEventListener('click', () => showCategory(c.name));
       }
 
+      results.appendChild(el('h3', undefined, 'Klassen von Pybricks'));
+      results.appendChild(el('p', 'help-note', 'Zum Nachschlagen wie in einer Python-Dokumentation: Import, Anlegen, alle Funktionen – und welche Blöcke sie benutzen.'));
+      results.appendChild(entryList(PY_CLASSES.map(c => ({title:c.name, text:summary(c.text), go:() => showClass(c.name)})), 'help-entries compact'));
+
       results.appendChild(el('h3', undefined, 'Python verstehen'));
       results.appendChild(el('p', 'help-note', 'Acht kurze Kapitel. Im Python-Code erklärt außerdem ein Klick auf ein Wort, was es bedeutet.'));
       results.appendChild(entryList(PY_CHAPTERS.map((c, i) => ({title:c.title, badge:String(i + 1), go:() => showChapter(c.id)})), 'help-entries numbered compact'));
@@ -488,6 +567,9 @@ export function initHelp(host: HelpHost): Help {
       group('Blöcke', HELP_CATEGORIES.flatMap(c => c.types.filter(t => hit(BLOCK_DOCS[t].title, BLOCK_DOCS[t].text, ...(BLOCK_DOCS[t].tips ?? []), c.name))
         .map(t => ({title:BLOCK_DOCS[t].title, text:c.name, colour:categoryColour(c.name), go:() => showBlock(t)}))));
       group('Python verstehen', PY_CHAPTERS.filter(c => hit(c.title, c.text)).map(c => ({title:c.title, go:() => showChapter(c.id)})));
+      group('Klassen von Pybricks', PY_CLASSES.filter(c => hit(c.name, c.text)).map(c => ({title:c.name, text:summary(c.text), go:() => showClass(c.name)})));
+      group('Funktionen der Klassen', PY_CLASSES.flatMap(c => c.methods.filter(m => hit(m.call, methodText(m), m.detail))
+        .map(m => ({title:m.call, text:c.name, go:() => showMethod(c.name, m.path)}))));
       const seen = new Set<string>();
       group('Python-Wörter', Object.entries(PY_DOCS).filter(([w, d]) => hit(w, d.title, d.text) && !seen.has(d.title) && !!seen.add(d.title))
         .map(([w, d]) => ({title:d.title, go:() => showWord(w)})));

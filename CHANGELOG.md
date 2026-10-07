@@ -50,6 +50,11 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Neu: **Blöcke lassen sich aus der Hilfe ziehen.** Das Bild eines Blocks auf seiner Hilfeseite
   ist anfassbar: herausziehen, und er liegt auf der Arbeitsfläche – ohne Suchen in der Blockliste.
   Solange gezogen wird, scheint die Hilfe durch.
+- Neu: **Die Hilfe hat ein Nachschlagewerk der Klassen von Pybricks**, aufgebaut wie eine
+  Python-Dokumentation: zu jeder Klasse (`PrimeHub`, `DriveBase`, `Motor`, die Sensoren,
+  `StopWatch`, `XboxController`, `Remote`) der Import, das Anlegen des Objekts und alle
+  Funktionen. Jede Funktion hat eine eigene Seite mit Eingaben, Beispielzeilen und den Blöcken,
+  die sie benutzen. Ein Klick auf `Motor` oder `straight` im Code führt direkt dorthin.
 - Neu: Der Code zeigt **Hilfslinien für die Einrückung** – je Stufe ein feiner senkrechter Strich.
 - Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine
   **Zeile frei**, damit man sieht, wo er endet.
