@@ -374,7 +374,13 @@ details.run a{color:#7CC8FF}
 .ext-head{flex:0 0 auto;display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}
 .ext-head h2{margin:0;font-size:17px}
 .ext-sub{flex:1 1 auto;color:var(--muted);font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ext-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:200px minmax(0,1.25fr) minmax(0,1fr)}
+/* Liste | Griff | Quelltext | Griff | Vorschau und Anleitung – die Griffe ändern --ext-list und --ext-side */
+.ext-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:var(--ext-list,200px) 6px minmax(0,1.25fr) 6px var(--ext-side,minmax(0,1fr))}
+.ext-split{cursor:col-resize;touch-action:none;position:relative;z-index:3;margin:0 -3px}
+.ext-split:hover,.ext-split.drag{background:var(--accent)}
+.ext.full{width:100vw;height:100vh;border:0;border-radius:0}
+.ext-full{align-self:center;display:inline-grid;place-items:center;padding:7px 8px}
+.ext-full[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .ext-list{display:flex;flex-direction:column;gap:6px;padding:12px;border-right:1px solid var(--rule);overflow:auto}
 .ext-list ul{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:4px}
 .ext-list li button{width:100%;text-align:left;padding:8px 10px;border:1.5px solid var(--rule);border-left:6px solid var(--ext-colour,var(--accent));border-radius:8px;background:var(--bg);cursor:pointer;font-weight:700;overflow:hidden;text-overflow:ellipsis}
@@ -426,6 +432,7 @@ details.run a{color:#7CC8FF}
 .ext-cheat code{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--rule);border-radius:4px;padding:1px 4px;overflow-wrap:anywhere}
 @media (max-width:900px){
   .ext-body{grid-template-columns:1fr;grid-template-rows:auto minmax(260px,1fr) minmax(220px,auto);overflow:auto}
+  .ext-split{display:none}
   .ext-list{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--rule)}
   .ext-list ul{flex-direction:row;flex-wrap:wrap;margin:0}
   .ext-side{border-left:0;border-top:1px solid var(--rule)}

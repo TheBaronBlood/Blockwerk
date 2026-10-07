@@ -30,7 +30,7 @@ export function initExtensionEditor(host: EditorHost): {open(): void} {
   const dialog = document.createElement('dialog');
   dialog.className = 'ext';
   dialog.innerHTML = `
-    <div class="ext-head"><h2>Erweiterungen</h2><span class="ext-sub">Eigene Blöcke mit eigenem Python-Code</span><button type="button" class="btn" data-act="close" aria-label="Schließen">✕</button></div>
+    <div class="ext-head"><h2>Erweiterungen</h2><span class="ext-sub">Eigene Blöcke mit eigenem Python-Code</span><button type="button" class="btn ext-full" data-act="full" aria-label="Vollbild" aria-pressed="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><button type="button" class="btn" data-act="close" aria-label="Schließen">✕</button></div>
     <div class="ext-body">
       <nav class="ext-list" aria-label="Installierte Erweiterungen">
         <ul></ul>
@@ -111,6 +111,55 @@ export function initExtensionEditor(host: EditorHost): {open(): void} {
 
   let preview: Blockly.WorkspaceSvg | null = null;
   let previewTypes: string[] = [];
+
+  // Aufteilung: Liste links und Vorschau/Anleitung rechts lassen sich durch Ziehen breiter und schmaler
+  // machen, das Fenster füllt auf Wunsch den ganzen Bildschirm. Beides bleibt gemerkt.
+  const LAYOUT_KEY = 'blockwerk-ext-layout-v1';
+  const layout: {list?: number; side?: number; full?: boolean} = (() => {
+    try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}') || {}; } catch { return {}; }
+  })();
+  const keepLayout = () => { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch { /* gilt dann bis zum Neuladen */ } };
+  const body = q('.ext-body'), fullBtn = q<HTMLButtonElement>('[data-act=full]');
+  function applyLayout(){
+    for (const key of ['list', 'side'] as const){
+      const px = layout[key];
+      if (typeof px === 'number') body.style.setProperty('--ext-' + key, px + 'px'); else body.style.removeProperty('--ext-' + key);
+    }
+    dialog.classList.toggle('full', !!layout.full);
+    fullBtn.setAttribute('aria-pressed', String(!!layout.full));
+    fullBtn.title = layout.full ? 'Vollbild verlassen' : 'Vollbild';
+    if (preview) Blockly.svgResize(preview);
+  }
+  function addSplit(before: Element, key: 'list' | 'side', label: string){
+    const handle = document.createElement('div');
+    handle.className = 'ext-split'; handle.tabIndex = 0;
+    handle.setAttribute('role', 'separator'); handle.setAttribute('aria-orientation', 'vertical'); handle.setAttribute('aria-label', label);
+    handle.title = 'Ziehen: Breite ändern · Doppelklick: Standard';
+    before.before(handle);
+    // die Mitte mit dem Quelltext behält immer Platz
+    const set = (x: number, store: boolean) => {
+      const r = body.getBoundingClientRect();
+      layout[key] = Math.round(key === 'list' ? Math.max(130, Math.min(x - r.left, r.width * 0.35)) : Math.max(220, Math.min(r.right - x, r.width * 0.6)));
+      applyLayout(); if (store) keepLayout();
+    };
+    let dragging = false;
+    handle.addEventListener('pointerdown', (e) => {
+      dragging = true; handle.classList.add('drag'); e.preventDefault();
+      try { handle.setPointerCapture(e.pointerId); } catch { /* ohne Zeigerbindung geht es trotzdem */ }
+    });
+    handle.addEventListener('pointermove', (e) => { if (dragging) set(e.clientX, false); });
+    const end = () => { if (dragging) keepLayout(); dragging = false; handle.classList.remove('drag'); };
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+    handle.addEventListener('dblclick', () => { delete layout[key]; applyLayout(); keepLayout(); });
+    handle.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowLeft' ? -24 : e.key === 'ArrowRight' ? 24 : 0;
+      if (step){ e.preventDefault(); set(handle.getBoundingClientRect().left + step, true); }
+    });
+  }
+  addSplit(q('.ext-edit'), 'list', 'Breite der Liste ändern');
+  addSplit(q('.ext-side'), 'side', 'Breite von Vorschau und Anleitung ändern');
+  applyLayout();
   let current: Extension | null = null;     // zuletzt fehlerfrei gelesener Stand des Quelltexts
   let editingId: string | null = null;      // welche installierte Erweiterung gerade offen ist
 
@@ -228,6 +277,7 @@ export function initExtensionEditor(host: EditorHost): {open(): void} {
     if (tab){ showTab(tab); return; }
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     if (act === 'close') dialog.close();
+    else if (act === 'full'){ layout.full = !layout.full; applyLayout(); keepLayout(); }
     else if (act === 'new') edit(TEMPLATE, null);
     else if (act === 'load') fileInput.click();
     else if (act === 'save') save();

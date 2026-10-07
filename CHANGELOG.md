@@ -36,6 +36,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   (Innensechskantschlüssel), das am Zahnrad hängt, sobald Erweiterungen eingeschaltet sind.
 - Neu: Neben »Kopieren« stehen **Minus und Plus für die Schrift im Code** – dieselbe Einstellung
   wie »Schriftgröße im Code«, nur ohne Umweg über die Einstellungen.
+- Neu: Im **Fenster »Erweiterungen«** lassen sich die Liste links und die Vorschau rechts durch
+  Ziehen breiter und schmaler machen (Doppelklick: Standard), und ein Knopf oben rechts schaltet
+  auf Vollbild. Beides merkt sich Blockwerk.
 - Geändert: Der Controller-Knopf über dem Startknopf blendet das Steuerfeld unter dem Code ein
   und aus (mit dem Finger oder bei eingeklapptem Code öffnet er weiter die große Ansicht).
 - Am Test-Hub geprüft; am echten Hub ist »Hub trennen« mit dem Zurücklegen noch nicht erprobt.
