@@ -98,13 +98,14 @@ function syncPadButton(){
 }
 let currentModules: GenerateResult['modules'] = [];
 let selectedId: string | null = null;
+let currentExprs: Record<string, string> = {};
 let shownCode: string | null = null;   // was gerade im Python-Bereich steht (Zeilen samt Block)
 
 function render(){
   let res: GenerateResult;
   try { res = generate(ws); }
-  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, usesXbox:false, modules:[]}; }
-  currentLines = res.lines;
+  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, usesXbox:false, modules:[], exprs:{}}; }
+  currentLines = res.lines; currentExprs = res.exprs;
   if (currentUsesPad !== res.usesPad){ currentUsesPad = res.usesPad; syncPadButton(); if (padViewRef) updateHubUi(); }
   currentModules = res.modules;
   currentUsesXbox = res.usesXbox;
@@ -117,12 +118,13 @@ function render(){
     const frag = document.createDocumentFragment();
     res.lines.forEach((l, i) => {
       const row = document.createElement('div'); row.className = 'ln';
-      if (l.id){ row.dataset.id = l.id; if (l.id === selectedId) row.classList.add('sel'); }
+      if (l.id) row.dataset.id = l.id;
       const no = document.createElement('span'); no.className = 'no'; no.textContent = String(i + 1);
       const tx = document.createElement('span'); tx.className = 'tx'; highlight(l.text, tx, hasWord);
       row.append(no, tx); frag.appendChild(row);
     });
     codeEl.appendChild(frag);
+    markSelection(selectedId, false);
   }
   if (res.warnings.length){
     warnEl.innerHTML = '';
@@ -131,16 +133,70 @@ function render(){
     warnEl.appendChild(ul); warnEl.classList.remove('hidden');
   } else warnEl.classList.add('hidden');
 }
-function markSelection(id: string | null){
+/** Der Wertblock (auch eine Zahl im Block), auf den zuletzt gedrückt wurde – Blockly wählt bei einer Zahl den Block darum aus. */
+let pressedValue: string | null = null;
+const paramMarks = (window as unknown as {Highlight?: typeof Highlight}).Highlight && CSS.highlights ? CSS.highlights : null;
+/**
+ * Markiert im Code, was zum gewählten Block gehört: bei einer Schleife oder Bedingung den ganzen Abschnitt
+ * (Kopfzeile bis letzte Zeile des Inhalts), bei einem Wertblock – einer Zahl, einem Sensor, einer Rechnung –
+ * die Zeile der Anweisung und darin den Ausdruck selbst.
+ */
+function markSelection(id: string | null, scroll = true){
   selectedId = id;
-  let first: HTMLElement | null = null;
-  codeEl.querySelectorAll<HTMLElement>('.ln').forEach(r => {
-    const on = !!id && r.dataset.id === id;
+  const block = id ? ws.getBlockById(id) : null;
+  // die Anweisung, in der ein Wertblock steckt (nur über Werteingänge nach oben – nicht zum Block darüber)
+  const statementOf = (b: Blockly.Block) => { while (b.outputConnection && b.getParent()) b = b.getParent()!; return b; };
+  const stmt = block ? statementOf(block) : null;
+  // gedrückter Wertblock: gilt nur, wenn er zur gewählten Anweisung gehört
+  const pressed = pressedValue ? ws.getBlockById(pressedValue) : null;
+  const param = pressed && stmt && statementOf(pressed) === stmt ? pressed : block?.outputConnection ? block : null;
+  const ids = new Set<string>();
+  if (stmt){
+    ids.add(stmt.id);
+    // ohne Parameter gehört der Inhalt dazu: alles, was in den Eingängen des Blocks steckt (nicht, was darunter hängt)
+    if (!param) for (const input of stmt.inputList) for (const inner of input.connection?.targetBlock()?.getDescendants(false) ?? []) ids.add(inner.id);
+  }
+  const rows = [...codeEl.querySelectorAll<HTMLElement>('.ln')];
+  const hits = rows.map((r, i) => r.dataset.id && ids.has(r.dataset.id) ? i : -1).filter(i => i >= 0);
+  const from = hits.length ? hits[0] : -1, to = hits.length ? hits[hits.length - 1] : -1;
+  rows.forEach((r, i) => {
+    // Leerzeilen mitten im Abschnitt gehören zum Rahmen
+    const on = i >= from && i <= to && (!param || hits.includes(i));
     r.classList.toggle('sel', on);
-    if (on && !first) first = r;
+    r.classList.toggle('sel-top', on && i === from);
+    r.classList.toggle('sel-end', on && i === to);
   });
-  (first as HTMLElement | null)?.scrollIntoView({block:'nearest'});
+  // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
+  paramMarks?.delete('bw-param');
+  const expr = param ? currentExprs[param.id] : undefined;
+  if (paramMarks && expr) for (const i of hits){
+    const tx = rows[i].querySelector('.tx'), at = tx?.textContent?.indexOf(expr) ?? -1;
+    if (!tx || at < 0) continue;
+    const range = document.createRange();
+    let seen = 0;
+    const walker = document.createTreeWalker(tx, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()){
+      const len = node.textContent!.length;
+      if (at >= seen && at < seen + len) range.setStart(node, at - seen);
+      if (at + expr.length > seen && at + expr.length <= seen + len){ range.setEnd(node, at + expr.length - seen); break; }
+      seen += len;
+    }
+    paramMarks.set('bw-param', new Highlight(range));
+    break;
+  }
+  if (scroll && from >= 0) rows[from].scrollIntoView({block:'nearest'});
 }
+// Welcher Block unter dem Zeiger liegt, steht an seinem Element – auch bei Zahlen, die Blockly nicht selbst auswählt
+$('blocklyDiv').addEventListener('pointerdown', (e) => {
+  const pressed = ws.getBlockById((e.target as Element).closest?.('g[data-id]')?.getAttribute('data-id') ?? '');
+  pressedValue = pressed?.outputConnection ? pressed.id : null;
+  // (ist der Block darum schon gewählt, meldet Blockly keine neue Auswahl)
+  setTimeout(() => {
+    const now = Blockly.common.getSelected();
+    // auf einen Block gedrückt: seine Auswahl gilt (oder die bisherige); daneben gedrückt: nichts ist gewählt
+    markSelection(now instanceof Blockly.BlockSvg ? now.id : pressed ? selectedId : null);
+  }, 0);
+}, true);
 codeEl.addEventListener('click', (e) => {
   // Klick auf ein erklärtes Wort öffnet die Python-Hilfe, sonst wird der Block zur Zeile markiert
   const word = (e.target as HTMLElement).closest<HTMLElement>('.tk-doc')?.dataset.word;
@@ -155,7 +211,13 @@ codeEl.addEventListener('click', (e) => {
 const STORE_KEY = 'blockwerk-workspace-v1';
 let renderTimer: number | undefined, saveTimer: number | undefined;
 ws.addChangeListener((e) => {
-  if (e.type === Blockly.Events.SELECTED){ markSelection((e as Blockly.Events.Selected).newElementId || null); return; }
+  if (e.type === Blockly.Events.SELECTED){
+    const id = (e as Blockly.Events.Selected).newElementId || null;
+    // Solange das Eingabefeld einer Zahl oder eine Auswahlliste offen ist, hebt Blockly die Auswahl auf –
+    // die Markierung im Code bleibt trotzdem stehen, bis woanders hingeklickt wird
+    if (id || !(Blockly.WidgetDiv.isVisible() || Blockly.DropDownDiv.isVisible())) markSelection(id);
+    return;
+  }
   if (e.isUiEvent) return;
   clearTimeout(renderTimer); renderTimer = window.setTimeout(render, 80);
   clearTimeout(saveTimer); saveTimer = window.setTimeout(() => {

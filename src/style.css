@@ -134,6 +134,12 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .ln{display:flex;padding-right:16px;border-left:3px solid transparent;cursor:default}
 .ln[data-id]{cursor:pointer}
 .ln.sel{background:var(--code-sel);border-left-color:var(--code-sel-bar)}
+/* Rahmen um den gewählten Abschnitt: oben und unten eine feine Linie */
+.ln.sel-top{box-shadow:inset 0 1px 0 var(--code-sel-bar)}
+.ln.sel-end{box-shadow:inset 0 -1px 0 var(--code-sel-bar)}
+.ln.sel-top.sel-end{box-shadow:inset 0 1px 0 var(--code-sel-bar),inset 0 -1px 0 var(--code-sel-bar)}
+/* der gewählte Parameter in seiner Zeile */
+::highlight(bw-param){background-color:rgba(255,217,69,.5);color:#fff}
 .ln .no{flex:0 0 3.2em;text-align:right;padding-right:14px;color:var(--code-gutter);user-select:none}
 .ln .tx{white-space:pre}
 .tk-kw{color:#FF3F4F}
