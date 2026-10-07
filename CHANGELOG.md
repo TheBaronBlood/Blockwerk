@@ -15,6 +15,62 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.27.0 – 7. Oktober 2026
+
+- Neu: **Die Oberfläche ist aufgeräumt** – nach einem Entwurf des Autors. Start und Stopp gibt
+  es nur noch einmal, als runde Knöpfe unten rechts an der Arbeitsfläche; die zweite Knopfleiste
+  über dem Python-Code ist weg.
+- Neu: **Verbinden ist ein eigener Knopf** oben rechts an der Arbeitsfläche. Er zeigt, ob ein
+  Hub verbunden ist: graue Wellen ohne Hub, grüne mit Hub. Ohne Hub öffnet er »Hub verbinden«,
+  mit Hub die Hub-Ansicht mit den Anschlüssen. Daneben steht, was der Hub gerade tut.
+- Neu: **»Hub trennen« steht in der Hub-Ansicht.** Vorher legt Blockwerk dein Programm zurück
+  auf den Hub – das Anzeige-Programm der Hub-Ansicht bleibt nie als letztes dort liegen. Das
+  gilt jetzt auch, wenn du noch gar nichts gestartet hattest: Dann kommt das Programm der
+  Arbeitsfläche auf den Hub, und die Taste am Hub startet es. Läuft ein Programm, fragt der
+  Verbinden-Knopf, ob es für die Hub-Ansicht anhalten oder der Hub getrennt werden soll.
+- Geändert: Der Werkzeugkasten zeigt jede Kategorie mit einem Balken und der Schrift in ihrer
+  Farbe; die gewählte ist ganz ausgefüllt. Die Knöpfe der Kopfleiste haben farbige Zeichen,
+  die Liste der Beispiele füllt die Mitte, der Python-Bereich klappt über einen Griff auf
+  halber Höhe ein und aus.
+- Geändert: »Erweiterungen« ist kein beschrifteter Knopf mehr, sondern ein kleines Zeichen
+  (Innensechskantschlüssel), das am Zahnrad hängt, sobald Erweiterungen eingeschaltet sind.
+- Neu: Neben »Kopieren« stehen **Minus und Plus für die Schrift im Code** – dieselbe Einstellung
+  wie »Schriftgröße im Code«, nur ohne Umweg über die Einstellungen.
+- Neu: Im **Fenster »Erweiterungen«** lassen sich die Liste links und die Vorschau rechts durch
+  Ziehen breiter und schmaler machen (Doppelklick: Standard), und ein Knopf oben rechts schaltet
+  auf Vollbild. Beides merkt sich Blockwerk.
+- Neu: **Der Code zeigt den ganzen Abschnitt eines Blocks.** Wer eine Schleife oder Bedingung
+  anklickt, sieht im Python-Code die Form des Blocks: Kopfzeile, links ein Steg, unten ein Balken. Das gilt
+  auch für eigene Blöcke (`def …`) und Ereignisse mit eigener Zeile. Ein Klick auf einen
+  **Parameter** – eine Zahl, eine Variable, einen Sensor, eine Rechnung – hebt nur diesen Ausdruck
+  hervor, nicht die ganze Zeile.
+- Neu: **Zu lange Zeilen brechen in der Anzeige um**, statt aus dem Bild zu laufen: Die Folgezeilen
+  stehen hinter der öffnenden Klammer, wie man es von Hand einrücken würde. Das Programm selbst und
+  die Zeilennummern bleiben dabei, wie sie sind.
+- Neu: **Blöcke lassen sich aus der Hilfe ziehen.** Das Bild eines Blocks auf seiner Hilfeseite
+  ist anfassbar: herausziehen, und er liegt auf der Arbeitsfläche – ohne Suchen in der Blockliste.
+  Solange gezogen wird, scheint die Hilfe durch.
+- Neu: **Die Hilfe hat ein Nachschlagewerk der Klassen von Pybricks**, aufgebaut wie eine
+  Python-Dokumentation: zu jeder Klasse (`PrimeHub`, `DriveBase`, `Motor`, die Sensoren,
+  `StopWatch`, `XboxController`, `Remote`) der Import, das Anlegen des Objekts und alle
+  Funktionen. Jede Funktion hat eine eigene Seite mit Eingaben, Beispielzeilen und den Blöcken,
+  die sie benutzen. Ein Klick auf `Motor` oder `straight` im Code führt direkt dorthin.
+- Neu: Der Code zeigt **Hilfslinien für die Einrückung** – je Stufe ein feiner senkrechter Strich.
+- Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine
+  **Zeile frei**, damit man sieht, wo er endet.
+- Neu: Beim **Löschen eines Blocks** ist ein kurzes Wischen zu hören (abschaltbar mit »Klang« in den
+  Einstellungen).
+- Geändert: Welcher Anlass welchen Klang bekommt, steht jetzt in `public/klang/klang.json` –
+  Datei in den Ordner legen, Namen eintragen, neu laden. Vorbereitet sind auch Knöpfe, Kategorien,
+  Start, Stopp, »verbunden«, »getrennt« und Fehler; sie sind von Haus aus stumm.
+- Behoben: Der Klang beim Zusammenstecken blieb in manchen Browsern (Edge) stumm, obwohl er
+  eingeschaltet war. Die Klänge laufen jetzt über einen anderen Weg des Browsers.
+- Neu: Zwischen den Lupen der Arbeitsfläche steht der **Zoom in Prozent**; ein Klick darauf setzt
+  ihn auf 100 % zurück.
+- Geändert: Der Controller-Knopf über dem Startknopf blendet das Steuerfeld unter dem Code ein
+  und aus (mit dem Finger oder bei eingeklapptem Code öffnet er weiter die große Ansicht).
+- Am Test-Hub geprüft; am echten Hub ist »Hub trennen« mit dem Zurücklegen noch nicht erprobt.
+
 ## 0.26.4 – 7. Oktober 2026
 
 - Neu: In »Über Blockwerk« steht ein **Dank an Pybricks** – mit Links zum Projekt und dazu, wie

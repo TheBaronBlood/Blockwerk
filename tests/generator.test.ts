@@ -226,6 +226,7 @@ describe('Mehrere Ereignisse', () => {
       'while True:',
       '    while not (farbe_C.color() == Color.RED):',
       '        wait(10)',
+      '',
       '    hub.speaker.beep(440, 200)',
       '    while farbe_C.color() == Color.RED:',
       '        wait(10)', ''].join('\n'));
@@ -262,10 +263,13 @@ describe('Mehrere Ereignisse', () => {
       '    while True:',
       '        while not (await abstand_D.distance() < 100):',
       '            await wait(10)',
+      '',
       '        while True:',
       '            if await kraft_E.pressed():',
       '                hub.light.on(Color.RED)',
+      '',
       '            await wait(0)  # die anderen Aufgaben kommen dran',
+      '',
       '        while await abstand_D.distance() < 100:',
       '            await wait(10)', ''].join('\n'));
     expect(lines.find(l => l.text.includes('await wait(0)'))?.id).toBe('schleife');
@@ -327,7 +331,7 @@ describe('Mehrere Ereignisse', () => {
     const {code} = run(ws_([
       at(seq(B('pb_start'), B('pb_forever', null, {DO:S(B('pb_wait_until', null, {COND:{block:left()}}))})), 0, 0),
       at(seq(B('pb_start'), beep()), 0, 300)]));
-    expect(code).toContain('        while not (Button.LEFT in hub.buttons.pressed()):\n            await wait(10)\n        await wait(0)  # die anderen');
+    expect(code).toContain('        while not (Button.LEFT in hub.buttons.pressed()):\n            await wait(10)\n\n        await wait(0)  # die anderen');
   });
 
   it('kommt mit Namen zurecht, die es schon gibt, und mit schwierigen Nachrichten', () => {

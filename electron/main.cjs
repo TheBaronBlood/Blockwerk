@@ -88,7 +88,7 @@ function menu(){
       {role:'cut', label:'Ausschneiden'}, {role:'copy', label:'Kopieren'}, {role:'paste', label:'Einfügen'}, {role:'selectAll', label:'Alles auswählen'}, {type:'separator'},
       item('Python-Code kopieren', 'copy', 'CmdOrCtrl+Shift+C')]},
     {label:'Hub', submenu:[
-      item('Verbinden / Trennen', 'connect', 'CmdOrCtrl+Shift+H'), {type:'separator'},
+      item('Hub verbinden', 'connect', 'CmdOrCtrl+Shift+H'), item('Hub trennen', 'disconnect'), {type:'separator'},
       item('Programm starten', 'run', 'F5'), item('Programm stoppen', 'stop', 'Shift+F5'), {type:'separator'},
       item('Hub-Ansicht: Anschlüsse und Akku …', 'hubview', 'CmdOrCtrl+Shift+A')]},
     {label:'Ansicht', submenu:[
@@ -221,7 +221,7 @@ function runSmokeTest(win){
         bluetooth: !!navigator.bluetooth,
         fonts: await (window.queryLocalFonts ? window.queryLocalFonts().then(f => f.length, e => String(e)) : 'fehlt'),
         serial: !!navigator.serial && await navigator.serial.getPorts().then(() => true, () => false),
-        hubBarVisible: !document.getElementById('hubBar').classList.contains('hidden'),
+        hubBarVisible: !document.getElementById('wsRun').classList.contains('hidden'),
         desktopBridge: !!window.blockwerkDesktop,
         fontLoaded: await document.fonts.load('15px "Atkinson Hyperlegible"').then(f => f.length > 0),
         // die Lizenztexte der eingebauten Software müssen dem Programm beiliegen (build/lizenzen.mjs)
@@ -272,18 +272,19 @@ function runSmokeTest(win){
           if (!connect) return {failed:'Fenster »Hub verbinden« fehlt'};
           connect.querySelector('[data-kind=test]').click();
           // Nach dem Verbinden sieht Blockwerk nach, was steckt (am Test-Hub: ein Motor an A), und stellt die Liste darauf ein
-          await until(() => motorPort() === 'A' && document.getElementById('hubState').textContent.includes('bereit'), 10000);
+          await until(() => motorPort() === 'A' && document.getElementById('wsHub').textContent.includes('bereit'), 10000);
           ports.push(motorPort());
           await wait(150);   // das Terminal schreibt mit kurzer Verzögerung
           const told = document.getElementById('termOut').textContent.includes('Am Hub erkannt: Motor an A, Farbsensor an C, Abstandssensor an D, Kraftsensor an E.');
-          document.getElementById('btnHubView').click();
+          // mit Hub öffnet der Verbinden-Knopf die Hub-Ansicht
+          document.getElementById('btnConnect').click();
           const view = await until(() => document.querySelector('dialog.hubv[open]'), 5000);
           if (!view) return {failed:'Hub-Ansicht öffnet sich nicht'};
           const live = await until(() => view.querySelector('.hubv-port[data-kind=motor]') && view.querySelector('.hubv-port[data-kind=color]'), 8000);
           const kinds = [...view.querySelectorAll('.hubv-port')].map(c => c.dataset.port + ':' + c.dataset.kind).join(' ');
           const battery = (view.querySelector('.hubv-battery b') || {}).textContent || '';
           view.querySelector('[data-act=close]').click();
-          const idle = await until(() => document.getElementById('hubState').textContent.includes('bereit'), 5000);
+          const idle = await until(() => document.getElementById('wsHub').textContent.includes('bereit'), 5000);
           const terminal = document.getElementById('termOut').textContent;
           // Fehler »Gerät fehlt« nachstellen: Das Programm erwartet einen Farbsensor an F – am Test-Hub steckt er an C.
           // Blockwerk sieht danach von selbst nach und sagt, wo der Sensor ist.
@@ -295,7 +296,7 @@ function runSmokeTest(win){
           print.getInput('TEXT').connection.connect(sensor.outputConnection);
           start.nextConnection.connect(print.previousConnection);
           await until(() => window.blockwerk.code().includes('farbe_F = ColorSensor(Port.F)'), 3000);
-          document.getElementById('btnRun').click();
+          document.getElementById('btnRunWs').click();
           await until(() => term().includes('[Test-Hub] Programm vollständig angekommen'), 8000);
           const lineNo = window.blockwerk.code().split('\\n').indexOf('farbe_F = ColorSensor(Port.F)') + 1;
           const bytes = new TextEncoder().encode('Traceback (most recent call last):\\r\\n  File "__main__.py", line ' + lineNo + ', in <module>\\r\\nOSError: [Errno 19] ENODEV: \\r\\n\\r\\nA sensor or motor is not connected to the specified port:\\r\\n');
@@ -303,7 +304,7 @@ function runSmokeTest(win){
           window.blockwerk.hub().handleEvent(new DataView(event.buffer));
           const explained = await until(() => term().includes('Das Programm erwartet einen Farbsensor an F; dort steckt nichts. Ein Farbsensor steckt an C'), 12000);
           const marked = !!sensor.getSvgRoot().classList.contains('blocklySelected');
-          await until(() => document.getElementById('hubState').textContent.includes('bereit'), 5000);
+          await until(() => document.getElementById('wsHub').textContent.includes('bereit'), 5000);
           const tidy = !term().includes('\\x1e');
           window.blockwerk.hub().disconnect();
           // ohne Hub gelten wieder die üblichen Vorgaben

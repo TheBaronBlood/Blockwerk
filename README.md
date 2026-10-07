@@ -142,10 +142,12 @@ Internet und ohne Browser.
 1. **Pybricks auf den Hub spielen** – einmalig, über [Pybricks Code](https://code.pybricks.com).
    Blockwerk selbst installiert keine Firmware.
 2. **Blockwerk starten** und über »Beispiel laden …« zum Beispiel »Quadrat fahren« wählen.
-3. **»Hub verbinden«** anklicken, Bluetooth wählen und den Hub aus der Liste nehmen. Der
-   Hub muss eingeschaltet sein; seine Bluetooth-Taste blinkt blau.
-4. **»Starten«** lädt das Programm auf den Hub und startet es. Was der Hub ausgibt, steht
-   im Terminal.
+3. **»Hub verbinden«** – den gelben Knopf oben rechts an der Arbeitsfläche – anklicken,
+   Bluetooth wählen und den Hub aus der Liste nehmen. Der Hub muss eingeschaltet sein; seine
+   Bluetooth-Taste blinkt blau. Ist ein Hub verbunden, sind die Wellen im Knopf grün; ein
+   weiterer Klick öffnet die Hub-Ansicht, in der sich der Hub auch wieder trennen lässt.
+4. **Der grüne Startknopf** unten rechts lädt das Programm auf den Hub und startet es, der
+   rote daneben stoppt es. Was der Hub ausgibt, steht im Terminal.
 
 Wie es danach weitergeht, zeigt die eingebaute Hilfe unter »Erste Schritte«.
 

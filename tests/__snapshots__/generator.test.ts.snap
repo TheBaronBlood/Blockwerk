@@ -62,6 +62,7 @@ async def ereignis():
     while True:
         while not (Button.LEFT in hub.buttons.pressed()):
             await wait(10)
+
         await hub.speaker.beep(880, 200)
         sende('lachen')
         while Button.LEFT in hub.buttons.pressed():
@@ -139,6 +140,7 @@ roboter.use_gyro(True)
 for count in range(4):
     roboter.straight(200)
     roboter.turn(90)
+
 hub.speaker.beep(880, 200)
 "
 `;
@@ -187,6 +189,7 @@ while True:
     roboter.drive(steuerung('y') * 3, steuerung('x') * 2)
     if steuerung('A'):
         hub.speaker.beep(880, 100)
+
     wait(20)
 "
 `;
@@ -213,9 +216,11 @@ roboter.use_gyro(True)
 hub.display.icon(Icon.ARROW_UP)
 while not kraft_E.pressed():
     wait(10)
+
 roboter.drive(150, 0)
 while not (abstand_D.distance() < 100):
     wait(10)
+
 roboter.brake()
 hub.display.icon(Icon.HAPPY)
 "
@@ -247,6 +252,7 @@ roboter.drive(120, 0)
 while True:
     while not (farbe_C.reflection() < 30):
         wait(10)
+
     Linien = Linien + 1
     hub.display.number(Linien)
     while not (farbe_C.reflection() > 60):

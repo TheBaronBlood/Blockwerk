@@ -6,6 +6,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import './style.css';
 import './blocks';
+import './category';
 import { BLOCKLY_MEDIA, THEME_DARK, THEME_LIGHT } from './theme';
 import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
@@ -30,7 +31,7 @@ import { TracebackParser } from './hub/traceback';
 import { hasWord, initHelp } from './help';
 import { highlight } from './highlight';
 import { initLayout } from './layout';
-import { installSnapSound } from './sound';
+import { installSounds } from './sound';
 import { FIXED_FLYOUT, START_SCALE } from './flyout';
 import { allPortsSeen, describePorts, deviceLine, foundPorts, missingDeviceHint, PORT_BLOCKS, samePorts, withFoundPorts, type DeviceAt, type FoundPorts } from './ports';
 import { isTablet, tabletSystem } from './platform';
@@ -72,7 +73,14 @@ const ws = Blockly.inject('blocklyDiv', {
   grid:{spacing:26, length:2, colour:isDark() ? '#2C313A' : '#DDE3EA', snap:false},
   move:{scrollbars:true, drag:true, wheel:false}
 });
-installSnapSound(ws, () => settings().sounds);
+const playSound = installSounds(ws, () => settings().sounds);
+// Knöpfe und Kategorien der Blockliste melden sich als Anlass – ob dazu ein Klang kommt, steht in public/klang/klang.json
+document.addEventListener('click', (e) => {
+  const target = e.target as Element;
+  if (target.closest?.('.blocklyToolboxCategory')){ playSound('kategorie'); return; }
+  const button = target.closest?.('button, [role=tab]') as HTMLButtonElement | null;
+  if (button && !button.disabled && button.id !== 'btnRunWs' && button.id !== 'btnStopWs') playSound('knopf');
+}, true);
 // für den Selbsttest des Programms (electron/main.cjs), der Blöcke anlegen und anklicken muss
 (window as unknown as {__blockwerkWorkspace?: Blockly.WorkspaceSvg}).__blockwerkWorkspace = ws;
 function applyTheme(){
@@ -97,13 +105,14 @@ function syncPadButton(){
 }
 let currentModules: GenerateResult['modules'] = [];
 let selectedId: string | null = null;
+let currentExprs: Record<string, string> = {};
 let shownCode: string | null = null;   // was gerade im Python-Bereich steht (Zeilen samt Block)
 
 function render(){
   let res: GenerateResult;
   try { res = generate(ws); }
-  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, usesXbox:false, modules:[]}; }
-  currentLines = res.lines;
+  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, usesXbox:false, modules:[], exprs:{}}; }
+  currentLines = res.lines; currentExprs = res.exprs;
   if (currentUsesPad !== res.usesPad){ currentUsesPad = res.usesPad; syncPadButton(); if (padViewRef) updateHubUi(); }
   currentModules = res.modules;
   currentUsesXbox = res.usesXbox;
@@ -114,14 +123,27 @@ function render(){
     shownCode = shown;
     codeEl.textContent = '';
     const frag = document.createDocumentFragment();
-    res.lines.forEach((l, i) => {
+    // Hilfslinien für die Einrückung: je Stufe ein feiner Strich (style.css). Eine Leerzeile führt die Linien
+    // der Zeile fort, mit der es danach weitergeht.
+    const level = (text: string) => Math.floor((text.length - text.trimStart().length) / 4);
+    const guides: number[] = [];
+    // ganz unten bleibt eine Zeile frei – nur in der Anzeige (dort endet auch der Rahmen des letzten Blocks)
+    const shownLines: CodeLine[] = [...res.lines, {text:'', id:null}];
+    for (let i = shownLines.length - 1, below = 0; i >= 0; i--) guides[i] = below = shownLines[i].text.trim() ? level(shownLines[i].text) : below;
+    shownLines.forEach((l, i) => {
       const row = document.createElement('div'); row.className = 'ln';
-      if (l.id){ row.dataset.id = l.id; if (l.id === selectedId) row.classList.add('sel'); }
+      if (guides[i]) row.style.setProperty('--ind', String(guides[i]));
+      // Passt eine Zeile nicht in die Breite, bricht sie nur in der Anzeige um (das Programm bleibt, wie es ist):
+      // Die Folgezeilen beginnen hinter der öffnenden Klammer – wie man es von Hand einrücken würde.
+      const indent = l.text.length - l.text.trimStart().length, paren = l.text.indexOf('(');
+      row.style.setProperty('--hang', String(l.text.trimStart().startsWith('#') ? indent + 2 : paren >= 0 && paren < 28 ? paren + 1 : indent + 4));
+      if (l.id) row.dataset.id = l.id;
       const no = document.createElement('span'); no.className = 'no'; no.textContent = String(i + 1);
       const tx = document.createElement('span'); tx.className = 'tx'; highlight(l.text, tx, hasWord);
       row.append(no, tx); frag.appendChild(row);
     });
     codeEl.appendChild(frag);
+    markSelection(selectedId, false);
   }
   if (res.warnings.length){
     warnEl.innerHTML = '';
@@ -130,16 +152,90 @@ function render(){
     warnEl.appendChild(ul); warnEl.classList.remove('hidden');
   } else warnEl.classList.add('hidden');
 }
-function markSelection(id: string | null){
+/** Der Wertblock (auch eine Zahl im Block), auf den zuletzt gedrückt wurde – Blockly wählt bei einer Zahl den Block darum aus. */
+let pressedValue: string | null = null;
+const paramMarks = (window as unknown as {Highlight?: typeof Highlight}).Highlight && CSS.highlights ? CSS.highlights : null;
+/**
+ * Markiert im Code, was zum gewählten Block gehört: bei einer Schleife oder Bedingung den ganzen Abschnitt
+ * (Kopfzeile bis letzte Zeile des Inhalts), bei einem Wertblock – einer Zahl, einem Sensor, einer Rechnung –
+ * die Zeile der Anweisung und darin den Ausdruck selbst.
+ */
+function markSelection(id: string | null, scroll = true){
   selectedId = id;
-  let first: HTMLElement | null = null;
-  codeEl.querySelectorAll<HTMLElement>('.ln').forEach(r => {
-    const on = !!id && r.dataset.id === id;
-    r.classList.toggle('sel', on);
-    if (on && !first) first = r;
-  });
-  (first as HTMLElement | null)?.scrollIntoView({block:'nearest'});
+  const block = id ? ws.getBlockById(id) : null;
+  // die Anweisung, in der ein Wertblock steckt (nur über Werteingänge nach oben – nicht zum Block darüber)
+  const statementOf = (b: Blockly.Block) => { while (b.outputConnection && b.getParent()) b = b.getParent()!; return b; };
+  const stmt = block ? statementOf(block) : null;
+  // gedrückter Wertblock: gilt nur, wenn er zur gewählten Anweisung gehört
+  const pressed = pressedValue ? ws.getBlockById(pressedValue) : null;
+  const param = pressed && stmt && statementOf(pressed) === stmt ? pressed : block?.outputConnection ? block : null;
+  const rows = [...codeEl.querySelectorAll<HTMLElement>('.ln')];
+  const textOf = (i: number) => rows[i].querySelector('.tx')?.textContent ?? '';
+  const indentOf = (i: number) => textOf(i).length - textOf(i).trimStart().length;
+  const own = (i: number) => rows[i].dataset.id === stmt?.id;
+  const ids = new Set<string>();
+  if (stmt){
+    ids.add(stmt.id);
+    // ohne Parameter gehört der Inhalt dazu: alles, was in den Eingängen des Blocks steckt (nicht, was darunter hängt)
+    if (!param) for (const input of stmt.inputList) for (const inner of input.connection?.targetBlock()?.getDescendants(false) ?? []) ids.add(inner.id);
+    // ein Ereignisblock mit eigener Zeile (»while True:«, »async def …«) umschließt den Stapel, der an ihm hängt
+    const hat = !stmt.previousConnection && !stmt.outputConnection && !!stmt.nextConnection;
+    if (!param && hat && rows.some((_, i) => own(i))) for (const inner of stmt.getNextBlock()?.getDescendants(false) ?? []) ids.add(inner.id);
+  }
+  const hits = rows.map((r, i) => r.dataset.id && ids.has(r.dataset.id) ? i : -1).filter(i => i >= 0);
+  const from = hits.length ? hits[0] : -1;
+  let to = hits.length ? hits[hits.length - 1] : -1;
+  const depth = from >= 0 ? indentOf(from) : 0;
+  // alles, was unter der Kopfzeile tiefer eingerückt weitergeht, gehört noch dazu (»return«, »pass«)
+  if (!param && from >= 0) for (let i = to + 1; i < rows.length && (!textOf(i).trim() ? i + 1 < rows.length && !!textOf(i + 1).trim() && indentOf(i + 1) > depth : indentOf(i) > depth); i++) to = i;
+  // Hat der Block einen Inhalt (Schleife, Bedingung, eigener Block), sieht die Markierung aus wie der Block
+  // selbst: die Kopfzeile, links ein Steg neben dem Inhalt, darunter ein Balken – der Inhalt bleibt frei.
+  // (Maßgeblich ist die Einrückung, nicht der Block: Auch »warte bis« erzeugt eine Schleife mit Inhalt.)
+  const deeper = (i: number) => !textOf(i).trim() || indentOf(i) > depth;
+  let shaped = false;
+  if (!param && from >= 0 && /:\s*(#.*)?$/.test(textOf(from))) for (let i = from + 1; i <= to; i++) if (textOf(i).trim() && deeper(i)) shaped = true;
+  // der Balken unten ist die Leerzeile nach dem Abschnitt (fehlt am Ende des Programms)
+  const foot = shaped && to + 1 < rows.length && !textOf(to + 1).trim() ? to + 1 : -1;
+  rows.forEach((r, i) => {
+    const inside = i >= from && i <= to;
+    // ein Parameter färbt nur sich selbst (unten) – die ganze Zeile gibt es für den Block
+    r.classList.toggle('sel', !shaped && !param && inside && hits.includes(i));
+    r.classList.toggle('blk-head', shaped && ((inside && !deeper(i)) || i === foot));
+    r.classList.toggle('blk-arm', shaped && inside && deeper(i));
+    if (shaped && (inside || i === foot)) r.style.setProperty('--depth', String(depth)); else r.style.removeProperty('--depth');
+  });  // den Ausdruck des Parameters in den Zeilen seiner Anweisung suchen und einfärben
+  paramMarks?.delete('bw-param');
+  const expr = param ? currentExprs[param.id] : undefined;
+  if (paramMarks && expr) for (const i of hits){
+    const tx = rows[i].querySelector('.tx'), at = tx?.textContent?.indexOf(expr) ?? -1;
+    if (!tx || at < 0) continue;
+    const range = document.createRange();
+    let seen = 0;
+    const walker = document.createTreeWalker(tx, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()){
+      const len = node.textContent!.length;
+      if (at >= seen && at < seen + len) range.setStart(node, at - seen);
+      if (at + expr.length > seen && at + expr.length <= seen + len){ range.setEnd(node, at + expr.length - seen); break; }
+      seen += len;
+    }
+    paramMarks.set('bw-param', new Highlight(range));
+    break;
+  }
+  // lässt sich der Ausdruck nicht einzeln zeigen (älterer Browser, umgeformter Code), dann wenigstens die Zeile
+  if (param && !paramMarks?.has('bw-param')) for (const i of hits) rows[i].classList.add('sel');
+  if (scroll && from >= 0) rows[from].scrollIntoView({block:'nearest'});
 }
+// Welcher Block unter dem Zeiger liegt, steht an seinem Element – auch bei Zahlen, die Blockly nicht selbst auswählt
+$('blocklyDiv').addEventListener('pointerdown', (e) => {
+  const pressed = ws.getBlockById((e.target as Element).closest?.('g[data-id]')?.getAttribute('data-id') ?? '');
+  pressedValue = pressed?.outputConnection ? pressed.id : null;
+  // (ist der Block darum schon gewählt, meldet Blockly keine neue Auswahl)
+  setTimeout(() => {
+    const now = Blockly.common.getSelected();
+    // auf einen Block gedrückt: seine Auswahl gilt (oder die bisherige); daneben gedrückt: nichts ist gewählt
+    markSelection(now instanceof Blockly.BlockSvg ? now.id : pressed ? selectedId : null);
+  }, 0);
+}, true);
 codeEl.addEventListener('click', (e) => {
   // Klick auf ein erklärtes Wort öffnet die Python-Hilfe, sonst wird der Block zur Zeile markiert
   const word = (e.target as HTMLElement).closest<HTMLElement>('.tk-doc')?.dataset.word;
@@ -154,7 +250,13 @@ codeEl.addEventListener('click', (e) => {
 const STORE_KEY = 'blockwerk-workspace-v1';
 let renderTimer: number | undefined, saveTimer: number | undefined;
 ws.addChangeListener((e) => {
-  if (e.type === Blockly.Events.SELECTED){ markSelection((e as Blockly.Events.Selected).newElementId || null); return; }
+  if (e.type === Blockly.Events.SELECTED){
+    const id = (e as Blockly.Events.Selected).newElementId || null;
+    // Solange das Eingabefeld einer Zahl oder eine Auswahlliste offen ist, hebt Blockly die Auswahl auf –
+    // die Markierung im Code bleibt trotzdem stehen, bis woanders hingeklickt wird
+    if (id || !(Blockly.WidgetDiv.isVisible() || Blockly.DropDownDiv.isVisible())) markSelection(id);
+    return;
+  }
   if (e.isUiEvent) return;
   clearTimeout(renderTimer); renderTimer = window.setTimeout(render, 80);
   clearTimeout(saveTimer); saveTimer = window.setTimeout(() => {
@@ -207,6 +309,12 @@ $('btnNew').addEventListener('click', () => {
 });
 $('zoomIn').addEventListener('click', () => ws.zoomCenter(1));
 $('zoomOut').addEventListener('click', () => ws.zoomCenter(-1));
+// Zoom in Prozent zwischen den Lupen: 100 % ist die Größe, mit der Blockwerk beginnt. Ein Klick setzt zurück.
+const zoomLevel = $('zoomLevel');
+const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + ' %'; };
+ws.addChangeListener((e) => { if (e.type === Blockly.Events.VIEWPORT_CHANGE) showZoom(); });
+zoomLevel.addEventListener('click', () => { ws.setScale(START_SCALE); ws.scrollCenter(); showZoom(); });
+showZoom();
 // Aufräumen ordnet die Blöcke und holt sie zurück in die Mitte – sonst wirkt der Knopf wirkungslos,
 // sobald schon alles geordnet ist und man nur die Ansicht verschoben hat
 $('tidy').addEventListener('click', () => { ws.cleanUp(); requestAnimationFrame(() => ws.scrollCenter()); });
@@ -225,6 +333,11 @@ async function copyCode(){
   }
 }
 $('btnCopy').addEventListener('click', copyCode);
+// Schrift im Code kleiner und größer: dieselbe Einstellung wie »Schriftgröße im Code« (10 bis 24 px)
+const codeSmaller = $<HTMLButtonElement>('codeSmaller'), codeBigger = $<HTMLButtonElement>('codeBigger');
+const stepCodeSize = (by: number) => updateSettings({codeSize:Math.max(10, Math.min(24, settings().codeSize + by))});
+codeSmaller.addEventListener('click', () => stepCodeSize(-1));
+codeBigger.addEventListener('click', () => stepCodeSize(1));
 
 // Projekt öffnen
 const fileInput = $<HTMLInputElement>('fileInput');
@@ -358,6 +471,7 @@ const aboutDialog = initAboutDialog({hub:() => hub, toast});
 $('btnAbout').addEventListener('click', () => aboutDialog.open());
 onSettings((s) => {
   applyTheme();
+  codeSmaller.disabled = s.codeSize <= 10; codeBigger.disabled = s.codeSize >= 24;
   $('btnExt').classList.toggle('hidden', !s.extensions);
   if (!s.autoPorts) setDetectedPorts(null);
   // Entwickler: Protokoll im Terminal, und in der Konsole ein Zugang zu den Innereien
@@ -382,7 +496,30 @@ const help = initHelp({
     try { const { courseProgram } = await import('./docs/kursProgramme'); if (await openSpike(await courseProgram(file))) toast('Programm aus dem Kurs geladen.'); }
     catch (err){ console.error(err); toast('Das Programm lässt sich nicht laden.'); }
   },
-  leader: () => settings().leader
+  leader: () => settings().leader,
+  // Block aus der Hilfe ziehen: Er entsteht unter dem Zeiger auf der Arbeitsfläche, und Blockly zieht ihn
+  // weiter, als wäre er dort angefasst worden. Solange gezogen wird, ist die Hilfe durchscheinend.
+  dragBlock: (state, e) => {
+    const helpEl = $('help');
+    const at = Blockly.utils.svgMath.screenToWsCoordinates(ws, new Blockly.utils.Coordinate(e.clientX, e.clientY));
+    // (die Kennungen aus dem Bild der Hilfe gelten dort – hier bekommt jeder Block eine eigene)
+    const fresh = JSON.parse(JSON.stringify(state, (key, value) => key === 'id' ? undefined : value)) as Blockly.serialization.blocks.State;
+    let block: Blockly.BlockSvg;
+    try { block = Blockly.serialization.blocks.append({...fresh, x:at.x - 14, y:at.y - 14}, ws) as Blockly.BlockSvg; }
+    catch (err){ console.error(err); return; }
+    helpEl.classList.add('dragging');
+    block.getSvgRoot().dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, cancelable:true, clientX:e.clientX, clientY:e.clientY,
+      pointerId:e.pointerId, pointerType:e.pointerType, isPrimary:e.isPrimary, button:0, buttons:1}));
+    const end = (up: Event) => {
+      for (const type of ['pointerup', 'pointercancel']) window.removeEventListener(type, end, true);
+      helpEl.classList.remove('dragging');
+      // über der Hilfe losgelassen: Dort läge der Block unsichtbar unter dem Fenster – er verschwindet wieder
+      const r = helpEl.getBoundingClientRect(), p = up as PointerEvent;
+      const overHelp = !helpEl.classList.contains('hidden') && p.clientX >= r.left && p.clientX <= r.right && p.clientY >= r.top && p.clientY <= r.bottom;
+      if (overHelp || up.type === 'pointercancel') setTimeout(() => { if (!block.isDeadOrDying()) block.dispose(false); }, 0);
+    };
+    for (const type of ['pointerup', 'pointercancel']) window.addEventListener(type, end, true);
+  }
 });
 $('btnHelp').addEventListener('click', () => {
   const sel = Blockly.common.getSelected();
@@ -398,9 +535,7 @@ Blockly.ContextMenuRegistry.registry.register({
 // ---------------------------------------------------------------
 // Hub: verbinden, Programm laden, Terminal
 // ---------------------------------------------------------------
-const btnConnect = $<HTMLButtonElement>('btnConnect'), btnRun = $<HTMLButtonElement>('btnRun'), btnStop = $<HTMLButtonElement>('btnStop');
-const hubState = $('hubState'), termOut = $('termOut');
-const RUN_LABEL = '▶ Starten';
+const btnConnect = $<HTMLButtonElement>('btnConnect'), termOut = $('termOut');
 const connectDialog = initConnectDialog({ownBleList:isTablet()});
 // Was hier geht: Bluetooth, USB-Kabel, beides oder nichts davon. In der App auf dem Tablet
 // laufen beide über die nativen Wege des Geräts (am iPad gibt es kein Kabel); die Module dafür
@@ -479,27 +614,36 @@ const traceback = new TracebackParser((e) => {
   if (hints) setTimeout(() => termWrite(hints, 't-hint'), 250);
   if (block){ Blockly.common.setSelected(block); ws.centerOnBlock(block.id); }
   toast(block ? 'Fehler im Programm – der Block ist markiert.' : 'Fehler im Programm – siehe Terminal.');
+  playSound('fehler');
   // … und Blockwerk sieht nach, was wirklich am Hub steckt
   if (noDevice) void recheckPorts(missing);
 });
 
-// dieselben Knöpfe noch einmal an der Arbeitsfläche
+// Verbinden oben rechts an der Arbeitsfläche, Start und Stopp unten rechts
 const btnRunWs = $<HTMLButtonElement>('btnRunWs'), btnStopWs = $<HTMLButtonElement>('btnStopWs'), wsHub = $('wsHub');
-const btnHubView = $<HTMLButtonElement>('btnHubView');
+/** Zwischenstand, der die Anzeige neben dem Verbinden-Knopf kurz ersetzt (»verbinde …«, »lade … 40 %«). */
+let hubNote: string | null = null;
+function setHubNote(note: string | null){ hubNote = note; updateHubUi(); }
 function updateHubUi(){
-  btnConnect.textContent = hub ? 'Trennen' : 'Hub verbinden';
-  btnConnect.disabled = btnHubView.disabled = hubBusy;
-  btnRun.disabled = btnRunWs.disabled = hubBusy;
-  btnStop.disabled = btnStopWs.disabled = !hub || hubBusy || !hub.isRunning;
+  // der Knopf zeigt, ob ein Hub verbunden ist: ohne Hub verbindet er, mit Hub öffnet er die Hub-Ansicht
+  btnConnect.classList.toggle('on', !!hub);
+  btnConnect.classList.toggle('busy', hubBusy && (!hub || scanning));
+  btnConnect.disabled = hubBusy;
+  btnConnect.title = hub ? `${hub.name} – Hub-Ansicht öffnen, dort lässt sich der Hub auch trennen` : 'Hub verbinden';
+  btnConnect.setAttribute('aria-label', hub ? 'Hub-Ansicht öffnen' : 'Hub verbinden');
+  btnRunWs.disabled = hubBusy;
+  btnStopWs.disabled = !hub || hubBusy || !hub.isRunning;
   btnRunWs.classList.toggle('busy', hubBusy);
-  hubState.classList.toggle('on', !!hub); wsHub.classList.toggle('on', !!hub);
-  hubState.textContent = !hub ? 'kein Hub' : scanning ? `${hub.name} – sieht nach, was angeschlossen ist …` : monitor ? `${hub.name} – Hub-Ansicht`
+  wsHub.classList.toggle('on', !!hub);
+  // ohne Hub sagt der Knopf schon alles – der Text erscheint erst, wenn es etwas zu melden gibt
+  wsHub.classList.toggle('hidden', !hub && !hubNote);
+  const hubText = !hub ? 'kein Hub' : scanning ? `${hub.name} – sieht nach, was angeschlossen ist …` : monitor ? `${hub.name} – Hub-Ansicht`
     : hub.isRunning ? `${hub.name} – läuft${remoteState ? ' · ' + remoteState : ''}` : `${hub.name} – bereit`;
-  // an der Arbeitsfläche ist wenig Platz: Dort steht während der Suche nur der Stand des Controllers
-  wsHub.textContent = hub?.isRunning && remoteState ? remoteState : hubState.textContent;
-  hubState.title = wsHub.title = `${hubState.textContent} – anklicken öffnet die Hub-Ansicht`;
+  // neben dem Knopf ist wenig Platz: Dort steht während der Suche nur der Stand des Controllers
+  wsHub.textContent = hubNote ?? (hub?.isRunning && remoteState ? remoteState : hubText);
+  wsHub.title = hubText;
   // die Controller-Ansicht zeigt denselben Stand (beim ersten Aufruf gibt es sie noch nicht)
-  padViewRef?.update({hubText:hubState.textContent!, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, gamepad:deviceGamepad});
+  padViewRef?.update({hubText:hubNote ?? hubText, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, gamepad:deviceGamepad});
 }
 function hubFailed(err: unknown){
   console.error(err);
@@ -513,7 +657,7 @@ async function connectHub(){
   const available = transports();
   const kind = available.length > 1 ? await connectDialog.choose(available) : available[0];
   if (!kind) return false;
-  hubBusy = true; updateHubUi(); hubState.textContent = wsHub.textContent = 'verbinde …';
+  hubBusy = true; setHubNote('verbinde …');
   connectDialog.searching(kind);
   try {
     hub = await CONNECT[kind]({
@@ -533,18 +677,18 @@ async function connectHub(){
       },
       onDisconnect: () => {
         if (!hub) return;
-        hub = null; hubBusy = false; lastProgram = null; btnRun.textContent = RUN_LABEL; termWrite('— Hub getrennt —\n', 't-info');
+        hub = null; hubBusy = false; hubNote = null; lastProgram = null; termWrite('— Hub getrennt —\n', 't-info'); playSound('getrennt');
         clearInterval(monitorBeat); monitor = monitorSink = null; monitorLoaded = false; hubView.close();
         scanWake?.(); setDetectedPorts(null);
         updateHubUi();
       }
     });
-    if (hub){ lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
+    if (hub){ playSound('verbunden'); lastProgram = null; rememberFirmware(hub.firmware); termWrite(`— Verbunden mit ${hub.name} über ${hub.via} (Firmware ${hub.firmware}) —\n`, 't-info'); }
     // Im Browser zeigt dessen eigenes Fenster nur eine leere Liste – hier steht, woran es meist liegt
     else if (kind === 'usb' && !tablet && !window.blockwerkDesktop){ terminal.showCode(); termWrite(usbHint(lastFirmware()) + '\n', 't-hint'); }
   } catch (err){ hubFailed(err); }
   connectDialog.close();
-  hubBusy = false; updateHubUi();
+  hubBusy = false; setHubNote(null);
   return !!hub;
 }
 /** Entwickleroption (Konsole: `blockwerk.runPython('print(1)')`): eigenes Python auf dem verbundenen Hub ausführen. */
@@ -558,6 +702,29 @@ async function runPython(code: string){
   await hub.run(payload, () => {});
   lastProgram = payload; lastRun = {lines:[], usesPad:false};
 }
+/**
+ * Übersetzt ein Programm samt den Modulen aus Erweiterungen. Liefert null, wenn es sich nicht übersetzen
+ * lässt – die Fehler stehen dann im Terminal, außer mit `quiet`.
+ */
+async function buildProgram(code: string, modules: GenerateResult['modules'], quiet = false){
+  const { compileProgram } = await import('./hub/compile');
+  const res = await compileProgram(code, wasmUrl);
+  if (!res.ok){
+    if (!quiet){ termWrite(res.errors.join('\n') + '\n', 't-err'); toast('Das Programm lässt sich nicht übersetzen – siehe Terminal.'); }
+    return null;
+  }
+  // Module aus Erweiterungen kommen hinter das Programm; der Hub startet das erste
+  const compiled = [{name:MAIN_MODULE, mpy:res.mpy}];
+  for (const m of modules){
+    const mod = await compileProgram(m.source, wasmUrl, m.name + '.py');
+    if (!mod.ok){
+      if (!quiet){ termWrite(`Modul ${m.name} (aus einer Erweiterung):\n${mod.errors.join('\n')}\n`, 't-err'); toast('Eine Erweiterung lässt sich nicht übersetzen – siehe Terminal.'); }
+      return null;
+    }
+    compiled.push({name:m.name, mpy:mod.mpy});
+  }
+  return compiled;
+}
 async function runOnHub(){
   if (hubView.isOpen()) return;   // erst die Hub-Ansicht schließen – sie belegt den Hub
   if (!hub && !(await connectHub())) return;
@@ -565,25 +732,9 @@ async function runOnHub(){
   const code = currentCode, lines = currentLines, usesPad = currentUsesPad, usesXbox = currentUsesXbox, modules = currentModules;
   hubBusy = true; updateHubUi();
   try {
-    btnRun.textContent = 'Übersetze …';
-    const { compileProgram } = await import('./hub/compile');
-    const res = await compileProgram(code, wasmUrl);
-    if (!res.ok){
-      termWrite(res.errors.join('\n') + '\n', 't-err');
-      toast('Das Programm lässt sich nicht übersetzen – siehe Terminal.');
-      return;
-    }
-    // Module aus Erweiterungen kommen hinter das Programm; der Hub startet das erste
-    const compiled = [{name:MAIN_MODULE, mpy:res.mpy}];
-    for (const m of modules){
-      const mod = await compileProgram(m.source, wasmUrl, m.name + '.py');
-      if (!mod.ok){
-        termWrite(`Modul ${m.name} (aus einer Erweiterung):\n${mod.errors.join('\n')}\n`, 't-err');
-        toast('Eine Erweiterung lässt sich nicht übersetzen – siehe Terminal.');
-        return;
-      }
-      compiled.push({name:m.name, mpy:mod.mpy});
-    }
+    setHubNote('übersetze …');
+    const compiled = await buildProgram(code, modules);
+    if (!compiled) return;
     // Das Übersetzen dauert einen Moment – inzwischen kann der Hub getrennt worden sein
     if (!hub) return;
     runLines = lines; runUsesPad = usesPad; traceback.reset();
@@ -595,17 +746,19 @@ async function runOnHub(){
       termWrite('→ ' + hint + '\n', 't-hint'); toast(hint);
     }
     const payload = encodeModules(compiled);
-    await hub.run(payload, (f) => { btnRun.textContent = `Lade … ${Math.round(f * 100)} %`; });
+    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)} %`));
     lastProgram = payload; lastRun = {lines, usesPad};
     if (usesPad){ showPad(true); pad.reset(); }
   } catch (err){ hubFailed(err); }
-  finally { hubBusy = false; btnRun.textContent = RUN_LABEL; updateHubUi(); }
+  finally { hubBusy = false; setHubNote(null); }
 }
 
 // ---------------------------------------------------------------
 // Hub-Ansicht: was an den Anschlüssen hängt, Messwerte, Akku (hub/monitor.ts, hub/monitorView.ts).
 // Dafür läuft auf dem Hub ein kleines Anzeige-Programm; es ersetzt dort das zuletzt geladene.
-// Beim Schließen lädt Blockwerk deshalb wieder auf den Hub, was es zuletzt selbst geladen hatte.
+// Beim Schließen lädt Blockwerk deshalb wieder auf den Hub, was es zuletzt selbst geladen hatte –
+// und hat es noch nichts geladen, das Programm der Arbeitsfläche. Das Anzeige-Programm bleibt
+// also nie als letztes auf dem Hub liegen, auch nicht nach »Hub trennen« in der Hub-Ansicht.
 // ---------------------------------------------------------------
 let monitor: MonitorFeed | null = null;         // gesetzt, solange das Anzeige-Programm auf dem Hub läuft
 let monitorSink: MonitorFeed | null = null;     // liest kurz nach dessen Ende noch mit: letzte Zeilen gehören nicht ins Terminal
@@ -614,18 +767,19 @@ const strayLines = new StrayFilter();
 let monitorPayload: Uint8Array | null = null;   // das Anzeige-Programm, übersetzt
 let monitorLoaded = false;                      // auf dem Hub liegt gerade das Anzeige-Programm
 let monitorClosePending = false;                // geschlossen, während noch geladen wurde
+let disconnecting = false;                      // »Hub trennen« läuft: Das Ende des Anzeige-Programms ist gewollt
 let scanning = false;                           // das Anzeige-Programm läuft gerade nur, um die Anschlüsse zu erkennen
 let scanWake: (() => void) | null = null;       // beendet das Warten der Erkennung: alles gesehen, Programm zu Ende, Hub getrennt
 /** Was Blockwerk zuletzt als Programm auf diesen Hub geladen hat – samt dem, was Blockwerk dazu wissen muss. */
 let lastProgram: Uint8Array | null = null;
 let lastRun: {lines: CodeLine[]; usesPad: boolean} = {lines:[], usesPad:false};
-const hubView = initHubView({closed:() => void closeHubView(), restart:() => void startMonitor()});
+const hubView = initHubView({closed:() => void closeHubView(), restart:() => void startMonitor(), disconnect:() => void disconnectHub()});
 
 /** Das Anzeige-Programm hat aufgehört – am Hub gestoppt oder weil keine Lebenszeichen mehr ankamen. */
 function monitorEnded(){
   clearInterval(monitorBeat); retireMonitor();
   scanWake?.();
-  if (hubView.isOpen()) hubView.status('ended');
+  if (hubView.isOpen() && !disconnecting) hubView.status('ended');
 }
 /** Das Anzeige-Programm läuft nicht mehr; was der Hub in den nächsten Sekunden noch von ihm schickt, wird verschluckt. */
 function retireMonitor(){
@@ -680,13 +834,47 @@ async function startMonitor(){
     if (monitorClosePending){ monitorClosePending = false; void closeHubView(); }
   }
 }
-async function openHubView(){
+/** `stopFirst`: Ein laufendes Programm wird angehalten (das hat der Nutzer dann schon bestätigt). */
+async function openHubView(stopFirst = false){
   if (hubView.isOpen() || hubBusy) return;
   if (!hub && !(await connectHub())) return;
   if (!hub) return;
-  if (hub.isRunning){ toast('Auf dem Hub läuft gerade ein Programm. Stoppe es – dann zeigt die Hub-Ansicht, was an den Anschlüssen hängt.'); return; }
+  if (hub.isRunning && !stopFirst){ toast('Auf dem Hub läuft gerade ein Programm. Stoppe es – dann zeigt die Hub-Ansicht, was an den Anschlüssen hängt.'); return; }
   hubView.open(hub.name);
   await startMonitor();
+}
+/** Der Verbinden-Knopf: ohne Hub verbinden, mit Hub die Hub-Ansicht öffnen – dort steht auch »Hub trennen«. */
+async function connectClicked(){
+  if (hubBusy) return;
+  // (die Anschlüsse nur hier erkennen: Wer mit dem Startknopf verbindet, will gleich weiter)
+  if (!hub){ if (await connectHub()) void scanPorts(); return; }
+  if (!hub.isRunning){ void openHubView(); return; }
+  // Die Hub-Ansicht braucht den Hub für sich. Läuft ein Programm, entscheidet der Nutzer, ob es anhalten soll.
+  const answer = await ask({
+    title:'Auf dem Hub läuft ein Programm',
+    text:['Die Hub-Ansicht zeigt, was an den Anschlüssen hängt, die Messwerte und den Akku. Dafür muss das laufende Programm anhalten.'],
+    buttons:[{id:'disconnect', label:'Hub trennen'}, {id:'view', label:'Anhalten und Hub-Ansicht öffnen', primary:true}]
+  });
+  if (answer === 'disconnect') void disconnectHub();
+  else if (answer === 'view') void openHubView(true);
+}
+/**
+ * Trennt den Hub. Liegt dort noch das Anzeige-Programm (Hub-Ansicht, Erkennung der Anschlüsse), kommt
+ * vorher das eigene Programm zurück – sonst startete die Taste am Hub später die Anzeige.
+ */
+async function disconnectHub(){
+  const connected = hub;
+  if (!connected) return;
+  // lädt gerade etwas, erst das Ende abwarten
+  for (let i = 0; i < 100 && hubBusy && hub === connected; i++) await sleep(50);
+  if (hub !== connected) return;
+  hubBusy = disconnecting = true; updateHubUi();
+  if (hubView.isOpen()) hubView.status('loading', 'Lege dein Programm zurück auf den Hub und trenne …');
+  try { if (monitor || monitorLoaded){ clearInterval(monitorBeat); await endMonitor(connected); } }
+  catch (err){ console.warn('Programm nicht zurückgelegt:', err); }
+  finally { retireMonitor(); hubBusy = disconnecting = false; monitorClosePending = false; setHubNote(null); }
+  // (schließt über onDisconnect auch die Hub-Ansicht)
+  if (hub === connected) connected.disconnect();
 }
 /** Nach dem Schließen: Anzeige-Programm beenden und das zuletzt geladene Programm wieder auf den Hub legen. */
 async function closeHubView(){
@@ -706,13 +894,23 @@ async function endMonitor(connected: Hub){
   retireMonitor();
   // inzwischen getrennt (ausgeschaltet, Kabel gezogen): Dann gibt es nichts zurückzuladen
   if (hub !== connected) return;
-  if (monitorLoaded && lastProgram){
-    hubState.textContent = wsHub.textContent = 'lade dein Programm zurück …';
-    await connected.load(lastProgram);
-    // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
-    runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
-  }
-  monitorLoaded = false;
+  if (!monitorLoaded) return;
+  setHubNote('lade dein Programm zurück …');
+  try {
+    if (!lastProgram){
+      // Blockwerk hat auf diesen Hub noch nichts geladen: dann das Programm der Arbeitsfläche, sofern es sich übersetzen lässt
+      const lines = currentLines, usesPad = currentUsesPad;
+      const compiled = await buildProgram(currentCode, currentModules, true).catch(() => null);
+      if (hub !== connected) return;
+      if (compiled){ lastProgram = encodeModules(compiled); lastRun = {lines, usesPad}; }
+    }
+    if (lastProgram){
+      await connected.load(lastProgram);
+      // … und Blockwerk kennt es wieder: Zeilen für die Fehleranzeige, Steuerfeld
+      runLines = lastRun.lines; runUsesPad = lastRun.usesPad;
+      monitorLoaded = false;
+    }
+  } finally { hubNote = null; }
 }
 
 // ---------------------------------------------------------------
@@ -807,10 +1005,9 @@ async function recheckPorts(missing: DeviceAt | null){
   if (missing) termWrite('→ ' + missingDeviceHint(missing, state) + '\n', 't-hint');
   termWrite(`— ${describePorts(foundPorts(state))} —\n`, 't-info');
 }
-for (const opener of [btnHubView, hubState, wsHub]) opener.addEventListener('click', () => void openHubView());
 
 // Steuerfeld: schickt Joystick und Tasten an das laufende Programm
-const padEl = $('pad'), btnPad = $('btnPad');
+const padEl = $('pad'), btnPadWs = $('btnPadWs');
 const pad = createPad((byte) => hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve());
 // der schmale Streifen unter dem Code: für Maus und Tastatur
 pad.bindStick(padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-knob')!);
@@ -818,17 +1015,21 @@ for (const b of PAD_BUTTONS) pad.bindButton(padEl.querySelector<HTMLElement>(`[d
 pad.bindKeys(padEl);
 padEl.querySelector('.pad-stick')!.addEventListener('pointerdown', () => padEl.focus());
 // die Controller-Ansicht: bildschirmfüllend, zum Anordnen – auf Geräten mit Fingerbedienung der übliche Weg
-const padView = padViewRef = initPadView(pad, {run:() => btnRun.click(), stop:() => btnStop.click()});
+const padView = padViewRef = initPadView(pad, {run:() => btnRunWs.click(), stop:() => btnStopWs.click()});
 const fingers = () => isTablet() || matchMedia('(pointer:coarse)').matches;
 function showPad(on: boolean){
   if (on && fingers()){ padView.open(); return; }
   padEl.classList.toggle('hidden', !on);
-  btnPad.setAttribute('aria-pressed', String(on));
+  btnPadWs.setAttribute('aria-pressed', String(on));
   if (on) pad.redraw();
 }
-btnPad.addEventListener('click', () => showPad(padEl.classList.contains('hidden')));
 $('btnPadBig').addEventListener('click', () => padView.open());
-$('btnPadWs').addEventListener('click', () => padView.open());
+// Der Controller-Knopf klappt den Streifen unter dem Code auf und zu. Ist der Python-Bereich nicht
+// zu sehen (eingeklappt, schmaler Bildschirm) oder wird mit dem Finger bedient, öffnet er die große Ansicht.
+btnPadWs.addEventListener('click', () => {
+  if (fingers() || mainEl.classList.contains('code-closed') || window.matchMedia('(max-width: 820px)').matches) padView.open();
+  else showPad(padEl.classList.contains('hidden'));
+});
 // Ein Gamepad, das mit diesem Gerät verbunden ist, bedient das Steuerfeld. Der Browser zeigt es
 // erst, nachdem daran eine Taste gedrückt wurde.
 const gamepads = browserGamepads();
@@ -847,9 +1048,14 @@ if (gamepads) watchGamepad({
 syncPadButton(); updateHubUi();
 
 // Menü des Programms und Tastenkürzel: lösen dieselben Knöpfe aus wie ein Klick
-const MENU: Record<string, string> = {new:'btnNew', open:'btnOpen', save:'btnSave', settings:'btnSettings', help:'btnHelp', about:'btnAbout',
-  extensions:'btnExt', connect:'btnConnect', run:'btnRun', stop:'btnStop', hubview:'btnHubView', code:'codeToggle', copy:'btnCopy'};
-const menuAction = (action: string) => { const el = MENU[action] && $<HTMLButtonElement>(MENU[action]); if (el && !el.disabled) el.click(); };
+const MENU: Record<string, string | (() => void)> = {new:'btnNew', open:'btnOpen', save:'btnSave', settings:'btnSettings', help:'btnHelp', about:'btnAbout',
+  extensions:'btnExt', connect:'btnConnect', run:'btnRunWs', stop:'btnStopWs', code:'codeToggle', copy:'btnCopy',
+  hubview:() => void openHubView(), disconnect:() => void disconnectHub()};
+const menuAction = (action: string) => {
+  const target = MENU[action];
+  if (typeof target === 'function'){ target(); return; }
+  const el = target && $<HTMLButtonElement>(target); if (el && !el.disabled) el.click();
+};
 const desktopMenu = (window.blockwerkDesktop as {onMenu?(cb: (action: string) => void): void} | undefined)?.onMenu;
 if (desktopMenu) desktopMenu(menuAction);
 else window.addEventListener('keydown', (e) => {
@@ -862,12 +1068,11 @@ else window.addEventListener('keydown', (e) => {
 // das Terminal gibt es auch ohne Weg zum Hub – der SPIKE-Import berichtet dort
 $('btnTermClear').addEventListener('click', () => { termPending = []; termOut.textContent = ''; });
 if (transports().length){
-  // (nur hier: Wer mit »Starten« oder der Hub-Ansicht verbindet, will gleich weiter)
-  btnConnect.addEventListener('click', () => { if (hub) hub.disconnect(); else void connectHub().then((ok) => { if (ok) void scanPorts(); }); });
-  for (const b of [btnRun, btnRunWs]) b.addEventListener('click', runOnHub);
-  for (const b of [btnStop, btnStopWs]) b.addEventListener('click', () => { hub?.stop().catch(hubFailed); });
+  for (const b of [btnConnect, wsHub]) b.addEventListener('click', () => void connectClicked());
+  btnRunWs.addEventListener('click', () => { playSound('start'); void runOnHub(); });
+  btnStopWs.addEventListener('click', () => { playSound('stopp'); hub?.stop().catch(hubFailed); });
 } else {
-  $('hubBar').classList.add('hidden'); $('wsRun').classList.add('hidden');
+  $('wsConnect').classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
 }
 

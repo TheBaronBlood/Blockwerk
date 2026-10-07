@@ -3,7 +3,7 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
   --bg:#EEF2F6; --surface:#FFFFFF; --ink:#18212C; --muted:#5A6676; --rule:#D7DEE6;
-  --accent:#0090F5; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
+  --accent:#0090F5; --warn-bg:#FFF4D6; --warn-ink:#6B4E00; --cat-mix:#000;
   --code-bg:#16171D; --code-ink:#F8F8F0; --code-gutter:#566072; --code-sel:rgba(255,217,69,.13); --code-sel-bar:#FFD945;
   --ui:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -11,13 +11,13 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16171D; --surface:#1D1F23; --ink:#ECEDE8; --muted:#8F97A6; --rule:#2C313A; --accent:#528BFF;
-    --warn-bg:#3A3011; --warn-ink:#F3D98A;
+    --warn-bg:#3A3011; --warn-ink:#F3D98A; --cat-mix:#fff;
     --code-bg:#111216; --code-ink:#F8F8F0; --code-gutter:#495162;
   }
 }
 :root[data-theme="dark"]{
   --bg:#16171D; --surface:#1D1F23; --ink:#ECEDE8; --muted:#8F97A6; --rule:#2C313A; --accent:#528BFF;
-  --warn-bg:#3A3011; --warn-ink:#F3D98A;
+  --warn-bg:#3A3011; --warn-ink:#F3D98A; --cat-mix:#fff;
   --code-bg:#111216; --code-ink:#F8F8F0; --code-gutter:#495162;
 }
 *,*::before,*::after{box-sizing:inherit}
@@ -27,19 +27,30 @@ button,select,input{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 /* Kopfleiste */
-.bar{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--rule);flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
-.brand-mark{width:36px;height:36px;flex:0 0 auto;display:block}
-.brand h1{font-size:19px;margin:0;line-height:1.1;font-weight:700;letter-spacing:-.01em}
-.brand .version{font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0}
+.bar{flex:0 0 auto;display:flex;align-items:center;gap:10px 20px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;flex:0 1 auto;min-width:0}
+.brand-mark{width:44px;height:44px;flex:0 0 auto;display:block}
+.brand h1{font-size:23px;margin:0;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.brand .version{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0}
 button.version{font-family:inherit;border:0;background:none;padding:2px 4px;border-radius:5px;cursor:pointer}
 button.version:hover{color:var(--ink);background:var(--bg)}
 .brand p{margin:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.actions{flex:1 1 420px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
 .btn{border:1.5px solid var(--rule);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;line-height:1.1;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 select.btn{padding-right:28px}
+/* Knöpfe der Kopfleiste: Zeichen in Farbe, Beschriftung fett */
+.bar .btn{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:7px 14px;border-radius:11px;font-size:15.5px;font-weight:700}
+.bar .btn .ico{width:24px;height:24px;flex:0 0 auto}
+.bar .btn.icon{padding:7px 9px}
+/* Erweiterungen hängen als kleiner Reiter am Zahnrad */
+.btn-group{display:flex}
+.btn-group .btn:first-child:not(.hidden){border-radius:11px 0 0 11px;border-right-width:0}
+.btn-group .btn:not(.hidden) + .btn{border-radius:0 11px 11px 0}
+/* die Liste der Beispiele füllt die Mitte */
+.bar select.examples{flex:1 1 180px;min-width:150px;max-width:560px;font-weight:400;-webkit-appearance:none;appearance:none;padding-right:40px;
+  background-repeat:no-repeat;background-position:right 14px center;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10' fill='none' stroke='%238F97A6' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 2l6 6 6-6'/%3E%3C/svg%3E")}
 .hidden{display:none!important}
 
 /* Reiter für schmale Bildschirme */
@@ -50,52 +61,97 @@ select.btn{padding-right:28px}
 /* Hauptbereich */
 main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{position:relative;flex:1 1 auto;min-width:0}
+/* Ganz rechts hat der Rollbalken der Arbeitsfläche seine eigene Spur (--lane); der Griff des
+   Python-Bereichs sitzt links davon, damit keiner den anderen verdeckt. */
+.ws-wrap{--lane:11px;--grip:24px}
 #blocklyDiv{position:absolute;inset:0}
-.ws-tools{position:absolute;right:14px;bottom:34px;display:flex;gap:8px;z-index:5}
+.blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
+.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
+.ws-tools button.zoom-level{min-width:62px;padding:0 10px;font-variant-numeric:tabular-nums}
 
-.ws-tools{right:176px}
-.ws-run{position:absolute;right:36px;bottom:28px;display:flex;align-items:center;gap:12px;z-index:5}
-.ws-run button{width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
-.ws-run button svg{width:26px;height:26px;fill:currentColor}
-.ws-run button.play{background:#00A645}
-.ws-run button.stop{background:#E5484D;width:44px;height:44px}
-.ws-run button.gamepad{background:var(--surface);color:var(--ink);border:1px solid var(--rule);width:44px;height:44px}
-.ws-run button.gamepad svg{fill:currentColor}
-/* mit dem Controller-Knopf rücken »Aufräumen« und die Lupen nach links */
-.ws-wrap.has-pad .ws-tools{right:232px}
+/* Start und Stopp: nur hier, unten rechts. Der Controller-Knopf sitzt über dem Startknopf. */
+.ws-run{position:absolute;right:calc(var(--lane) + 14px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
+.ws-run button{width:64px;height:64px;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
+.ws-run button svg{width:34px;height:34px;fill:currentColor}
+.ws-run button.play{background:#00B94D}
+.ws-run button.stop{background:#DA3041;width:48px;height:48px}
+.ws-run button.stop svg{width:28px;height:28px}
+.ws-run button.gamepad{position:absolute;right:8px;bottom:calc(100% + 14px);background:#00A645;width:48px;height:48px}
+.ws-run button.gamepad svg{width:30px;height:30px}
+.ws-run button.gamepad[aria-pressed="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 6px #00A645}
 .ws-run button:hover:not(:disabled){transform:scale(1.06)}
 .ws-run button:disabled{background:var(--rule);color:var(--muted);cursor:default;box-shadow:none}
 .ws-run button.busy{animation:run-busy 1s ease-in-out infinite}
 @keyframes run-busy{50%{opacity:.55}}
-.ws-hub{position:absolute;right:0;bottom:66px;white-space:nowrap;font-size:12.5px;padding:3px 9px;border-radius:10px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis}
+/* Verbinden, oben rechts: graue Wellen ohne Hub, grüne mit Hub. Daneben steht, was der Hub gerade tut. */
+.ws-connect{position:absolute;right:calc(var(--lane) + 14px);top:16px;display:flex;align-items:center;gap:10px;z-index:5}
+.connect-btn{width:64px;height:64px;flex:0 0 auto;border-radius:50%;border:0;padding:0;cursor:pointer;display:grid;place-items:center;background:#FFBB00;box-shadow:0 2px 8px rgba(0,0,0,.28);transition:transform .1s}
+.connect-btn svg{width:46px;height:46px}
+.connect-btn .waves{stroke:#A5A9B1}
+.connect-btn .dot{fill:#A5A9B1}
+.connect-btn.on .waves{stroke:#00C254}
+.connect-btn.on .dot{fill:#00C254}
+.connect-btn:hover:not(:disabled){transform:scale(1.06)}
+.connect-btn:disabled{cursor:default}
+.connect-btn.busy .waves path{animation:connect-wave 1.2s ease-in-out infinite}
+.connect-btn.busy .waves path:nth-child(2){animation-delay:-.4s}
+.connect-btn.busy .waves path:nth-child(1){animation-delay:-.8s}
+@keyframes connect-wave{50%{opacity:.2}}
+.ws-hub{white-space:nowrap;font-size:13px;padding:4px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-hub.on{color:#0EAA7E;border-color:#0EAA7E}
-/* Griff am rechten Rand: klappt den Python-Bereich ein und aus */
-.code-toggle{position:absolute;right:22px;top:12px;z-index:6;padding:5px 10px;border:1px solid var(--rule);border-radius:15px;background:var(--surface);color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.code-toggle::after{content:"›";font-size:16px;line-height:1}
-.code-toggle:hover{color:var(--ink);border-color:var(--accent)}
-.code-toggle[aria-expanded="false"]{background:var(--accent);border-color:var(--accent);color:#fff;flex-direction:row-reverse}
-.code-toggle[aria-expanded="false"]::after{content:"‹"}
+/* Griff am rechten Rand, auf halber Höhe: klappt den Python-Bereich ein und aus */
+.code-toggle{position:absolute;right:var(--lane);top:50%;transform:translateY(-50%);z-index:6;width:var(--grip);height:132px;padding:0;border:0;border-radius:14px 0 0 14px;background:var(--code-bg);color:#fff;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:-2px 0 8px rgba(0,0,0,.2)}
+.code-toggle svg{width:22px;height:22px;flex:0 0 auto}
+.code-toggle span{display:none;writing-mode:vertical-rl;font-size:13px;font-weight:700;letter-spacing:.05em}
+.code-toggle:hover{color:var(--code-sel-bar)}
+.code-toggle[aria-expanded="false"]{background:var(--accent)}
+.code-toggle[aria-expanded="false"]:hover{color:#fff;filter:brightness(1.1)}
+.code-toggle[aria-expanded="false"] svg{transform:rotate(180deg)}
+.code-toggle[aria-expanded="false"] span{display:block}
 main.code-closed aside.code,main.code-closed .split{display:none}
-@media (prefers-reduced-motion: reduce){.ws-run button{transition:none}.ws-run button.busy{animation:none}}
+@media (prefers-reduced-motion: reduce){.ws-run button,.connect-btn{transition:none}.ws-run button.busy,.connect-btn.busy .waves path{animation:none}}
 
 /* Codebereich */
 aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--code-bg);color:var(--code-ink)}
-.code-head{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
-.code-head h2{margin:0 auto 0 0;font-size:15px;font-weight:700;letter-spacing:.01em}
+.code-head{display:flex;align-items:center;gap:10px;padding:13px 16px 11px;border-bottom:2px solid rgba(255,255,255,.16)}
+.code-mark{width:28px;height:28px;flex:0 0 auto}
+.code-head h2{margin:0 auto 0 0;font-size:17px;font-weight:700;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .code-head .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
 .code-head .btn:hover{border-color:#fff}
 .code-head a.btn{text-decoration:none}
+/* Schrift im Code kleiner und größer */
+.code-zoom{display:flex}
+.code-zoom .btn{min-width:34px;padding-left:0;padding-right:0;font-size:17px;line-height:1;font-weight:700}
+.code-zoom .btn:first-child{border-radius:8px 0 0 8px;border-right-width:0}
+.code-zoom .btn:last-child{border-radius:0 8px 8px 0}
+.code-zoom .btn:disabled{opacity:.4;cursor:default;border-color:rgba(255,255,255,.22)}
 .warnings{margin:10px 14px 0;padding:9px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:13.5px;line-height:1.4}
 .warnings ul{margin:0;padding-left:18px}
 .code-scroll{flex:1 1 auto;overflow:auto;padding:10px 0 16px}
-.code-lines{font-family:var(--mono);font-size:var(--code-size,13.5px);line-height:1.6;min-width:max-content}
+.code-lines{font-family:var(--mono);font-size:var(--code-size,13.5px);line-height:1.6}
 .ln{display:flex;padding-right:16px;border-left:3px solid transparent;cursor:default}
 .ln[data-id]{cursor:pointer}
+/* Hilfslinien der Einrückung: je Stufe (--ind, vier Zeichen) ein feiner Strich, immer zu sehen */
+.code-lines .ln{position:relative}
+.code-lines .ln::after{content:"";position:absolute;left:3.2em;top:0;bottom:0;width:calc(var(--ind,0) * 4ch);pointer-events:none;
+  background:repeating-linear-gradient(to right,rgba(255,255,255,.13) 0,rgba(255,255,255,.13) 1px,transparent 1px,transparent 4ch)}
 .ln.sel{background:var(--code-sel);border-left-color:var(--code-sel-bar)}
+/* Gewählter Block mit Inhalt (Schleife, Bedingung, eigener Block): markiert wie der Block selbst. Wie bei
+   einer einzelnen Zeile beginnt die Markierung ganz links – kräftiger Strich, Zeilennummer –, die Kopfzeile
+   ist ganz hinterlegt, neben dem Inhalt reicht sie nur bis zu dessen Einrückung (--depth: Einrückung der
+   Kopfzeile in Zeichen; die Zeilennummern sind 3.2em breit), darunter liegt ein Balken. */
+.ln.blk-head,.ln.blk-arm{border-left-color:var(--code-sel-bar);background-repeat:no-repeat!important}
+.ln.blk-head{background:var(--code-sel)}
+.ln.blk-arm{background:linear-gradient(to right,var(--code-sel) calc(3.2em + (var(--depth,0) + 3) * 1ch),transparent 0)}
+/* der gewählte Parameter in seiner Zeile */
+::highlight(bw-param){background-color:rgba(255,217,69,.5);color:#fff}
 .ln .no{flex:0 0 3.2em;text-align:right;padding-right:14px;color:var(--code-gutter);user-select:none}
 .ln .tx{white-space:pre}
+/* Zu lange Zeilen brechen in der Anzeige um; die Folgezeilen hängen hinter der öffnenden Klammer (--hang) */
+.code-lines .ln .tx{flex:1 1 0;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;padding-left:calc(var(--hang,4) * 1ch);text-indent:calc(var(--hang,4) * -1ch)}
 .tk-kw{color:#FF3F4F}
 .tk-cls{color:#19D1E5}
 .tk-fn{color:#81F900}
@@ -103,13 +159,6 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .tk-str{color:#FFD945}
 .tk-com{color:#6B7385;font-style:italic}
 .tk-bi{color:#61AFEF}
-.hub-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.hub-bar .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
-.hub-bar .btn:hover{border-color:#fff}
-.hub-bar .btn.primary{background:#00B94D;border-color:#00B94D;color:#fff}
-.hub-bar .btn:disabled{opacity:.45;cursor:default;border-color:rgba(255,255,255,.22)}
-.hub-state{flex:1 1 40px;text-align:right;font-size:13px;color:#9AA6B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.hub-state.on{color:#6EE7A0}
 .pad{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.08);outline-offset:-3px}
 .pad-stick{position:relative;width:92px;height:92px;flex:0 0 auto;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);touch-action:none;cursor:grab}
 .pad-knob{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#0FBD8C;pointer-events:none}
@@ -166,10 +215,9 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .padv-bar .padv-size{min-width:44px;font-size:20px;font-weight:700;padding-top:4px;padding-bottom:4px}
 .padv-bar{flex-wrap:wrap}
 @media (prefers-reduced-motion: reduce){.padv-tile,.padv-btn{transition:none}.padv-tile.refused{animation:none}}
-.hub-bar .btn[aria-pressed="true"]{border-color:#0FBD8C;color:#5CD6B4}
 /* Trennleisten */
-.split{flex:0 0 7px;cursor:col-resize;background:var(--rule);touch-action:none;position:relative;z-index:6}
-.split::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:36px;margin-top:-18px;border-radius:2px;background:var(--muted);opacity:.55}
+.split{flex:0 0 6px;cursor:col-resize;background:var(--code-bg);touch-action:none;position:relative;z-index:6}
+.split::after{content:"";position:absolute;left:2px;top:22%;width:2px;height:36px;margin-top:-18px;border-radius:2px;background:#9AA6B5;opacity:.45}
 .split-h{flex:0 0 7px;cursor:row-resize;background:rgba(255,255,255,.06);touch-action:none;position:relative}
 .split-h::after{content:"";position:absolute;top:2px;left:50%;height:3px;width:36px;margin-left:-18px;border-radius:2px;background:#9AA6B5;opacity:.55}
 .split:hover,.split.drag,.split-h:hover,.split-h.drag{background:var(--accent)}
@@ -287,7 +335,8 @@ details.run a{color:#7CC8FF}
 .hubv-bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .12s linear}
 @media (prefers-reduced-motion: reduce){.hubv-dial line,.hubv-bar i{transition:none}}
 .hubv.paused .hubv-grid{opacity:.5}
-.hub-state,.ws-hub{cursor:pointer}
+.hubv-disconnect{color:#E5484D}
+.hubv-disconnect:hover{border-color:#E5484D}
 @media (max-width:620px){
   .hubv-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .hubv-mid{grid-column:1 / -1;grid-row:1;flex-direction:row;align-items:center}
@@ -341,8 +390,17 @@ details.run a{color:#7CC8FF}
 .ext-head{flex:0 0 auto;display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}
 .ext-head h2{margin:0;font-size:17px}
 .ext-sub{flex:1 1 auto;color:var(--muted);font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ext-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:200px minmax(0,1.25fr) minmax(0,1fr)}
+/* Liste | Griff | Quelltext | Griff | Vorschau und Anleitung – die Griffe ändern --ext-list und --ext-side */
+.ext-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:var(--ext-list,200px) 6px minmax(0,1.25fr) 6px var(--ext-side,minmax(0,1fr))}
+.ext-split{cursor:col-resize;touch-action:none;position:relative;z-index:3;margin:0 -3px}
+.ext-split:hover,.ext-split.drag{background:var(--accent)}
+.ext.full{width:100vw;height:100vh;border:0;border-radius:0}
+.ext-full{align-self:center;display:inline-grid;place-items:center;padding:7px 8px}
+.ext-full[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 .ext-list{display:flex;flex-direction:column;gap:6px;padding:12px;border-right:1px solid var(--rule);overflow:auto}
+/* schmal gezogen: Die Knöpfe kürzen ihren Text, statt unter den Quelltext zu ragen */
+.ext-list{min-width:0}
+.ext-list > .btn{flex:0 0 auto;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .ext-list ul{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:4px}
 .ext-list li button{width:100%;text-align:left;padding:8px 10px;border:1.5px solid var(--rule);border-left:6px solid var(--ext-colour,var(--accent));border-radius:8px;background:var(--bg);cursor:pointer;font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .ext-list li button:hover,.ext-list li button[aria-current="true"]{border-color:var(--ext-colour,var(--accent))}
@@ -393,6 +451,7 @@ details.run a{color:#7CC8FF}
 .ext-cheat code{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--rule);border-radius:4px;padding:1px 4px;overflow-wrap:anywhere}
 @media (max-width:900px){
   .ext-body{grid-template-columns:1fr;grid-template-rows:auto minmax(260px,1fr) minmax(220px,auto);overflow:auto}
+  .ext-split{display:none}
   .ext-list{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--rule)}
   .ext-list ul{flex-direction:row;flex-wrap:wrap;margin:0}
   .ext-side{border-left:0;border-top:1px solid var(--rule)}
@@ -467,6 +526,7 @@ details.run a{color:#7CC8FF}
 .help-quiz-score:empty{display:none}
 .help-word{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px}
 .help-body .help-word code{font-size:17px;padding:4px 10px;border-radius:8px}
+.help-methods b{font-family:var(--mono);font-size:13px;font-weight:600}
 .help-kind{font-size:12.5px;padding:3px 9px;border-radius:10px;border:1px solid var(--rule);color:var(--muted)}
 .help-step-of{margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
 .help-body .help-entries{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -496,8 +556,10 @@ details.run a{color:#7CC8FF}
 .help-fields{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:baseline}
 .help-fields dt{margin:0;white-space:nowrap}
 .help-fields dd{margin:0}
-.help-block{height:60px;margin:0 0 4px;border-radius:10px;overflow:hidden;border:1px solid var(--rule);position:relative}
+.help-block{cursor:grab;touch-action:none;height:60px;margin:0 0 4px;border-radius:10px;overflow:hidden;border:1px solid var(--rule);position:relative}
 .help-load{margin:0 0 6px}
+/* ein Block wird aus der Hilfe gezogen: Die Hilfe scheint durch und lässt den Zeiger zur Arbeitsfläche */
+.help.dragging{opacity:.25;pointer-events:none}
 .help-pager{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 .help-pager button{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);cursor:pointer;text-align:left;min-width:0}
 .help-pager button.next{text-align:right;align-items:flex-end}
@@ -516,9 +578,21 @@ details.run a{color:#7CC8FF}
 /* dasselbe für die Rollbalken der Arbeitsfläche */
 .blocklyScrollbarHandle{rx:4px;ry:4px;fill-opacity:.55}
 .blocklyScrollbarHandle:hover{fill-opacity:.9}
-.blocklyToolboxDiv{font-family:var(--ui)!important}
-/* Beschriftung der Kategorien (bis Blockly 11 hieß die Klasse blocklyTreeLabel) */
-.blocklyToolboxCategoryLabel{font-family:var(--ui)!important;font-size:15px!important}
+/* Werkzeugkasten: Jede Kategorie trägt links einen Balken in ihrer Farbe (--cat, aus category.ts),
+   die Schrift hat dieselbe Farbe; die gewählte Kategorie ist ganz ausgefüllt. */
+.blocklyToolbox{font-family:var(--ui)!important;padding:10px 0!important}
+.blocklyToolboxCategory{--cat:#8A94A3;height:auto!important;line-height:36px!important;margin:0 0 8px!important;padding:0 16px 0 12px!important;
+  border-left:10px solid var(--cat);border-radius:0 5px 5px 0;background:color-mix(in srgb,var(--cat) 15%,transparent);cursor:pointer}
+.blocklyToolboxCategory:not(.blocklyToolboxSelected):hover{background:color-mix(in srgb,var(--cat) 30%,transparent)!important}
+.blocklyToolboxCategory.blocklyToolboxSelected{background:var(--cat)}
+/* Blockly gibt der angeklickten Kategorie den Fokus; der blaue Fokusrahmen der Seite wäre dort nur als
+   abgeschnittene Linie zu sehen. Welche Kategorie gewählt ist, zeigt schon die ausgefüllte Zeile. */
+.blocklyToolbox:focus-visible,.blocklyToolboxCategoryGroup:focus-visible,.blocklyToolboxCategoryContainer:focus-visible{outline:none}
+.blocklyToolboxCategoryIcon{display:none!important}
+.blocklyToolboxCategoryLabel{font-family:var(--ui)!important;font-size:16px!important;font-weight:700;padding:0!important;cursor:pointer!important;
+  color:color-mix(in srgb,var(--cat) 84%,var(--cat-mix))}
+.blocklyToolboxSelected .blocklyToolboxCategoryLabel{color:#fff}
+.blocklyTreeSeparator{border-bottom:2px solid var(--muted)!important;opacity:.55;margin:2px 0 10px!important}
 /* Blockly zieht um die Arbeitsfläche eine hellgraue Linie; im dunklen Design sticht sie hervor */
 .blocklyMainBackground{stroke:none!important}
 
@@ -528,18 +602,28 @@ details.run a{color:#7CC8FF}
   .bar{padding:8px 12px;gap:8px}
   .actions{gap:6px}
   .btn{padding:6px 10px}
-  select.btn{max-width:170px}
-  .brand h1{font-size:17px}
+  .bar .btn{min-height:0;padding:6px 10px;font-size:14.5px;gap:6px}
+  .bar .btn .ico{width:20px;height:20px}
+  .bar select.examples{max-width:none;padding-right:34px;background-position:right 10px center}
+  .brand-mark{width:36px;height:36px}
+  .brand h1{font-size:18px}
+  .brand .version{font-size:12px}
+  .blocklyToolboxCategory{line-height:30px!important;margin-bottom:5px!important;padding:0 10px 0 8px!important;border-left-width:7px}
+  .blocklyToolboxCategoryLabel{font-size:14.5px!important}
   .code-head h2 .long{display:none}
   main{position:relative}
   aside.code{position:absolute;inset:0;flex:none}
   main[data-view="blocks"] aside.code{display:none}
   main[data-view="code"] .ws-wrap{visibility:hidden}
   .split,.code-toggle{display:none}
+  .ws-wrap{--grip:0px}
   main.code-closed aside.code{display:flex}
-  .ws-tools{right:14px;bottom:126px}   /* über der Anzeige »kein Hub«, die über den runden Knöpfen sitzt */
-  .ws-wrap.has-pad .ws-tools{right:14px}
-  .ws-run{right:14px}
+  .ws-tools{right:14px;bottom:106px}   /* über den runden Knöpfen */
+  .ws-run{right:14px;bottom:20px}
+  .ws-run button.gamepad{position:static}
+  .ws-connect{right:14px;top:12px}
+  .connect-btn{width:54px;height:54px}
+  .connect-btn svg{width:38px;height:38px}
   /* Meldungen oben: Unten säßen sie auf Start und Stopp. In der Controller-Ansicht ist es umgekehrt. */
   .toast{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 10px)}
   html.pad-open .toast{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 22px)}
@@ -547,13 +631,15 @@ details.run a{color:#7CC8FF}
 /* Handy: Die Lupen fallen weg – dort zoomt man mit zwei Fingern, und neben dem Werkzeugkasten
    ist für drei Knöpfe kein Platz (der linke verschwand halb darunter). */
 @media (max-width:820px) and (pointer:coarse){
-  #zoomOut,#zoomIn{display:none}
+  #zoomOut,#zoomIn,#zoomLevel{display:none}
 }
 /* sehr schmal: Der Werkzeugkasten soll der Arbeitsfläche möglichst wenig Breite nehmen */
 @media (max-width:520px){
-  .blocklyToolboxCategoryLabel{padding:0 2px!important}
-  .blocklyToolboxCategoryIcon{display:none!important}
-  .blocklyToolboxCategory{padding-right:4px!important}
+  .blocklyToolboxCategory{padding:0 6px 0 5px!important;border-left-width:5px}
+  .blocklyToolboxCategoryLabel{font-size:13.5px!important}
+  /* in der Kopfleiste bleiben nur die Zeichen (die Beschriftung bleibt für Vorleseprogramme) */
+  .bar .btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .bar .btn{padding:6px 8px}
 }
 
 /* ---------------------------------------------------------------
@@ -568,8 +654,10 @@ details.run a{color:#7CC8FF}
   .ws-tools{gap:10px}
   .ws-tools button{width:46px;height:46px;font-size:20px}
   .ws-tools button.wide{border-radius:23px;padding:0 16px}
-  .ws-run button{width:58px;height:58px}
-  .code-toggle{padding:10px 14px;border-radius:22px}
+  .bar .btn{min-height:44px}
+  .ws-run button{width:68px;height:68px}
+  .ws-run button.stop,.ws-run button.gamepad{width:54px;height:54px}
+  .code-toggle{height:150px}
   .term-head{padding:8px 14px}
   .term-head .btn{padding:8px 12px;min-height:38px}
   .term-toggle{padding:10px 0}
@@ -589,8 +677,7 @@ details.run a{color:#7CC8FF}
   .padv-bar .btn{min-height:44px}
   .padv-bar .padv-size{min-width:52px}
   /* Kategorien im Werkzeugkasten: höhere Zeilen, damit der Finger sie trifft */
-  .blocklyToolboxCategory{height:34px!important;line-height:34px!important;margin-bottom:2px!important}
-  .blocklyToolboxCategoryLabel{font-size:15.5px!important}
+  .blocklyToolboxCategory{line-height:40px!important}
   /* Auswahllisten: eigene Form, damit sie auf jedem Gerät so hoch sind wie die Knöpfe daneben */
   select.btn{-webkit-appearance:none;appearance:none;padding-right:36px;background-repeat:no-repeat;background-position:right 12px center;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%237A8696' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.500l5 5 5-5'/%3E%3C/svg%3E")}
@@ -608,3 +695,5 @@ html.tablet body{-webkit-user-select:none;user-select:none;-webkit-touch-callout
 html.tablet .code-lines,html.tablet .term-out,html.tablet .help,html.tablet .about dd,html.tablet .about-licenses,html.tablet .settings-path,
 html.tablet input,html.tablet textarea{-webkit-user-select:text;user-select:text}
 html.tablet .ln .no{-webkit-user-select:none;user-select:none}
+/* Tablets: der Griff des Python-Bereichs breiter, damit der Finger ihn trifft */
+@media (pointer:coarse) and (min-width:821px){.ws-wrap{--grip:32px}}
