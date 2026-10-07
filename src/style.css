@@ -554,8 +554,10 @@ details.run a{color:#7CC8FF}
 .help-fields{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:baseline}
 .help-fields dt{margin:0;white-space:nowrap}
 .help-fields dd{margin:0}
-.help-block{height:60px;margin:0 0 4px;border-radius:10px;overflow:hidden;border:1px solid var(--rule);position:relative}
+.help-block{cursor:grab;touch-action:none;height:60px;margin:0 0 4px;border-radius:10px;overflow:hidden;border:1px solid var(--rule);position:relative}
 .help-load{margin:0 0 6px}
+/* ein Block wird aus der Hilfe gezogen: Die Hilfe scheint durch und lässt den Zeiger zur Arbeitsfläche */
+.help.dragging{opacity:.25;pointer-events:none}
 .help-pager{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid var(--rule)}
 .help-pager button{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);cursor:pointer;text-align:left;min-width:0}
 .help-pager button.next{text-align:right;align-items:flex-end}

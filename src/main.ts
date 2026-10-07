@@ -483,7 +483,30 @@ const help = initHelp({
     try { const { courseProgram } = await import('./docs/kursProgramme'); if (await openSpike(await courseProgram(file))) toast('Programm aus dem Kurs geladen.'); }
     catch (err){ console.error(err); toast('Das Programm lässt sich nicht laden.'); }
   },
-  leader: () => settings().leader
+  leader: () => settings().leader,
+  // Block aus der Hilfe ziehen: Er entsteht unter dem Zeiger auf der Arbeitsfläche, und Blockly zieht ihn
+  // weiter, als wäre er dort angefasst worden. Solange gezogen wird, ist die Hilfe durchscheinend.
+  dragBlock: (state, e) => {
+    const helpEl = $('help');
+    const at = Blockly.utils.svgMath.screenToWsCoordinates(ws, new Blockly.utils.Coordinate(e.clientX, e.clientY));
+    // (die Kennungen aus dem Bild der Hilfe gelten dort – hier bekommt jeder Block eine eigene)
+    const fresh = JSON.parse(JSON.stringify(state, (key, value) => key === 'id' ? undefined : value)) as Blockly.serialization.blocks.State;
+    let block: Blockly.BlockSvg;
+    try { block = Blockly.serialization.blocks.append({...fresh, x:at.x - 14, y:at.y - 14}, ws) as Blockly.BlockSvg; }
+    catch (err){ console.error(err); return; }
+    helpEl.classList.add('dragging');
+    block.getSvgRoot().dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, cancelable:true, clientX:e.clientX, clientY:e.clientY,
+      pointerId:e.pointerId, pointerType:e.pointerType, isPrimary:e.isPrimary, button:0, buttons:1}));
+    const end = (up: Event) => {
+      for (const type of ['pointerup', 'pointercancel']) window.removeEventListener(type, end, true);
+      helpEl.classList.remove('dragging');
+      // über der Hilfe losgelassen: Dort läge der Block unsichtbar unter dem Fenster – er verschwindet wieder
+      const r = helpEl.getBoundingClientRect(), p = up as PointerEvent;
+      const overHelp = !helpEl.classList.contains('hidden') && p.clientX >= r.left && p.clientX <= r.right && p.clientY >= r.top && p.clientY <= r.bottom;
+      if (overHelp || up.type === 'pointercancel') setTimeout(() => { if (!block.isDeadOrDying()) block.dispose(false); }, 0);
+    };
+    for (const type of ['pointerup', 'pointercancel']) window.addEventListener(type, end, true);
+  }
 });
 $('btnHelp').addEventListener('click', () => {
   const sel = Blockly.common.getSelected();

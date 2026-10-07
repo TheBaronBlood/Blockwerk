@@ -47,6 +47,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Neu: **Zu lange Zeilen brechen in der Anzeige um**, statt aus dem Bild zu laufen: Die Folgezeilen
   stehen hinter der öffnenden Klammer, wie man es von Hand einrücken würde. Das Programm selbst und
   die Zeilennummern bleiben dabei, wie sie sind.
+- Neu: **Blöcke lassen sich aus der Hilfe ziehen.** Das Bild eines Blocks auf seiner Hilfeseite
+  ist anfassbar: herausziehen, und er liegt auf der Arbeitsfläche – ohne Suchen in der Blockliste.
+  Solange gezogen wird, scheint die Hilfe durch.
 - Neu: Der Code zeigt **Hilfslinien für die Einrückung** – je Stufe ein feiner senkrechter Strich.
 - Geändert: Nach jedem eingerückten Abschnitt (Schleife, Bedingung) lässt der erzeugte Code eine
   **Zeile frei**, damit man sieht, wo er endet.

@@ -37,6 +37,8 @@ export interface HelpHost {
   loadProgram(file: string): void;
   /** Ob die Einstellung »Kursleitung« eingeschaltet ist. */
   leader(): boolean;
+  /** Ein Block wird aus der Hilfe gezogen: auf der Arbeitsfläche unter dem Zeiger anlegen und weiterziehen. */
+  dragBlock(state: Blockly.serialization.blocks.State, e: PointerEvent): void;
 }
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
@@ -153,6 +155,26 @@ export function initHelp(host: HelpHost): Help {
       }
       holder.style.height = Math.ceil((y - 14) * 0.8 + 22) + 'px';
       Blockly.svgResize(picture);
+      // Die Blöcke lassen sich von hier auf die Arbeitsfläche ziehen – man muss sie nicht in der Blockliste suchen.
+      // Erst nach ein paar Pixeln Bewegung: Ein bloßer Klick legt nichts an.
+      const from = picture;
+      holder.title = 'Zieh den Block von hier auf die Arbeitsfläche';
+      holder.addEventListener('pointerdown', (down) => {
+        const pressed = down.button === 0 ? from.getBlockById((down.target as Element).closest?.('g[data-id]')?.getAttribute('data-id') ?? '') : null;
+        const state = pressed && Blockly.serialization.blocks.save(pressed.getRootBlock(), {addCoordinates:false});
+        if (!state) return;
+        // Das Bild selbst soll den Zeiger nicht für sich beanspruchen: Blockly verfolgt nur einen Zeiger zugleich,
+        // und der gehört gleich dem Block auf der Arbeitsfläche.
+        down.stopPropagation();
+        const stop = () => { for (const type of ['pointermove', 'pointerup', 'pointercancel']) window.removeEventListener(type, watch, true); };
+        const watch = (e: Event) => {
+          const p = e as PointerEvent;
+          if (p.type !== 'pointermove'){ stop(); return; }
+          if (p.pointerId !== down.pointerId || Math.hypot(p.clientX - down.clientX, p.clientY - down.clientY) < 6) return;
+          stop(); host.dragBlock(state, p);
+        };
+        for (const type of ['pointermove', 'pointerup', 'pointercancel']) window.addEventListener(type, watch, true);
+      }, true);   // (vor Blockly, das den Druck auf einen Block sonst für sich behält)
     } catch (err){ console.error(err); holder.remove(); picture?.dispose(); picture = null; }
   }
 
