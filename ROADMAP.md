@@ -409,6 +409,9 @@ erste Ansicht im Codebereich (Knopf »Simulator«).
   steuert auch den simulierten Roboter; Zeitlupe und Zeitraffer; einzelne Motoren als Scheibe mit Zeiger.
 - »Umbauen«: Der Roboter erscheint groß, seine Sensoren lassen sich an einen anderen Platz ziehen
   (gemerkt über das Neuladen hinweg, wie die Größe des Roboters).
+  Der Roboter steht dabei mit der Nase nach oben auf einem Raster im Abstand der LEGO-Noppen
+  (8 mm); Sensoren rasten ein, und mit Symmetrie wandert der Sensor gegenüber spiegelbildlich mit
+  (`build.ts`).
 
 **Offen:** Rampen beim Anfahren, Bahn und Hindernisse merken, Spur des Roboters, Blickrichtung des
 Abstandssensors, eigenes einklappbares Fenster statt im Codebereich.

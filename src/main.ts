@@ -1112,7 +1112,8 @@ btnSim.addEventListener('click', async () => {
       ws, toast, print:termWrite,
       pad:(name) => padState[name] ?? 0, soundOn:() => settings().sounds,
       // fragt das Programm das Steuerfeld ab, klappt es auf
-      onStart:() => { if (currentUsesPad) showPad(true); },
+      // (der Streifen unter dem Simulator, auch bei Fingerbedienung – die große Controller-Ansicht würde ihn verdecken)
+      onStart:() => { if (!currentUsesPad) return; padEl.classList.remove('hidden'); btnPadWs.setAttribute('aria-pressed', 'true'); pad.redraw(); pad.release(); },
       showBlock:(id) => { const b = ws.getBlockById(id); if (b){ Blockly.common.setSelected(b as Blockly.BlockSvg); ws.centerOnBlock(id); } }
     });
   }

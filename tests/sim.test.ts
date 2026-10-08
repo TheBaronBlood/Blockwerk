@@ -3,8 +3,9 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
+import { mirrorPartner, MOUNT_AREA, placeSensor } from '../src/sim/build';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
-import { colorSensorPoints, describeRobot, robotFromWorkspace } from '../src/sim/robot';
+import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
 import { Simulation } from '../src/sim/simulation';
 import { colorAt, coneDistance, reflectionAt, type Obstacle, type Track } from '../src/sim/world';
@@ -72,6 +73,43 @@ describe('Roboter aus dem Programm', () => {
   });
   it('zählt nur, was am Programm hängt', () => {
     expect(robotOf(ws_([at(B('pb_drive_straight', null, {DIST:N(100)}), 0, 0)])).drive).toBeNull();
+  });
+});
+
+describe('Umbauen', () => {
+  const robot = (colors: string[], more: Partial<SimRobot> = {}): SimRobot => ({drive:null, colors, ultra:null, force:[], motors:[], notes:[], ...more});
+  const two = robot(['C', 'D'], {ultra:'E'}), usual = defaultMounts(two);
+  const free = {grid:false, symmetry:false}, grid = {grid:true, symmetry:false}, mirror = {grid:true, symmetry:true};
+  it('wer gegenüber sitzt', () => {
+    expect(mirrorPartner(two, 'C')).toBe('D'); expect(mirrorPartner(two, 'D')).toBe('C');
+    expect(mirrorPartner(two, 'E')).toBeNull();
+    const three = robot(['A', 'B', 'C'], {force:['E', 'F']});
+    expect(mirrorPartner(three, 'A')).toBe('C'); expect(mirrorPartner(three, 'B')).toBeNull();
+    expect(mirrorPartner(three, 'F')).toBe('E');
+  });
+  it('ohne Raster auf den Millimeter, mit Raster auf die Noppe (8 mm)', () => {
+    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual.C, free)).toEqual({C:{x:101, y:-37}});
+    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual.C, grid)).toEqual({C:{x:104, y:-40}});
+    // der andere Sensor bleibt, wo er ist
+    expect(placeSensor(two, {D:{x:90, y:30}}, 'C', {x:80, y:-16}, usual.C, grid)).toEqual({C:{x:80, y:-16}, D:{x:90, y:30}});
+  });
+  it('bleibt im erlaubten Bereich', () => {
+    expect(placeSensor(two, {}, 'C', {x:900, y:-900}, usual.C, grid)).toEqual({C:{x:MOUNT_AREA.front, y:-MOUNT_AREA.side}});
+    expect(placeSensor(two, {}, 'C', {x:-900, y:900}, usual.C, free)).toEqual({C:{x:MOUNT_AREA.back, y:MOUNT_AREA.side}});
+  });
+  it('Symmetrie: Der Sensor gegenüber wandert spiegelbildlich mit', () => {
+    expect(placeSensor(two, {}, 'C', {x:110, y:-30}, usual.C, mirror)).toEqual({C:{x:112, y:-32}, D:{x:112, y:32}});
+    expect(placeSensor(two, {}, 'D', {x:96, y:50}, usual.D, {grid:false, symmetry:true})).toEqual({D:{x:96, y:50}, C:{x:96, y:-50}});
+    // auf der Mittellinie lägen beide aufeinander: Sie bleiben einen Rasterschritt daneben, jeder auf seiner Seite
+    expect(placeSensor(two, {}, 'C', {x:96, y:1}, usual.C, mirror)).toEqual({C:{x:96, y:-8}, D:{x:96, y:8}});
+    expect(placeSensor(two, {}, 'D', {x:96, y:0}, usual.D, mirror)).toEqual({D:{x:96, y:8}, C:{x:96, y:-8}});
+  });
+  it('Symmetrie: Ein einzelner Sensor rastet auf der Mittellinie ein', () => {
+    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual.E, {grid:false, symmetry:true})).toEqual({E:{x:80, y:0}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual.E, free)).toEqual({E:{x:80, y:6}});
+    // mit Raster bleibt die Noppe neben der Mitte erreichbar
+    expect(placeSensor(two, {}, 'E', {x:80, y:7}, usual.E, mirror)).toEqual({E:{x:80, y:8}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:3}, usual.E, mirror)).toEqual({E:{x:80, y:0}});
   });
 });
 
@@ -279,6 +317,21 @@ describe('Programm', () => {
     await runner.start(); await runner.advance(1000); runner.stop(); ws.dispose();
     // Joystick ganz vorn: 300 mm/s
     expect(sim.pose.x).toBeGreaterThan(280); expect(sim.pose.x).toBeLessThan(300.001);
+  });
+  it('ein eigener Block, der sich endlos selbst aufruft, bricht mit einem Fehler ab', async () => {
+    const state = ws_([
+      at(B('procedures_defnoreturn', {NAME:'Endlos'}, {STACK:S(B('procedures_callnoreturn', null, null, {name:'Endlos'}))}), 0, 0),
+      at(seq(B('pb_start'), B('procedures_callnoreturn', null, null, {name:'Endlos'})), 0, 200)]);
+    const {errors, running} = await simulate(state, 100);
+    expect(running).toBe(false);
+    expect(errors).toEqual([expect.stringContaining('maximum recursion depth exceeded')]);
+  });
+  it('ein Ereignis ohne Blöcke darunter startet nichts', async () => {
+    const ws = new Blockly.Workspace();
+    Blockly.serialization.workspaces.load(ws_([at(B('pb_start'), 0, 0)]), ws);
+    const runner = new Runner(ws, new Simulation(robotFromWorkspace(ws)), {print:() => {}});
+    await runner.start(); ws.dispose();
+    expect(runner.tasks).toBe(0); expect(runner.running).toBe(false);
   });
   it('eine endlose Schleife ohne Warten hält die Uhr nicht an', async () => {
     const {sim, running} = await simulate(program(B('pb_forever')), 500);

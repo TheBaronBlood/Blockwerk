@@ -35,8 +35,11 @@ class Return { constructor(readonly value: unknown){} }
 /** Fehler im Programm, wie ihn auch der Hub melden würde. */
 class ProgramError extends Error { blockId: string | null = null; }
 
-/** Die Parameter eines eigenen Blocks gelten nur in ihm; alle anderen Variablen gehören dem ganzen Programm. */
-type Frame = Map<string, unknown> | null;
+/**
+ * Ein Aufruf eines eigenen Blocks: Seine Parameter gelten nur in ihm (alle anderen Variablen gehören dem
+ * ganzen Programm); `depth` zählt, wie tief die Aufrufe ineinander stecken. Außerhalb eigener Blöcke: null.
+ */
+type Frame = {vars: Map<string, unknown>; depth: number} | null;
 interface Sleeper { at: number; wake(): void; fail(reason: unknown): void }
 
 /** So lange dauert ein Durchlauf einer Schleife mindestens – auf dem Hub kostet er ebenfalls Zeit, und ohne das bliebe die Uhr in »wiederhole fortlaufend« stehen. */
@@ -45,6 +48,8 @@ const LOOP_MS = 1;
 const STEP_MS = 5;
 /** Wie auf dem Hub: Tempo von »fahre geradeaus« und »drehe«, solange das Programm nichts anderes einstellt. */
 const STRAIGHT_SPEED = 200, TURN_RATE = 150;
+/** So tief dürfen eigene Blöcke einander aufrufen – danach bricht auch der Hub ab. */
+const MAX_CALL_DEPTH = 100;
 const HATS = ['pb_start', 'pb_when', 'pb_when_message'];
 
 const truthy = (v: unknown) => Array.isArray(v) ? v.length > 0 : !!v;
@@ -69,6 +74,8 @@ export class Runner {
   private straightSpeed = STRAIGHT_SPEED;
   private turnRate = TURN_RATE;
   private timerZero = 0;
+  /** So viele Programmteile (Ereignisse mit Blöcken darunter) hat das Programm gestartet. */
+  tasks = 0;
   /** Was der Simulator nicht nachbildet – jede Blockart wird nur einmal genannt. */
   readonly ignored = new Set<string>();
 
@@ -87,7 +94,7 @@ export class Runner {
     // wer auf eine Nachricht wartet, startet zuerst – sonst könnte er eine gleich zu Beginn gesendete verpassen
     const first = hats.filter(b => b.type === 'pb_when_message'), rest = hats.filter(b => b.type !== 'pb_when_message');
     // (ohne ein zweites Ereignis sendet niemand: Dann läuft »wenn ich … empfange« nie)
-    for (const hat of [...(multi ? first : []), ...rest]) await this.spawn(() => this.hat(hat));
+    for (const hat of [...(multi ? first : []), ...rest]){ this.tasks++; await this.spawn(() => this.hat(hat)); }
   }
 
   /** Lässt `ms` Millisekunden simulierter Zeit vergehen und alle Programmteile laufen, die in dieser Zeit aufwachen. */
@@ -151,6 +158,8 @@ export class Runner {
         while (!truthy(await this.val(b, 'COND', null))) await this.sleep(10);
         await this.run(stack, null);
         while (truthy(await this.val(b, 'COND', null))) await this.sleep(10);
+        // (kostet einen Moment wie jede Schleife – sonst bliebe die Uhr stehen, wenn die Bedingung ohne Warten hin- und herspringt)
+        await this.sleep(LOOP_MS);
       }
     }
     const name = b.getFieldValue('NAME') as string;
@@ -292,8 +301,8 @@ export class Runner {
     const v = await this.val(b, name, f);
     return v === undefined || Number.isNaN(Number(v)) ? fallback : Number(v);
   }
-  private getVar(id: string, f: Frame){ return f?.has(id) ? f.get(id) : this.vars.get(id) ?? 0; }
-  private setVar(id: string, value: unknown, f: Frame){ if (f?.has(id)) f.set(id, value); else this.vars.set(id, value); }
+  private getVar(id: string, f: Frame){ return f?.vars.has(id) ? f.vars.get(id) : this.vars.get(id) ?? 0; }
+  private setVar(id: string, value: unknown, f: Frame){ if (f?.vars.has(id)) f.vars.set(id, value); else this.vars.set(id, value); }
   private list(v: unknown): unknown[] {
     if (!Array.isArray(v)) throw new ProgramError('Hier wird eine Liste erwartet.');
     return v;
@@ -314,9 +323,10 @@ export class Runner {
   private async call(b: Blockly.Block, f: Frame): Promise<unknown> {
     const name = b.getFieldValue('NAME') as string, def = Blockly.Procedures.getDefinition(name, this.ws);
     if (!def) throw new ProgramError(`Den eigenen Block »${name}« gibt es nicht.`);
-    const frame = new Map<string, unknown>();
+    const frame = {vars:new Map<string, unknown>(), depth:(f?.depth ?? 0) + 1};
+    if (frame.depth > MAX_CALL_DEPTH) throw new ProgramError(`Der eigene Block »${name}« ruft sich immer wieder selbst auf (RuntimeError: maximum recursion depth exceeded).`);
     const params = def.getVarModels();
-    for (let i = 0; i < params.length; i++) frame.set(params[i].getId(), await this.val(b, 'ARG' + i, f) ?? 0);
+    for (let i = 0; i < params.length; i++) frame.vars.set(params[i].getId(), await this.val(b, 'ARG' + i, f) ?? 0);
     try { await this.run(def.getInputTargetBlock('STACK'), frame); }
     catch (err){ if (err instanceof Return) return err.value; throw err; }
     return def.getInput('RETURN') ? this.val(def, 'RETURN', frame) : undefined;

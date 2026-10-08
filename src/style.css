@@ -180,6 +180,14 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-force .btn{border-color:#DA3041}
 .sim-force .btn:active{background:#DA3041}
 .sim-info{margin:0;padding:2px 14px 6px;font-size:13px;line-height:1.4;color:#9AA6B5;min-height:1.4em}
+/* die Messwerte: Platz für zwei Zeilen, damit die Bahn nicht springt, wenn eine Angabe dazukommt */
+#simValues{min-height:calc(2.8em + 8px);font-variant-numeric:tabular-nums}
+/* Umbauen: eine zweite Leiste mit Raster und Symmetrie; was nur zur Bahn gehört, macht Platz */
+.sim-build-bar{display:none;padding-top:0}
+.sim.building .sim-build-bar{display:flex}
+.sim.building #simReset,.sim.building #simObstacle,.sim.building #simImage,.sim.building .sim-tempo,.sim.building .sim-force{display:none}
+.sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
+.sim-check input{width:18px;height:18px;accent-color:var(--accent)}
 .sim-stage{flex:1 1 auto;min-height:120px;position:relative;overflow:hidden;background:#23262D}
 .sim-stage canvas{position:absolute;inset:0;display:block;touch-action:none}
 /* der Hub liegt in der Ecke über der Bahn */
@@ -191,7 +199,7 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-hub-buttons button.center{width:22px;height:22px;border-radius:50%;background:var(--light,#D7DCE3);border:2px solid #AAB2BE}
 .sim-hub-buttons button.on,.sim-hub-buttons button:active{background:#6F7A8A}
 /* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
-.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild{display:none}
+.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild,.sim.hub-only .sim-tempo{display:none}
 .sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
 .sim.hub-only .sim-stage{container-type:size}
 .sim.hub-only .sim-matrix{gap:8px;padding:14px;border-radius:10px}
@@ -699,6 +707,8 @@ details.run a{color:#7CC8FF}
   .ws-tools{gap:10px}
   .ws-tools button{width:46px;height:46px;font-size:20px}
   .ws-tools button.wide{border-radius:23px;padding:0 16px}
+  /* (die Zoom-Anzeige hat eine feste Breite – mit dem Rand der breiten Knöpfe rutschte das Prozentzeichen unter die Zahl) */
+  .ws-tools button.zoom-level{width:76px;padding:0}
   .bar .btn{min-height:44px}
   .ws-run button{width:68px;height:68px}
   .ws-run button.stop,.ws-run button.gamepad{width:54px;height:54px}
@@ -707,8 +717,6 @@ details.run a{color:#7CC8FF}
   .term-head .btn{padding:8px 12px;min-height:38px}
   .term-toggle{padding:10px 0}
   .connect-head .btn,.settings .connect-head .btn{padding:10px 14px}
-  /* (die Zoom-Anzeige hat eine feste Breite – mit dem Rand der breiten Knöpfe rutschte das Prozentzeichen unter die Zahl) */
-  .ws-tools button.zoom-level{width:76px;padding:0}
   /* Trennleisten: sichtbar etwas breiter, greifbar deutlich breiter als sichtbar */
   .split,.split-h{flex-basis:11px}
   .split::before{content:"";position:absolute;inset:0 -12px}
