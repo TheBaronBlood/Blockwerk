@@ -81,6 +81,15 @@
       <button type="button" class="wide zoom-level" id="zoomLevel" aria-label="Zoom zurücksetzen" title="Zoom der Arbeitsfläche – anklicken setzt auf 100 % zurück">100&nbsp;%</button>
       <button type="button" id="zoomIn" aria-label="Vergrößern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
       <button type="button" class="wide" id="tidy">Aufräumen</button>
+      <!-- mehrere Blöcke auswählen (multiselect.ts); mit Tastatur geht dasselbe mit gedrückter Umschalttaste -->
+      <button type="button" class="wide" id="btnPick" aria-pressed="false" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">Auswählen</button>
+    </div>
+    <!-- erscheint, sobald Blöcke ausgewählt sind -->
+    <div class="ws-picked hidden" id="wsPicked" role="toolbar" aria-label="Ausgewählte Blöcke">
+      <span id="wsPickedCount" role="status"></span>
+      <button type="button" id="wsPickedCopy" title="Die Auswahl noch einmal daneben einfügen">Duplizieren</button>
+      <button type="button" id="wsPickedDelete">Löschen</button>
+      <button type="button" class="close" id="wsPickedClear" aria-label="Auswahl aufheben" title="Auswahl aufheben">✕</button>
     </div>
     <!-- Verbinden: ohne Hub öffnet der Knopf »Hub verbinden«, mit Hub die Hub-Ansicht (dort steht auch »Trennen«) -->
     <div class="ws-connect" id="wsConnect">

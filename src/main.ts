@@ -8,6 +8,7 @@ import './style.css';
 import './blocks';
 import './category';
 import './copy';
+import { initMultiSelect } from './multiselect';
 import { BLOCKLY_MEDIA, THEME_DARK, THEME_LIGHT } from './theme';
 import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
@@ -80,6 +81,7 @@ const ws = Blockly.inject('blocklyDiv', {
   move:{scrollbars:true, drag:true, wheel:false}
 });
 const playSound = installSounds(ws, () => settings().sounds);
+initMultiSelect(ws);
 // Knöpfe und Kategorien der Blockliste melden sich als Anlass – ob dazu ein Klang kommt, steht in public/klang/klang.json
 document.addEventListener('click', (e) => {
   const target = e.target as Element;
