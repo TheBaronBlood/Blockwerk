@@ -7,6 +7,6 @@ checkdist/
 release/
 .wrangler/
 .DS_Store
-# Schlüssel für die Android-App gehören nie ins Repository (README, »Android-Schlüssel«)
+# Schlüssel für die Android-App gehören nie ins Repository (docs/ENTWICKLUNG.md, »Android-Schlüssel«)
 *.jks
 *.keystore

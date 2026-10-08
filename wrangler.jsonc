@@ -1,4 +1,4 @@
-// Bereitstellung bei Cloudflare (README, »Im Netz bereitstellen«): `npx wrangler deploy` lädt den
+// Bereitstellung bei Cloudflare (docs/ENTWICKLUNG.md, »Im Netz bereitstellen«): `npx wrangler deploy` lädt den
 // fertigen Build aus dist/ hoch – nur Dateien, kein eigenes Skript. Die Kopfzeilen stehen in
 // public/_headers. Der Name muss so heißen wie das Projekt bei Cloudflare.
 {

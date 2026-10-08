@@ -5,7 +5,7 @@ apply plugin: 'com.android.application'
 def blockwerkVersion = new groovy.json.JsonSlurper().parseText(file('../../package.json').text).version
 def versionParts = blockwerkVersion.tokenize('.-').take(3).collect { it.toInteger() }
 
-// Fester Schlüssel für die App (README, »Android-Schlüssel«): Sind die vier Angaben gesetzt – im
+// Fester Schlüssel für die App (docs/ENTWICKLUNG.md, »Android-Schlüssel«): Sind die vier Angaben gesetzt – im
 // Workflow aus den Secrets des Repositorys –, wird die Release-Fassung damit signiert. Nur so lässt
 // sich eine neue Fassung über eine vorhandene installieren. Ohne die Angaben gibt es die
 // Debug-Fassung mit dem Wegwerf-Schlüssel des jeweiligen Rechners. Der Schlüssel selbst gehört
