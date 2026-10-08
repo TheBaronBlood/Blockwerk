@@ -74,7 +74,7 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 /* Lupen als Zeichnung: sitzt genau in der Mitte, anders als ein Schriftzeichen */
 .ws-tools button svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 /* feste Breite: Die Anzeige ändert ihre Größe nicht, wenn aus zwei Ziffern drei werden */
-.ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums}
+.ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* Start und Stopp: nur hier, unten rechts. Der Controller-Knopf sitzt über dem Startknopf. */
 .ws-run{position:absolute;right:calc(var(--lane) + 14px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
@@ -707,6 +707,8 @@ details.run a{color:#7CC8FF}
   .term-head .btn{padding:8px 12px;min-height:38px}
   .term-toggle{padding:10px 0}
   .connect-head .btn,.settings .connect-head .btn{padding:10px 14px}
+  /* (die Zoom-Anzeige hat eine feste Breite – mit dem Rand der breiten Knöpfe rutschte das Prozentzeichen unter die Zahl) */
+  .ws-tools button.zoom-level{width:76px;padding:0}
   /* Trennleisten: sichtbar etwas breiter, greifbar deutlich breiter als sichtbar */
   .split,.split-h{flex-basis:11px}
   .split::before{content:"";position:absolute;inset:0 -12px}

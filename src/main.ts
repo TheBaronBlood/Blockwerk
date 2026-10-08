@@ -318,7 +318,7 @@ $('zoomIn').addEventListener('click', () => ws.zoomCenter(1));
 $('zoomOut').addEventListener('click', () => ws.zoomCenter(-1));
 // Zoom in Prozent zwischen den Lupen: 100 % ist die Größe, mit der Blockwerk beginnt. Ein Klick setzt zurück.
 const zoomLevel = $('zoomLevel');
-const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + ' %'; };
+const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + '\u00A0%'; };
 ws.addChangeListener((e) => { if (e.type === Blockly.Events.VIEWPORT_CHANGE) showZoom(); });
 zoomLevel.addEventListener('click', () => { ws.setScale(START_SCALE); ws.scrollCenter(); showZoom(); });
 showZoom();
@@ -758,7 +758,7 @@ async function runOnHub(){
       termWrite('→ ' + hint + '\n', 't-hint'); toast(hint);
     }
     const payload = encodeModules(compiled);
-    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)} %`));
+    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)}\u00A0%`));
     lastProgram = payload; lastRun = {lines, usesPad};
     if (usesPad){ showPad(true); pad.reset(); }
   } catch (err){ hubFailed(err); }
