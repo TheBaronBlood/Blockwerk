@@ -127,9 +127,24 @@
         <button class="btn" id="codeBigger" type="button" aria-label="Schrift im Code größer" title="Schrift im Code größer">+</button>
       </div>
       <button class="btn" id="btnCopy" type="button">Kopieren</button>
+      <!-- zeigt statt des Codes den Simulator (src/sim) -->
+      <button class="btn" id="btnSim" type="button" aria-pressed="false" title="Programm ohne Roboter ausprobieren">Simulator</button>
     </div>
     <div class="warnings hidden" id="warnings"></div>
     <div class="code-scroll"><div class="code-lines" id="codeLines"></div></div>
+    <section class="sim hidden" id="sim" aria-label="Simulator">
+      <div class="sim-bar">
+        <button class="btn primary" id="simRun" type="button">▶ Start</button>
+        <button class="btn" id="simReset" type="button" title="Stellt den Roboter dorthin zurück, wo er beim Start stand">Zurück</button>
+        <button class="btn" id="simObstacle" type="button" title="Hindernis vor den Roboter stellen – Doppelklick räumt es wieder weg">+ Hindernis</button>
+        <button class="btn" id="simImage" type="button" title="Ein Bild der Bahn laden, von oben gesehen">Bahn laden …</button>
+        <label class="sim-scale" title="Wie groß der Roboter auf der Bahn ist">Roboter <input type="range" id="simScale" min="0.3" max="3" step="0.05" value="1"></label>
+        <input type="file" id="simFile" accept="image/*" class="hidden">
+      </div>
+      <p class="sim-info" id="simInfo"></p>
+      <div class="sim-stage"><canvas id="simCanvas"></canvas></div>
+      <p class="sim-info" id="simValues" role="status"></p>
+    </section>
     <section class="pad hidden" id="pad" tabindex="0" aria-label="Steuerfeld">
       <div class="pad-stick" aria-label="Joystick"><div class="pad-knob"></div></div>
       <div class="pad-buttons">

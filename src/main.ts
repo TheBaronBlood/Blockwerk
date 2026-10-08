@@ -112,6 +112,7 @@ let currentModules: GenerateResult['modules'] = [];
 let selectedId: string | null = null;
 let currentExprs: Record<string, string> = {};
 let shownCode: string | null = null;   // was gerade im Python-Bereich steht (Zeilen samt Block)
+let simView: import('./sim/view').SimView | null = null;   // der Simulator; entsteht beim ersten Öffnen
 
 function render(){
   let res: GenerateResult;
@@ -156,6 +157,7 @@ function render(){
     res.warnings.forEach(w => { const li = document.createElement('li'); li.textContent = w; ul.appendChild(li); });
     warnEl.appendChild(ul); warnEl.classList.remove('hidden');
   } else warnEl.classList.add('hidden');
+  simView?.programChanged();
 }
 /** Der Wertblock (auch eine Zahl im Block), auf den zuletzt gedrückt wurde – Blockly wählt bei einer Zahl den Block darum aus. */
 let pressedValue: string | null = null;
@@ -1085,6 +1087,26 @@ if (transports().length){
   $('wsConnect').classList.add('hidden'); btnConnect.classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
 }
+
+// ---------------------------------------------------------------
+// Simulator (src/sim): steht im Codebereich an der Stelle des Codes. Geladen wird er erst, wenn
+// ihn jemand öffnet.
+// ---------------------------------------------------------------
+const btnSim = $('btnSim');
+btnSim.addEventListener('click', async () => {
+  const on = btnSim.getAttribute('aria-pressed') !== 'true';
+  btnSim.setAttribute('aria-pressed', String(on));
+  $('codePanel').classList.toggle('sim-on', on);
+  $('sim').classList.toggle('hidden', !on);
+  if (!simView){
+    const { initSimView } = await import('./sim/view');
+    simView ??= initSimView($('sim'), {
+      ws, toast, print:termWrite,
+      showBlock:(id) => { const b = ws.getBlockById(id); if (b){ Blockly.common.setSelected(b as Blockly.BlockSvg); ws.centerOnBlock(id); } }
+    });
+  }
+  simView.setShown(btnSim.getAttribute('aria-pressed') === 'true');
+});
 
 // Reiter auf schmalen Bildschirmen
 const mainEl = $('main');

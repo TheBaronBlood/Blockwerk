@@ -16,7 +16,7 @@ dabeisteht.
 | 7 | Sprachumschaltung Deutsch/Englisch | offen |
 | 8 | Hub am USB-Kabel | 🟢 läuft am echten Hub unter macOS (Beta-Firmware 4.1.0b5); Windows, Linux und Android stehen aus |
 | 9 | Erweiterungen: eigene Blöcke mit eigenem Python | 🟢 umgesetzt; ein Modul lief am echten Hub (Bluetooth und Kabel) |
-| 10 | Simulation des Roboters | geplant, noch nicht begonnen |
+| 10 | Simulation des Roboters | begonnen: Kern und erste Ansicht |
 | 11 | App für Android (Tablets und Handys) | 🟡 umgesetzt; im Emulator geprüft, Bluetooth lief an einem echten Handy, das Kabel steht aus. iPad zurückgestellt |
 
 ---
@@ -383,12 +383,28 @@ Programm importiert aus der zweiten Datei und gibt deren Ergebnis aus.
 - Eigene Hilfeseiten: bisher nur der Hinweistext beim Zeigen auf den Block.
 - Fehler im Kopf einer Erweiterung zeigen im Terminal die Zeile, markieren aber keinen Block.
 
-## 10 · Simulation des Roboters (geplant)
+## 10 · Simulation des Roboters (begonnen)
 
 **Ziel:** Programme ohne Roboter ausprobieren – vor allem Linienverfolgung für RoboCup
 Junior Rescue Line.
 
-**Entwurf (noch nichts gebaut):**
+**Stand:** Der Kern steht in `src/sim/` (ohne DOM, geprüft in `tests/sim.test.ts`), dazu eine
+erste Ansicht im Codebereich (Knopf »Simulator«).
+- Der Roboter entsteht aus dem Programm (`robot.ts`): Fahrblöcke geben ihm Räder, jeder
+  abgefragte Farbsensor sitzt vorn (höchstens vier), der Abstandssensor schaut nach vorn.
+- Die Bahn ist ein Bild von oben (`world.ts`); Reflexion und Farbe liest der Sensor daraus.
+  Hindernisse sind Rechtecke, der Abstandssensor sieht, was in seinem Kegel liegt.
+- Ausgeführt werden die Blöcke selbst (`runner.ts`), in simulierter Zeit – nicht der erzeugte
+  Python-Code. Das weicht vom Entwurf unten ab: Es braucht kein zusätzliches Paket, markiert
+  den laufenden Block und verträgt sich mit der Content-Security-Policy. Der Preis: Was der
+  Generator tut, muss dort nachgezogen werden, und Blöcke aus Erweiterungen laufen nicht mit.
+- Größe des Roboters auf der Bahn einstellbar; Roboter und Hindernisse mit dem Zeiger
+  verschieben, Hindernisse in der Größe ändern, eigenes Bild als Bahn laden.
+
+**Offen:** Kraftsensor und Hub-Tasten drücken, Lichtmatrix und Ton, Steuerfeld, Rampen beim
+Anfahren, Bahn und Hindernisse merken, eigenes einklappbares Fenster statt im Codebereich.
+
+**Ursprünglicher Entwurf:**
 - Echtes Python im Browser (MicroPython als WebAssembly) mit einem nachgebauten
   `pybricks`-Modul, das statt Motoren einen simulierten Roboter bewegt. So läuft derselbe
   Code wie auf dem Hub, auch handgeschriebener.
