@@ -405,7 +405,8 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
   Reflexion und Farbe liest der Sensor aus dem Bild. Hindernisse sind Rechtecke zum Setzen, Ziehen und
   Vergrößern; der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt am
   Hindernis oder per Knopf. Der Roboter fährt an ein Hindernis heran, nicht hinein – und nicht
-  über den Rand der Bahn hinaus, den aber kein Sensor bemerkt (ein Klick schaltet ihn um). Die
+  über den Rand der Bahn hinaus. Ein Klick auf den Rand schaltet seine Art weiter: kein Sensor
+  bemerkt ihn, niedrige Wand (nur Kraftsensor), hohe Wand (auch Abstandssensor), kein Rand. Die
   Bahn lässt sich heranholen und verschieben.
 - **Ausführen** (`runner.ts`): Der Simulator läuft die Blöcke selbst ab, in simulierter Zeit –
   nicht den erzeugten Python-Code. Das weicht vom Entwurf unten ab: Es braucht kein zusätzliches

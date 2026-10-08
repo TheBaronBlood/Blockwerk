@@ -249,17 +249,40 @@ describe('Fahren', () => {
     const field = track(1000, 600, () => WHITE);
     const state = program(setup(), B('pb_drive_straight', null, {DIST:N(2000)}),
       B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
-    const place = (fence: boolean) => (s: Simulation) => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; };
+    const place = (fence: Simulation['fence']) => (s: Simulation) => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; };
     // der Stoßkreis (75 mm, 20 mm vor der Achse) bleibt auf der Bahn: Die Achse kommt bis 905
-    const held = await simulate(state, 4000, place(true));
+    const held = await simulate(state, 4000, place('hidden'));
     expect(held.sim.blocked).toBe(true);
     expect(held.sim.pose.x).toBeLessThanOrEqual(905); expect(held.sim.pose.x).toBeGreaterThan(903);
     // … und weder Abstands- noch Kraftsensor merken etwas davon
-    const after = await simulate(state, 12000, place(true));
+    const after = await simulate(state, 12000, place('hidden'));
     expect(after.out).toBe('2000\nFalse\n');
     // ohne Rand fährt er von der Bahn herunter
-    const free = await simulate(state, 6000, place(false));
+    const free = await simulate(state, 6000, place('off'));
     expect(free.sim.pose.x).toBeGreaterThan(1300); expect(free.sim.blocked).toBe(false);
+  });
+  it('hohe und niedrige Wand: Die hohe sehen Taster und Abstandssensor, die niedrige nur der Taster', async () => {
+    const field = track(1000, 600, () => WHITE);
+    const state = program(setup(), B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_drive_straight', null, {DIST:N(2000)}),
+      B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
+    const run = async (fence: Simulation['fence']) => (await simulate(state, 12000, s => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; }));
+    // vom Start aus: Der Abstandssensor sitzt 85 mm vor der Achse, die Wand steht bei 1000
+    const high = await run('high');
+    expect(high.out).toBe('615\n10\nTrue\n');
+    expect(high.sim.pose.x).toBeLessThanOrEqual(905); expect(high.sim.pose.x).toBeGreaterThan(903);
+    // über die niedrige Wand schaut der Abstandssensor hinweg – der Taster stößt trotzdem an
+    expect((await run('low')).out).toBe('2000\n2000\nTrue\n');
+    expect((await run('hidden')).out).toBe('2000\n2000\nFalse\n');
+    expect((await run('off')).out).toBe('2000\n2000\nFalse\n');
+  });
+  it('die hohe Wand steht ringsum: auch seitlich und hinter dem Roboter', async () => {
+    const field = track(1000, 600, () => WHITE);
+    const look = async (heading: number) => Number((await simulate(program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}})), 100,
+      s => { s.track = field; s.pose = {x:500, y:300, heading}; s.fence = 'high'; })).out);
+    expect(await look(0)).toBe(415);     // nach rechts: 1000 − 585
+    expect(await look(90)).toBe(215);    // nach unten: 600 − 385
+    expect(await look(180)).toBe(415);   // nach links: 415 − 0
+    expect(await look(-90)).toBe(215);
   });
   it('am Rand geht es nicht weiter hinaus, zurück aber immer', async () => {
     const field = track(1000, 600, () => WHITE);

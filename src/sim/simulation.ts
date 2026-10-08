@@ -9,6 +9,16 @@ import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimRobot } from '
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
 
 export interface SimMotor { angle: number; speed: number }
+/**
+ * Der Rand der Bahn. `high`: eine hohe Wand – Kraftsensor und Abstandssensor bemerken sie. `low`: eine niedrige
+ * Wand – nur der Kraftsensor, der Abstandssensor schaut darüber hinweg. `hidden`: Der Roboter steht an, aber
+ * kein Sensor bemerkt etwas. `off`: kein Rand, der Roboter fährt von der Bahn herunter.
+ */
+export type Fence = 'high' | 'low' | 'hidden' | 'off';
+/** In dieser Reihenfolge schaltet ein Klick auf den Rand weiter. */
+export const FENCES: Fence[] = ['hidden', 'low', 'high', 'off'];
+/** So dick ist die Wand hinter dem Rand – nur damit Sensoren etwas zum Treffen haben. */
+const WALL = 60;
 
 export class Simulation {
   /** Simulierte Zeit in Millisekunden. */
@@ -26,11 +36,8 @@ export class Simulation {
   angle = 0;
   /** Der Roboter steht an einem Hindernis oder am Rand der Bahn an: Die Räder drehen durch. */
   blocked = false;
-  /**
-   * Die Bahn hat einen Rand: Der Roboter fährt nicht über ihre Kante hinaus, er steht dort an. Für die Sensoren
-   * gibt es den Rand nicht – weder der Abstandssensor noch der Kraftsensor bemerken ihn.
-   */
-  fence = true;
+  /** Der Rand der Bahn: Außer bei `off` fährt der Roboter nicht über ihre Kante hinaus, er steht dort an. */
+  fence: Fence = 'hidden';
   /** Der Hub: Lichtmatrix, Farbe des Statuslichts (null: aus) und die Tasten, die gerade gedrückt sind (LEFT, RIGHT). */
   display: Pixels = [...DISPLAY_OFF];
   light: string | null = null;
@@ -83,12 +90,18 @@ export class Simulation {
   }
   /** Wie weit der Roboter über den Rand der Bahn hinausragt (0: gar nicht – oder es gibt keinen Rand). */
   private beyond(pose: Pose): number {
-    if (!this.fence || !this.track) return 0;
+    if (this.fence === 'off' || !this.track) return 0;
     const at = toWorld(pose, this.scale, BUMPER.at), r = BUMPER.radius * this.scale;
     return Math.max(0, r - at.x, r - at.y, at.x + r - this.track.width, at.y + r - this.track.height);
   }
   private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
 
+  /** Die Wände um die Bahn als Hindernisse – für die Sensoren, die sie bemerken (`seenBy`: die niedrige Wand zählt mit). */
+  private walls(low: boolean): Obstacle[] {
+    if (!this.track || !(this.fence === 'high' || (low && this.fence === 'low'))) return [];
+    const {width:w, height:h} = this.track, wall = (x: number, y: number, bw: number, bh: number, id: number): Obstacle => ({id, x:x + bw / 2, y:y + bh / 2, w:bw, h:bh});
+    return [wall(-WALL, -WALL, WALL, h + 2 * WALL, -1), wall(w, -WALL, WALL, h + 2 * WALL, -2), wall(0, -WALL, w, WALL, -3), wall(0, h, w, WALL, -4)];
+  }
   /** Wo der Sensor an diesem Anschluss am Roboter sitzt – null, wenn der Simulator dort keinen kennt. */
   mount(port: string): Mount | null {
     if (this.defaults?.robot !== this.robot) this.defaults = {robot:this.robot, mounts:defaultMounts(this.robot)};
@@ -122,12 +135,14 @@ export class Simulation {
     if (this.forceHeld.has(port)) return true;
     // der Taster sitzt vorn am Sensor – wohin das ist, hängt an seiner Drehung
     const out = forward(at.angle ?? 0), tip = toWorld(this.pose, this.scale, {x:at.x + FORCE.tip * out.x, y:at.y + FORCE.tip * out.y});
-    return touches(this.obstacles, tip, FORCE.reach * this.scale);
+    // (auch an der Wand um die Bahn, wenn sie eine ist – hoch oder niedrig)
+    return touches([...this.obstacles, ...this.walls(true)], tip, FORCE.reach * this.scale);
   }
   /** Abstand am Abstandssensor in Millimetern; ohne Hindernis im Kegel 2000 wie am echten Sensor. */
   ultrasonic(port: string): number {
     if (port !== this.robot.ultra) return ULTRA.nothing;
-    const hit = coneDistance(this.ultraPoint(), this.ultraHeading(), ULTRA.halfAngle, ULTRA.range * this.scale, this.obstacles);
+    // (die hohe Wand um die Bahn sieht er, über die niedrige schaut er hinweg)
+    const hit = coneDistance(this.ultraPoint(), this.ultraHeading(), ULTRA.halfAngle, ULTRA.range * this.scale, [...this.obstacles, ...this.walls(false)]);
     return hit === null ? ULTRA.nothing : Math.round(hit / this.scale);
   }
   /** Ausrichtung des Hubs in Grad, positiv nach rechts. */
