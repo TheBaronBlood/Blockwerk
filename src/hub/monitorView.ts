@@ -160,17 +160,17 @@ export function initHubView(host: HubViewHost): HubView {
       if (card.swatch) card.swatch.style.background = hsvToCss(r.h ?? 0, r.s ?? 0, r.v ?? 0);
       const reflection = card.colorMode === 'reflection';
       card.modes.querySelectorAll<HTMLElement>('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === card.colorMode)));
-      card.value.textContent = reflection ? `${num(r.reflection ?? 0)} %` : colorName(r.color ?? 'NONE');
+      card.value.textContent = reflection ? `${num(r.reflection ?? 0)}\u00A0%` : colorName(r.color ?? 'NONE');
       card.detail.textContent = reflection ? 'so viel Licht kommt zurück' : `Farbton ${num(r.h ?? 0)} · Sättigung ${num(r.s ?? 0)} · Helligkeit ${num(r.v ?? 0)}`;
       card.root.querySelector<HTMLElement>('.hubv-bar')!.classList.toggle('hidden', !reflection);
       fill(card, (r.reflection ?? 0) / 100);
     } else if (r.kind === 'ultra'){
       const nothing = (r.distance ?? 2000) >= 2000;
-      card.value.textContent = nothing ? 'nichts erkannt' : `${num(r.distance ?? 0)} mm`;
+      card.value.textContent = nothing ? 'nichts erkannt' : `${num(r.distance ?? 0)}\u00A0mm`;
       card.detail.textContent = nothing ? 'der Block liefert dann 2000' : 'Abstand';
       fill(card, nothing ? 0 : (r.distance ?? 0) / 2000);
     } else if (r.kind === 'force'){
-      card.value.textContent = `${num(r.force ?? 0, 1)} N`;
+      card.value.textContent = `${num(r.force ?? 0, 1)}\u00A0N`;
       card.detail.textContent = r.pressed ? 'gedrückt' : 'nicht gedrückt';
       fill(card, (r.force ?? 0) / 10);
     }

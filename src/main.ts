@@ -7,6 +7,8 @@ import '@fontsource/jetbrains-mono/600.css';
 import './style.css';
 import './blocks';
 import './category';
+import './copy';
+import { initMultiSelect } from './multiselect';
 import { BLOCKLY_MEDIA, THEME_DARK, THEME_LIGHT } from './theme';
 import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
@@ -79,6 +81,7 @@ const ws = Blockly.inject('blocklyDiv', {
   move:{scrollbars:true, drag:true, wheel:false}
 });
 const playSound = installSounds(ws, () => settings().sounds);
+initMultiSelect(ws);
 // Knöpfe und Kategorien der Blockliste melden sich als Anlass – ob dazu ein Klang kommt, steht in public/klang/klang.json
 document.addEventListener('click', (e) => {
   const target = e.target as Element;
@@ -112,6 +115,7 @@ let currentModules: GenerateResult['modules'] = [];
 let selectedId: string | null = null;
 let currentExprs: Record<string, string> = {};
 let shownCode: string | null = null;   // was gerade im Python-Bereich steht (Zeilen samt Block)
+let simView: import('./sim/view').SimView | null = null;   // der Simulator; entsteht beim ersten Öffnen
 
 function render(){
   let res: GenerateResult;
@@ -156,6 +160,7 @@ function render(){
     res.warnings.forEach(w => { const li = document.createElement('li'); li.textContent = w; ul.appendChild(li); });
     warnEl.appendChild(ul); warnEl.classList.remove('hidden');
   } else warnEl.classList.add('hidden');
+  simView?.programChanged();
 }
 /** Der Wertblock (auch eine Zahl im Block), auf den zuletzt gedrückt wurde – Blockly wählt bei einer Zahl den Block darum aus. */
 let pressedValue: string | null = null;
@@ -316,7 +321,7 @@ $('zoomIn').addEventListener('click', () => ws.zoomCenter(1));
 $('zoomOut').addEventListener('click', () => ws.zoomCenter(-1));
 // Zoom in Prozent zwischen den Lupen: 100 % ist die Größe, mit der Blockwerk beginnt. Ein Klick setzt zurück.
 const zoomLevel = $('zoomLevel');
-const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + ' %'; };
+const showZoom = () => { zoomLevel.textContent = Math.round(ws.scale / START_SCALE * 100) + '\u00A0%'; };
 ws.addChangeListener((e) => { if (e.type === Blockly.Events.VIEWPORT_CHANGE) showZoom(); });
 zoomLevel.addEventListener('click', () => { ws.setScale(START_SCALE); ws.scrollCenter(); showZoom(); });
 showZoom();
@@ -756,7 +761,7 @@ async function runOnHub(){
       termWrite('→ ' + hint + '\n', 't-hint'); toast(hint);
     }
     const payload = encodeModules(compiled);
-    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)} %`));
+    await hub.run(payload, (f) => setHubNote(`lade … ${Math.round(f * 100)}\u00A0%`));
     lastProgram = payload; lastRun = {lines, usesPad};
     if (usesPad){ showPad(true); pad.reset(); }
   } catch (err){ hubFailed(err); }
@@ -1018,7 +1023,15 @@ async function recheckPorts(missing: DeviceAt | null){
 
 // Steuerfeld: schickt Joystick und Tasten an das laufende Programm
 const padEl = $('pad'), btnPadWs = $('btnPadWs');
-const pad = createPad((byte) => hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve());
+/** Stand des Steuerfelds für den Simulator – mitgelesen aus dem, was das Steuerfeld an den Hub schickt (padProtocol.ts). */
+const padState: Record<string, number | boolean> = {x:0, y:0, A:false, B:false, C:false, D:false};
+function trackPad(byte: number){
+  if (byte >= 150 && byte <= 170) padState.x = (byte - 160) * 10;
+  else if (byte >= 180 && byte <= 200) padState.y = (byte - 190) * 10;
+  else if (byte >= 65 && byte <= 68) padState[String.fromCharCode(byte)] = true;
+  else if (byte >= 97 && byte <= 100) padState[String.fromCharCode(byte - 32)] = false;
+}
+const pad = createPad((byte) => { trackPad(byte); return hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve(); });
 // der schmale Streifen unter dem Code: für Maus und Tastatur
 pad.bindStick(padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-knob')!);
 for (const b of PAD_BUTTONS) pad.bindButton(padEl.querySelector<HTMLElement>(`[data-pad="${b}"]`)!, b);
@@ -1085,6 +1098,30 @@ if (transports().length){
   $('wsConnect').classList.add('hidden'); btnConnect.classList.add('hidden'); $('wsRun').classList.add('hidden');
   $('hubUnsupported').classList.remove('hidden');
 }
+
+// ---------------------------------------------------------------
+// Simulator (src/sim): steht im Codebereich an der Stelle des Codes. Geladen wird er erst, wenn
+// ihn jemand öffnet.
+// ---------------------------------------------------------------
+const btnSim = $('btnSim');
+btnSim.addEventListener('click', async () => {
+  const on = btnSim.getAttribute('aria-pressed') !== 'true';
+  btnSim.setAttribute('aria-pressed', String(on));
+  $('codePanel').classList.toggle('sim-on', on);
+  $('sim').classList.toggle('hidden', !on);
+  if (!simView){
+    const { initSimView } = await import('./sim/view');
+    simView ??= initSimView($('sim'), {
+      ws, toast, print:termWrite,
+      pad:(name) => padState[name] ?? 0, soundOn:() => settings().sounds,
+      // fragt das Programm das Steuerfeld ab, klappt es auf
+      // (der Streifen unter dem Simulator, auch bei Fingerbedienung – die große Controller-Ansicht würde ihn verdecken)
+      onStart:() => { if (!currentUsesPad) return; padEl.classList.remove('hidden'); btnPadWs.setAttribute('aria-pressed', 'true'); pad.redraw(); pad.release(); },
+      showBlock:(id) => { const b = ws.getBlockById(id); if (b){ Blockly.common.setSelected(b as Blockly.BlockSvg); ws.centerOnBlock(id); } }
+    });
+  }
+  simView.setShown(btnSim.getAttribute('aria-pressed') === 'true');
+});
 
 // Reiter auf schmalen Bildschirmen
 const mainEl = $('main');

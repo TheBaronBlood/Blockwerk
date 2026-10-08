@@ -68,13 +68,28 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{--lane:11px;--grip:24px}
 #blocklyDiv{position:absolute;inset:0}
 .blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
-.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5}
+/* (passt die Reihe nicht – mit dem Auswahl-Knopf bei Fingerbedienung –, rutscht er in eine zweite darüber statt unter den Werkzeugkasten) */
+.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:calc(100% - var(--lane) - 322px)}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
 /* Lupen als Zeichnung: sitzt genau in der Mitte, anders als ein Schriftzeichen */
 .ws-tools button svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 /* feste Breite: Die Anzeige ändert ihre Größe nicht, wenn aus zwei Ziffern drei werden */
-.ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums}
+.ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ws-tools button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* »Auswählen« gibt es nur bei Bedienung mit dem Finger (Tablet, Handy) – mit Tastatur genügt die Umschalttaste */
+#btnPick{display:none}
+@media (pointer:coarse){#btnPick{display:grid}}
+#btnPick svg{width:22px;height:22px;stroke-width:2}
+/* Mehrere Blöcke ausgewählt (multiselect.ts): Umriss wie beim gewählten Block, nur kräftiger; dazu eine Leiste oben */
+.bw-picked > .blocklyPath{stroke:#FFD945!important;stroke-width:4px!important}
+.ws-wrap.picking #blocklyDiv .blocklyMainBackground{cursor:crosshair}
+.bw-band{position:fixed;z-index:50;border:1.5px dashed var(--accent);border-radius:3px;background:color-mix(in srgb,var(--accent) 14%,transparent);pointer-events:none}
+.ws-picked{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:24px;
+  background:var(--surface);border:1px solid var(--rule);box-shadow:0 2px 10px rgba(0,0,0,.22);font-size:14px;white-space:nowrap}
+.ws-picked button{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--rule);background:var(--bg);cursor:pointer;font-size:14px}
+.ws-picked button:hover{border-color:var(--accent)}
+.ws-picked button.close{width:34px;padding:0}
 
 /* Start und Stopp: nur hier, unten rechts. Der Controller-Knopf sitzt über dem Startknopf. */
 .ws-run{position:absolute;right:calc(var(--lane) + 14px);bottom:26px;display:flex;align-items:center;gap:14px;z-index:5}
@@ -164,6 +179,53 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 .tk-str{color:#FFD945}
 .tk-com{color:#6B7385;font-style:italic}
 .tk-bi{color:#61AFEF}
+/* Simulator: steht im Codebereich an der Stelle des Codes */
+aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .code-zoom,aside.code.sim-on #btnCopy{display:none!important}
+.code-head .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.sim{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.sim-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px 6px}
+.sim-bar .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
+.sim-bar .btn:hover{border-color:#fff}
+.sim-bar .btn.primary{background:#00B94D;border-color:#00B94D;color:#fff}
+.sim-scale{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#9AA6B5}
+.sim-scale input{width:110px;accent-color:var(--accent)}
+.sim-bar select.btn{padding:5px 8px;background:var(--code-bg)}
+.sim-bar .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.sim-force{display:contents}
+.sim-force .btn{border-color:#DA3041}
+.sim-force .btn:active{background:#DA3041}
+.sim-info{margin:0;padding:2px 14px 6px;font-size:13px;line-height:1.4;color:#9AA6B5;min-height:1.4em}
+/* die Messwerte: Platz für zwei Zeilen, damit die Bahn nicht springt, wenn eine Angabe dazukommt */
+#simValues{min-height:calc(2.8em + 8px);font-variant-numeric:tabular-nums}
+/* Umbauen: eine zweite Leiste mit Raster und Symmetrie; was nur zur Bahn gehört, macht Platz */
+.sim-build-bar{display:none;padding-top:0}
+.sim.building .sim-build-bar{display:flex}
+.sim.building #simReset,.sim.building #simObstacle,.sim.building #simImage,.sim.building .sim-tempo,.sim.building .sim-force{display:none}
+.sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
+.sim-check input{width:18px;height:18px;accent-color:var(--accent)}
+/* die Zusatztasten beim Umbauen – ohne Tastatur (Finger) gibt es sie nicht */
+.sim-keys{flex:1 1 100%;margin:0;font-size:12.5px;line-height:1.7;color:#9AA6B5}
+.sim-keys kbd{font:inherit;font-weight:700;color:var(--code-ink);padding:1px 5px;border:1px solid rgba(255,255,255,.22);border-radius:5px}
+@media (pointer:coarse){.sim-keys{display:none}}
+.sim-stage canvas:focus-visible{outline-offset:-3px}
+.sim-stage{flex:1 1 auto;min-height:120px;position:relative;overflow:hidden;background:#23262D}
+.sim-stage canvas{position:absolute;inset:0;display:block;touch-action:none}
+/* der Hub liegt in der Ecke über der Bahn */
+.sim-hub{position:absolute;left:10px;bottom:10px;width:92px;padding:8px 8px 7px;border-radius:12px;background:#F4F5F7;box-shadow:0 2px 8px rgba(0,0,0,.4);touch-action:none;user-select:none}
+.sim-matrix{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:5px;border-radius:6px;background:#1B1D22}
+.sim-matrix i{aspect-ratio:1;border-radius:2px;background:#FFE14D;opacity:calc(.08 + var(--on,0) * .92)}
+.sim-hub-buttons{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.sim-hub-buttons button{width:22px;height:14px;padding:0;border:0;border-radius:7px;background:#B9C0CB;cursor:pointer}
+.sim-hub-buttons button.center{width:22px;height:22px;border-radius:50%;background:var(--light,#D7DCE3);border:2px solid #AAB2BE}
+.sim-hub-buttons button.on,.sim-hub-buttons button:active{background:#6F7A8A}
+/* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
+.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild,.sim.hub-only .sim-tempo{display:none}
+.sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
+.sim.hub-only .sim-stage{container-type:size}
+.sim.hub-only .sim-matrix{gap:8px;padding:14px;border-radius:10px}
+.sim.hub-only .sim-hub-buttons{margin-top:9%}
+.sim.hub-only .sim-hub-buttons button{width:24%;height:auto;aspect-ratio:22/14;border-radius:999px}
+.sim.hub-only .sim-hub-buttons button.center{width:24%;aspect-ratio:1;border-radius:50%;border-width:4px}
 .pad{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.08);outline-offset:-3px}
 .pad-stick{position:relative;width:92px;height:92px;flex:0 0 auto;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);touch-action:none;cursor:grab}
 .pad-knob{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#0FBD8C;pointer-events:none}
@@ -665,6 +727,8 @@ details.run a{color:#7CC8FF}
   .ws-tools{gap:10px}
   .ws-tools button{width:46px;height:46px;font-size:20px}
   .ws-tools button.wide{border-radius:23px;padding:0 16px}
+  /* (die Zoom-Anzeige hat eine feste Breite – mit dem Rand der breiten Knöpfe rutschte das Prozentzeichen unter die Zahl) */
+  .ws-tools button.zoom-level{width:76px;padding:0}
   .bar .btn{min-height:44px}
   .ws-run button{width:68px;height:68px}
   .ws-run button.stop,.ws-run button.gamepad{width:54px;height:54px}
@@ -764,6 +828,19 @@ html[data-layout^="phone"] .ws-run button.stop{width:42px;height:42px}
 html[data-layout^="phone"] .ws-run button.stop svg{width:24px;height:24px}
 html[data-layout^="phone"] .ws-run button.gamepad{position:absolute;right:7px;width:40px;height:40px}
 html[data-layout^="phone"] .ws-run button.gamepad svg{width:25px;height:25px}
+
+/* »Auswählen« bleibt auf dem Handy als einziger Knopf der Leiste: hochkant unten rechts über dem
+   Werkzeugkasten, quer links neben Stopp. Die Leiste der Auswahl rückt hochkant darüber – oben
+   sitzen dort Start und Stopp. */
+@media (pointer:coarse){
+  html[data-layout^="phone"] .ws-tools{display:flex;max-width:none}
+  html[data-layout^="phone"] .ws-tools > :not(#btnPick){display:none}
+  html[data-layout="phone-portrait"] .ws-tools{right:calc(var(--lane) + 10px);bottom:64px}
+  html[data-layout="phone-landscape"] .ws-tools{right:calc(var(--lane) + var(--grip) + 128px);bottom:18px}
+  html[data-layout="phone-portrait"] .ws-picked{top:auto;bottom:116px;gap:5px;padding:5px 5px 5px 12px;font-size:13px}
+  html[data-layout="phone-portrait"] .ws-picked button{padding:0 10px;font-size:13px}
+  html[data-layout="phone-portrait"] .ws-picked button.close{padding:0}
+}
 
 /* Kopfleiste: kompakte Knöpfe; »Neu« nur als Zeichen, »Hilfe« nur als Wort */
 html[data-layout^="phone"] .bar .btn{min-height:38px;padding:5px 10px;font-size:14.5px;gap:6px;border-radius:10px}

@@ -78,9 +78,25 @@
     <div id="blocklyDiv"></div>
     <div class="ws-tools">
       <button type="button" id="zoomOut" aria-label="Verkleinern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
-      <button type="button" class="wide zoom-level" id="zoomLevel" aria-label="Zoom zurücksetzen" title="Zoom der Arbeitsfläche – anklicken setzt auf 100 % zurück">100 %</button>
+      <button type="button" class="wide zoom-level" id="zoomLevel" aria-label="Zoom zurücksetzen" title="Zoom der Arbeitsfläche – anklicken setzt auf 100 % zurück">100&nbsp;%</button>
       <button type="button" id="zoomIn" aria-label="Vergrößern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
       <button type="button" class="wide" id="tidy">Aufräumen</button>
+      <!-- mehrere Blöcke auswählen (multiselect.ts); mit Tastatur geht dasselbe mit gedrückter Umschalttaste -->
+      <!-- das Zeichen: ein Auswahlrahmen um zwei Blöcke -->
+      <button type="button" id="btnPick" aria-pressed="false" aria-label="Mehrere Blöcke auswählen" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="3" stroke-dasharray="3.2 2.9"/>
+          <rect x="6.5" y="7" width="11" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+          <rect x="6.5" y="13" width="7.5" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+    </div>
+    <!-- erscheint, sobald Blöcke ausgewählt sind -->
+    <div class="ws-picked hidden" id="wsPicked" role="toolbar" aria-label="Ausgewählte Blöcke">
+      <span id="wsPickedCount" role="status"></span>
+      <button type="button" id="wsPickedCopy" title="Die Auswahl noch einmal daneben einfügen">Duplizieren</button>
+      <button type="button" id="wsPickedDelete">Löschen</button>
+      <button type="button" class="close" id="wsPickedClear" aria-label="Auswahl aufheben" title="Auswahl aufheben">✕</button>
     </div>
     <!-- Verbinden: ohne Hub öffnet der Knopf »Hub verbinden«, mit Hub die Hub-Ansicht (dort steht auch »Trennen«) -->
     <div class="ws-connect" id="wsConnect">
@@ -127,9 +143,49 @@
         <button class="btn" id="codeBigger" type="button" aria-label="Schrift im Code größer" title="Schrift im Code größer">+</button>
       </div>
       <button class="btn" id="btnCopy" type="button">Kopieren</button>
+      <!-- zeigt statt des Codes den Simulator (src/sim) -->
+      <button class="btn" id="btnSim" type="button" aria-pressed="false" title="Programm ohne Roboter ausprobieren">Simulator</button>
     </div>
     <div class="warnings hidden" id="warnings"></div>
     <div class="code-scroll"><div class="code-lines" id="codeLines"></div></div>
+    <section class="sim hidden" id="sim" aria-label="Simulator">
+      <div class="sim-bar">
+        <button class="btn primary" id="simRun" type="button">▶ Start</button>
+        <button class="btn" id="simReset" type="button" title="Stellt den Roboter dorthin zurück, wo er beim Start stand">Zurück</button>
+        <button class="btn" id="simObstacle" type="button" title="Hindernis vor den Roboter stellen – Doppelklick räumt es wieder weg">+ Hindernis</button>
+        <button class="btn" id="simImage" type="button" title="Ein Bild der Bahn laden, von oben gesehen">Bahn laden …</button>
+        <button class="btn" id="simBuild" type="button" aria-pressed="false" title="Roboter groß zeigen und seine Sensoren versetzen – mit Raster und Symmetrie">Umbauen</button>
+        <label class="sim-scale" title="Wie groß der Roboter auf der Bahn ist">Roboter <input type="range" id="simScale" min="0.3" max="3" step="0.05" value="1"></label>
+        <label class="sim-scale sim-tempo" title="Zeitlupe und Zeitraffer">Tempo
+          <select class="btn" id="simSpeed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        </label>
+        <!-- je Kraftsensor des Programms ein Knopf zum Drücken -->
+        <span class="sim-force" id="simForce"></span>
+        <input type="file" id="simFile" accept="image/*" class="hidden">
+      </div>
+      <!-- nur beim Umbauen: Raster (Abstand der LEGO-Noppen) und Symmetrie -->
+      <div class="sim-bar sim-build-bar">
+        <label class="sim-check" title="Sensoren rasten im Abstand der LEGO-Noppen ein (8 mm) und drehen in Schritten von 15 Grad"><input type="checkbox" id="simGrid" checked> Raster</label>
+        <label class="sim-check" title="Der Sensor auf der anderen Seite wandert und dreht spiegelbildlich mit"><input type="checkbox" id="simSymmetry" checked> Symmetrie</label>
+        <button class="btn" id="simMountsReset" type="button" title="Setzt alle Sensoren an ihren üblichen Platz zurück, ungedreht">Alle zurücksetzen</button>
+        <!-- nur mit Tastatur: die Zusatztasten, wie in Zeichenprogrammen üblich -->
+        <p class="sim-keys"><kbd>Alt</kbd> ohne Einrasten · <kbd>Umschalt</kbd> nur eine Richtung, beim Drehen 45° · <kbd>Strg</kbd> ohne Spiegeln · <kbd>R</kbd> dreht, Pfeiltasten versetzen</p>
+      </div>
+      <p class="sim-info" id="simInfo"></p>
+      <div class="sim-stage">
+        <canvas id="simCanvas"></canvas>
+        <!-- der Hub: Lichtmatrix und Tasten; die mittlere beendet wie am echten Hub das Programm -->
+        <div class="sim-hub" id="simHub" role="group" aria-label="Hub" title="Doppelklick: nur den Hub zeigen">
+          <div class="sim-matrix" id="simMatrix" role="img" aria-label="Lichtmatrix"></div>
+          <div class="sim-hub-buttons">
+            <button type="button" data-hub="LEFT" aria-label="linke Taste des Hubs" title="linke Taste"></button>
+            <button type="button" class="center" id="simHubCenter" aria-label="mittlere Taste des Hubs: startet und beendet das Programm" title="mittlere Taste: startet und beendet das Programm"></button>
+            <button type="button" data-hub="RIGHT" aria-label="rechte Taste des Hubs" title="rechte Taste"></button>
+          </div>
+        </div>
+      </div>
+      <p class="sim-info" id="simValues" role="status"></p>
+    </section>
     <section class="pad hidden" id="pad" tabindex="0" aria-label="Steuerfeld">
       <div class="pad-stick" aria-label="Joystick"><div class="pad-knob"></div></div>
       <div class="pad-buttons">
