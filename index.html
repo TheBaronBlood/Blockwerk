@@ -149,9 +149,11 @@
       </div>
       <!-- nur beim Umbauen: Raster (Abstand der LEGO-Noppen) und Symmetrie -->
       <div class="sim-bar sim-build-bar">
-        <label class="sim-check" title="Sensoren rasten im Abstand der LEGO-Noppen ein (8 mm)"><input type="checkbox" id="simGrid" checked> Raster</label>
-        <label class="sim-check" title="Der Sensor auf der anderen Seite wandert spiegelbildlich mit"><input type="checkbox" id="simSymmetry" checked> Symmetrie</label>
-        <button class="btn" id="simMountsReset" type="button" title="Setzt alle Sensoren an ihren üblichen Platz zurück">Alle zurücksetzen</button>
+        <label class="sim-check" title="Sensoren rasten im Abstand der LEGO-Noppen ein (8 mm) und drehen in Schritten von 15 Grad"><input type="checkbox" id="simGrid" checked> Raster</label>
+        <label class="sim-check" title="Der Sensor auf der anderen Seite wandert und dreht spiegelbildlich mit"><input type="checkbox" id="simSymmetry" checked> Symmetrie</label>
+        <button class="btn" id="simMountsReset" type="button" title="Setzt alle Sensoren an ihren üblichen Platz zurück, ungedreht">Alle zurücksetzen</button>
+        <!-- nur mit Tastatur: die Zusatztasten, wie in Zeichenprogrammen üblich -->
+        <p class="sim-keys"><kbd>Alt</kbd> ohne Einrasten · <kbd>Umschalt</kbd> nur eine Richtung, beim Drehen 45° · <kbd>Strg</kbd> ohne Spiegeln · <kbd>R</kbd> dreht, Pfeiltasten versetzen</p>
       </div>
       <p class="sim-info" id="simInfo"></p>
       <div class="sim-stage">

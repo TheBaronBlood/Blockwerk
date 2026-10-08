@@ -411,10 +411,12 @@ erste Ansicht im Codebereich (Knopf »Simulator«).
   (gemerkt über das Neuladen hinweg, wie die Größe des Roboters).
   Der Roboter steht dabei mit der Nase nach oben auf einem Raster im Abstand der LEGO-Noppen
   (8 mm); Sensoren rasten ein, und mit Symmetrie wandert der Sensor gegenüber spiegelbildlich mit
-  (`build.ts`).
+  (`build.ts`). Sensoren lassen sich auch drehen, in Schritten von 15 Grad (der Abstandssensor schaut
+  dann dorthin, beim Kraftsensor sitzt dort der Taster). Zusatztasten wie in Zeichenprogrammen: Alt
+  ohne Einrasten, Umschalt nur eine Richtung bzw. 45 Grad, Strg ohne Spiegeln. Gemerkte Plätze gelten
+  je Gruppe von Sensoren – wird aus zwei Farbsensoren einer, sitzt der wieder in der Mitte.
 
-**Offen:** Rampen beim Anfahren, Bahn und Hindernisse merken, Spur des Roboters, Blickrichtung des
-Abstandssensors, eigenes einklappbares Fenster statt im Codebereich.
+**Offen:** Rampen beim Anfahren, Bahn und Hindernisse merken, Spur des Roboters, eigenes einklappbares Fenster statt im Codebereich.
 
 **Ursprünglicher Entwurf:**
 - Echtes Python im Browser (MicroPython als WebAssembly) mit einem nachgebauten

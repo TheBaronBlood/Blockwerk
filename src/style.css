@@ -188,6 +188,11 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim.building #simReset,.sim.building #simObstacle,.sim.building #simImage,.sim.building .sim-tempo,.sim.building .sim-force{display:none}
 .sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
 .sim-check input{width:18px;height:18px;accent-color:var(--accent)}
+/* die Zusatztasten beim Umbauen – ohne Tastatur (Finger) gibt es sie nicht */
+.sim-keys{flex:1 1 100%;margin:0;font-size:12.5px;line-height:1.7;color:#9AA6B5}
+.sim-keys kbd{font:inherit;font-weight:700;color:var(--code-ink);padding:1px 5px;border:1px solid rgba(255,255,255,.22);border-radius:5px}
+@media (pointer:coarse){.sim-keys{display:none}}
+.sim-stage canvas:focus-visible{outline-offset:-3px}
 .sim-stage{flex:1 1 auto;min-height:120px;position:relative;overflow:hidden;background:#23262D}
 .sim-stage canvas{position:absolute;inset:0;display:block;touch-action:none}
 /* der Hub liegt in der Ecke über der Bahn */

@@ -85,8 +85,11 @@ export const ULTRA = {at:{x:85, y:0} as Point, halfAngle:17.5, range:2000, nothi
 /** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
 export const BUMPER = {at:{x:20, y:0} as Point, radius:75};
 
-/** Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit er tastet und was er gedrückt meldet (Newton). */
-export const FORCE = {front:92, spacing:30, reach:12, pressed:10};
+/**
+ * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit sein Taster vor ihm liegt, wie weit
+ * der tastet und was er gedrückt meldet (Newton).
+ */
+export const FORCE = {front:92, spacing:30, tip:8, reach:12, pressed:10};
 /**
  * Wo jeder Sensor sitzt, solange ihn niemand versetzt hat: Farbsensoren nebeneinander vorn, der
  * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Anschluss → Platz am Roboter.

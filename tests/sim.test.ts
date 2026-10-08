@@ -3,7 +3,7 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
-import { mirrorPartner, MOUNT_AREA, placeSensor } from '../src/sim/build';
+import { mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts } from '../src/sim/build';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
 import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
@@ -88,28 +88,69 @@ describe('Umbauen', () => {
     expect(mirrorPartner(three, 'F')).toBe('E');
   });
   it('ohne Raster auf den Millimeter, mit Raster auf die Noppe (8 mm)', () => {
-    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual.C, free)).toEqual({C:{x:101, y:-37}});
-    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual.C, grid)).toEqual({C:{x:104, y:-40}});
+    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual, free)).toEqual({C:{x:101, y:-37}});
+    expect(placeSensor(two, {}, 'C', {x:101.4, y:-37.2}, usual, grid)).toEqual({C:{x:104, y:-40}});
     // der andere Sensor bleibt, wo er ist
-    expect(placeSensor(two, {D:{x:90, y:30}}, 'C', {x:80, y:-16}, usual.C, grid)).toEqual({C:{x:80, y:-16}, D:{x:90, y:30}});
+    expect(placeSensor(two, {D:{x:90, y:30}}, 'C', {x:80, y:-16}, usual, grid)).toEqual({C:{x:80, y:-16}, D:{x:90, y:30}});
   });
   it('bleibt im erlaubten Bereich', () => {
-    expect(placeSensor(two, {}, 'C', {x:900, y:-900}, usual.C, grid)).toEqual({C:{x:MOUNT_AREA.front, y:-MOUNT_AREA.side}});
-    expect(placeSensor(two, {}, 'C', {x:-900, y:900}, usual.C, free)).toEqual({C:{x:MOUNT_AREA.back, y:MOUNT_AREA.side}});
+    expect(placeSensor(two, {}, 'C', {x:900, y:-900}, usual, grid)).toEqual({C:{x:MOUNT_AREA.front, y:-MOUNT_AREA.side}});
+    expect(placeSensor(two, {}, 'C', {x:-900, y:900}, usual, free)).toEqual({C:{x:MOUNT_AREA.back, y:MOUNT_AREA.side}});
   });
   it('Symmetrie: Der Sensor gegenüber wandert spiegelbildlich mit', () => {
-    expect(placeSensor(two, {}, 'C', {x:110, y:-30}, usual.C, mirror)).toEqual({C:{x:112, y:-32}, D:{x:112, y:32}});
-    expect(placeSensor(two, {}, 'D', {x:96, y:50}, usual.D, {grid:false, symmetry:true})).toEqual({D:{x:96, y:50}, C:{x:96, y:-50}});
+    expect(placeSensor(two, {}, 'C', {x:110, y:-30}, usual, mirror)).toEqual({C:{x:112, y:-32}, D:{x:112, y:32}});
+    expect(placeSensor(two, {}, 'D', {x:96, y:50}, usual, {grid:false, symmetry:true})).toEqual({D:{x:96, y:50}, C:{x:96, y:-50}});
     // auf der Mittellinie lägen beide aufeinander: Sie bleiben einen Rasterschritt daneben, jeder auf seiner Seite
-    expect(placeSensor(two, {}, 'C', {x:96, y:1}, usual.C, mirror)).toEqual({C:{x:96, y:-8}, D:{x:96, y:8}});
-    expect(placeSensor(two, {}, 'D', {x:96, y:0}, usual.D, mirror)).toEqual({D:{x:96, y:8}, C:{x:96, y:-8}});
+    expect(placeSensor(two, {}, 'C', {x:96, y:1}, usual, mirror)).toEqual({C:{x:96, y:-8}, D:{x:96, y:8}});
+    expect(placeSensor(two, {}, 'D', {x:96, y:0}, usual, mirror)).toEqual({D:{x:96, y:8}, C:{x:96, y:-8}});
+  });
+  it('Umschalt: nur vor und zurück oder nur seitlich – was fest ist, rastet auch nicht ein', () => {
+    expect(placeSensor(two, {}, 'C', {x:110, y:-33}, usual, {...grid, fixed:{y:-20}})).toEqual({C:{x:112, y:-20}});
+    expect(placeSensor(two, {}, 'C', {x:110, y:-33}, usual, {...mirror, fixed:{x:100}})).toEqual({C:{x:100, y:-32}, D:{x:100, y:32}});
+  });
+  it('drehen: in Schritten von 15 Grad, auf Wunsch frei', () => {
+    const turn = (angle: number, step: number) => rotateSensor(two, {}, 'E', angle, usual, {step, symmetry:false}).E;
+    expect(turn(22, 15)).toEqual({...usual.E, angle:15});
+    expect(turn(23, 15)).toEqual({...usual.E, angle:30});
+    expect(turn(50, 45)).toEqual({...usual.E, angle:45});
+    expect(turn(22.4, 0)).toEqual({...usual.E, angle:22});
+    // geradeaus steht kein Winkel dabei; der Winkel bleibt zwischen −179 und 180 Grad
+    expect(turn(4, 15)).toEqual(usual.E);
+    expect(turn(190, 15).angle).toBe(-165); expect(turn(-180, 15).angle).toBe(180); expect(turn(370, 0).angle).toBe(10);
+  });
+  it('drehen mit Symmetrie: Der Sensor gegenüber dreht spiegelbildlich mit', () => {
+    const turned = rotateSensor(two, {C:{x:96, y:-32}, D:{x:96, y:32}}, 'C', -30, usual, {step:15, symmetry:true});
+    expect(turned).toEqual({C:{x:96, y:-32, angle:-30}, D:{x:96, y:32, angle:30}});
+    // ohne Symmetrie bleibt der andere, wie er ist
+    expect(rotateSensor(two, turned, 'C', 0, usual, {step:15, symmetry:false})).toEqual({C:{x:96, y:-32}, D:{x:96, y:32, angle:30}});
+    // beim Versetzen behält der Sensor seine Drehung, der gegenüber bekommt die gespiegelte
+    expect(placeSensor(two, {C:{x:96, y:-32, angle:45}}, 'C', {x:104, y:-40}, usual, mirror)).toEqual({C:{x:104, y:-40, angle:45}, D:{x:104, y:40, angle:-45}});
+    // und gemerkt wird sie auch
+    expect(mountsFor(two, saveMounts(two, {}, turned))).toEqual(turned);
+  });
+  it('Plätze gelten nur für die Sensoren, für die sie eingestellt wurden', () => {
+    // zwei Farbsensoren und der Abstandssensor sind versetzt
+    const saved = saveMounts(two, {}, {C:{x:128, y:-48}, D:{x:128, y:48}, E:{x:60, y:0}});
+    expect(mountsFor(two, saved)).toEqual({C:{x:128, y:-48}, D:{x:128, y:48}, E:{x:60, y:0}});
+    // das Programm benutzt nur noch einen Farbsensor: Der sitzt wieder am üblichen Platz, in der Mitte …
+    const one = robot(['C'], {ultra:'E'});
+    expect(mountsFor(one, saved)).toEqual({E:{x:60, y:0}});   // … der Abstandssensor bleibt, wo er war
+    expect(defaultMounts(one).C.y).toBe(0);
+    // den einzelnen versetzen ändert nichts an dem, was für die zwei gemerkt ist
+    const both = saveMounts(one, saved, {C:{x:96, y:16}, E:{x:60, y:0}});
+    expect(mountsFor(one, both)).toEqual({C:{x:96, y:16}, E:{x:60, y:0}});
+    expect(mountsFor(two, both)).toEqual({C:{x:128, y:-48}, D:{x:128, y:48}, E:{x:60, y:0}});
+    // alle zurückgesetzt: Für diese Sensoren ist nichts mehr gemerkt
+    expect(mountsFor(two, saveMounts(two, both, {}))).toEqual({});
+    // Unsinn im Speicher schadet nicht
+    expect(mountsFor(two, {'color:C,D':{C:{x:'links'} as never}, 'ultra:E':null as never})).toEqual({});
   });
   it('Symmetrie: Ein einzelner Sensor rastet auf der Mittellinie ein', () => {
-    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual.E, {grid:false, symmetry:true})).toEqual({E:{x:80, y:0}});
-    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual.E, free)).toEqual({E:{x:80, y:6}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual, {grid:false, symmetry:true})).toEqual({E:{x:80, y:0}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:6}, usual, free)).toEqual({E:{x:80, y:6}});
     // mit Raster bleibt die Noppe neben der Mitte erreichbar
-    expect(placeSensor(two, {}, 'E', {x:80, y:7}, usual.E, mirror)).toEqual({E:{x:80, y:8}});
-    expect(placeSensor(two, {}, 'E', {x:80, y:3}, usual.E, mirror)).toEqual({E:{x:80, y:0}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:7}, usual, mirror)).toEqual({E:{x:80, y:8}});
+    expect(placeSensor(two, {}, 'E', {x:80, y:3}, usual, mirror)).toEqual({E:{x:80, y:0}});
   });
 });
 
@@ -296,6 +337,11 @@ describe('Programm', () => {
     const far = program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}));
     expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; })).out).toBe('415\n');
     expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; s.mounts = {D:{x:0, y:0}}; })).out).toBe('500\n');
+    // … und in seine Richtung: nach rechts gedreht sieht er das Hindernis rechts neben dem Roboter, nicht mehr das vorn
+    const beside = (mounts: Simulation['mounts']) => simulate(far, 100, s => { s.obstacles = [box(85, 300)]; s.mounts = mounts; });
+    expect((await beside({})).out).toBe('2000\n');
+    expect((await beside({D:{x:85, y:0, angle:90}})).out).toBe('250\n');
+    expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; s.mounts = {D:{x:85, y:0, angle:90}}; })).out).toBe('2000\n');
     // ein Platz für einen Anschluss, an dem das Programm nichts kennt, zählt nicht
     expect((await simulate(state, 100, s => { s.mounts = {F:{x:0, y:0}}; })).sim.mount('F')).toBeNull();
   });

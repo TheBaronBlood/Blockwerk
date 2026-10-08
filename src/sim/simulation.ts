@@ -3,6 +3,7 @@
 // melden. `step()` lässt Zeit vergehen; das Programm (runner.ts) stellt nur Geschwindigkeiten ein
 // und fragt Sensoren ab. (Ohne DOM.)
 // ---------------------------------------------------------------
+import type { Mount } from './build';
 import { DISPLAY_OFF, type Pixels } from './hubDisplay';
 import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimRobot } from './robot';
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
@@ -31,8 +32,8 @@ export class Simulation {
   readonly buttons = new Set<string>();
   /** Kraftsensoren (Anschlüsse), die gerade von Hand gedrückt werden. */
   readonly forceHeld = new Set<string>();
-  /** Sensoren, die jemand versetzt hat: Anschluss → Platz am Roboter (Millimeter, x nach vorn, y nach rechts). */
-  mounts: Record<string, Point> = {};
+  /** Sensoren, die jemand versetzt oder gedreht hat: Anschluss → Platz am Roboter (Millimeter, x nach vorn, y nach rechts) und Drehung. */
+  mounts: Record<string, Mount> = {};
   private defaults: {robot: SimRobot; mounts: Record<string, Point>} | null = null;
   private headingZero = 0;
   private readonly motors: Record<string, SimMotor> = {};
@@ -76,11 +77,13 @@ export class Simulation {
   private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
 
   /** Wo der Sensor an diesem Anschluss am Roboter sitzt – null, wenn der Simulator dort keinen kennt. */
-  mount(port: string): Point | null {
+  mount(port: string): Mount | null {
     if (this.defaults?.robot !== this.robot) this.defaults = {robot:this.robot, mounts:defaultMounts(this.robot)};
     const usual = this.defaults.mounts[port];
     return usual ? this.mounts[port] ?? usual : null;
   }
+  /** Wohin der Sensor an diesem Anschluss schaut: die Richtung des Roboters, dazu die Drehung des Sensors. */
+  sensorHeading(port: string): number { return this.pose.heading + (this.mount(port)?.angle ?? 0); }
   /** Wo der Sensor an diesem Anschluss gerade über der Bahn steht. */
   sensorPoint(port: string): Point | null { const at = this.mount(port); return at && toWorld(this.pose, this.scale, at); }
   /** Wo die Farbsensoren gerade über der Bahn stehen, in der Reihenfolge von `robot.colors`. */
@@ -96,17 +99,22 @@ export class Simulation {
     const at = this.colorPoint(port);
     return at ? colorAt(this.track, at, COLOR_SPOT * this.scale) : 'WHITE';
   }
-  /** Wo der Abstandssensor sitzt. */
+  /** Wo der Abstandssensor sitzt und wohin er schaut. */
   ultraPoint(): Point { return (this.robot.ultra && this.sensorPoint(this.robot.ultra)) || toWorld(this.pose, this.scale, ULTRA.at); }
-  /** Ob der Kraftsensor gedrückt ist: von Hand oder weil er an ein Hindernis stößt. */
+  ultraHeading(): number { return this.robot.ultra ? this.sensorHeading(this.robot.ultra) : this.pose.heading; }
+  /** Ob der Kraftsensor gedrückt ist: von Hand oder weil sein Taster an ein Hindernis stößt. */
   forcePressed(port: string): boolean {
-    if (!this.robot.force.includes(port)) return false;
-    return this.forceHeld.has(port) || touches(this.obstacles, this.sensorPoint(port)!, FORCE.reach * this.scale);
+    const at = this.robot.force.includes(port) ? this.mount(port) : null;
+    if (!at) return false;
+    if (this.forceHeld.has(port)) return true;
+    // der Taster sitzt vorn am Sensor – wohin das ist, hängt an seiner Drehung
+    const out = forward(at.angle ?? 0), tip = toWorld(this.pose, this.scale, {x:at.x + FORCE.tip * out.x, y:at.y + FORCE.tip * out.y});
+    return touches(this.obstacles, tip, FORCE.reach * this.scale);
   }
   /** Abstand am Abstandssensor in Millimetern; ohne Hindernis im Kegel 2000 wie am echten Sensor. */
   ultrasonic(port: string): number {
     if (port !== this.robot.ultra) return ULTRA.nothing;
-    const hit = coneDistance(this.ultraPoint(), this.pose.heading, ULTRA.halfAngle, ULTRA.range * this.scale, this.obstacles);
+    const hit = coneDistance(this.ultraPoint(), this.ultraHeading(), ULTRA.halfAngle, ULTRA.range * this.scale, this.obstacles);
     return hit === null ? ULTRA.nothing : Math.round(hit / this.scale);
   }
   /** Ausrichtung des Hubs in Grad, positiv nach rechts. */
