@@ -1047,6 +1047,8 @@ function showPad(on: boolean){
   if (on) pad.redraw();
 }
 $('btnPadBig').addEventListener('click', () => padView.open());
+// (am Tablet öffnet der Controller-Knopf die große Ansicht – den Streifen schließt dort nur sein eigener Knopf)
+$('btnPadClose').addEventListener('click', () => showPad(false));
 // Der Controller-Knopf klappt den Streifen unter dem Code auf und zu. Ist der Python-Bereich nicht
 // zu sehen (eingeklappt, schmaler Bildschirm) oder wird mit dem Finger bedient, öffnet er die große Ansicht.
 btnPadWs.addEventListener('click', () => {

@@ -81,15 +81,6 @@
       <button type="button" class="wide zoom-level" id="zoomLevel" aria-label="Zoom zurücksetzen" title="Zoom der Arbeitsfläche – anklicken setzt auf 100 % zurück">100&nbsp;%</button>
       <button type="button" id="zoomIn" aria-label="Vergrößern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
       <button type="button" class="wide" id="tidy">Aufräumen</button>
-      <!-- mehrere Blöcke auswählen (multiselect.ts); mit Tastatur geht dasselbe mit gedrückter Umschalttaste -->
-      <!-- das Zeichen: ein Auswahlrahmen um zwei Blöcke -->
-      <button type="button" id="btnPick" aria-pressed="false" aria-label="Mehrere Blöcke auswählen" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="2.5" y="2.5" width="19" height="19" rx="3" stroke-dasharray="3.2 2.9"/>
-          <rect x="6.5" y="7" width="11" height="4" rx="1.3" fill="currentColor" stroke="none"/>
-          <rect x="6.5" y="13" width="7.5" height="4" rx="1.3" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
     </div>
     <!-- erscheint, sobald Blöcke ausgewählt sind -->
     <div class="ws-picked hidden" id="wsPicked" role="toolbar" aria-label="Ausgewählte Blöcke">
@@ -112,6 +103,15 @@
     </div>
     <!-- Start und Stopp gibt es nur hier – auch wenn der Python-Bereich eingeklappt ist -->
     <div class="ws-run" id="wsRun">
+      <!-- mehrere Blöcke auswählen (multiselect.ts): nur bei Bedienung mit dem Finger, über dem Startknopf – mit Tastatur genügt die Umschalttaste -->
+      <!-- das Zeichen: ein Auswahlrahmen um zwei Blöcke -->
+      <button type="button" class="pick" id="btnPick" aria-pressed="false" aria-label="Mehrere Blöcke auswählen" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="3" stroke-dasharray="3.2 2.9"/>
+          <rect x="6.5" y="7" width="11" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+          <rect x="6.5" y="13" width="7.5" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
       <!-- nur sichtbar, wenn das Programm das Steuerfeld abfragt -->
       <button type="button" class="gamepad hidden" id="btnPadWs" aria-label="Steuerfeld ein- oder ausblenden" aria-pressed="false" title="Steuerfeld">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.500 6h9a5.500 5.500 0 0 1 5.400 6.500l-.800 4.300a2.700 2.700 0 0 1-4.800 1.200L14.500 16h-5l-1.800 2a2.700 2.700 0 0 1-4.800-1.200l-.800-4.300A5.500 5.500 0 0 1 7.500 6Z" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"/><path d="M8 9.500v3M6.500 11h3" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round"/><circle cx="15.200" cy="12" r="1.100"/><circle cx="17.800" cy="10" r="1.100"/></svg>
@@ -257,6 +257,7 @@
       <p class="pad-note">Tastatur: erst hier hineinklicken, dann Pfeiltasten oder W A S D für den Joystick, 1 bis 4 für die Tasten. Ein Controller an diesem Gerät bedient das Steuerfeld ebenfalls.</p>
       <p class="pad-gamepad hidden" id="padGamepad" role="status"></p>
       <button class="btn" id="btnPadBig" type="button" title="Steuerfeld bildschirmfüllend, zum Anordnen und für Tablets">Controller-Ansicht</button>
+      <button class="btn pad-close" id="btnPadClose" type="button" aria-label="Steuerfeld schließen" title="Schließen">✕</button>
     </section>
     <div class="split-h" id="splitTerm" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Höhe des Terminals ändern" title="Ziehen: Höhe ändern · Doppelklick: Standard"></div>
     <section class="term collapsed" id="term" aria-label="Terminal">

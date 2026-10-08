@@ -68,19 +68,13 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{--lane:11px;--grip:24px}
 #blocklyDiv{position:absolute;inset:0}
 .blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
-/* (passt die Reihe nicht – mit dem Auswahl-Knopf bei Fingerbedienung –, rutscht er in eine zweite darüber statt unter den Werkzeugkasten) */
-.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:calc(100% - var(--lane) - 322px)}
+.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
 /* Lupen als Zeichnung: sitzt genau in der Mitte, anders als ein Schriftzeichen */
 .ws-tools button svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 /* feste Breite: Die Anzeige ändert ihre Größe nicht, wenn aus zwei Ziffern drei werden */
 .ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ws-tools button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-/* »Auswählen« gibt es nur bei Bedienung mit dem Finger (Tablet, Handy) – mit Tastatur genügt die Umschalttaste */
-#btnPick{display:none}
-@media (pointer:coarse){#btnPick{display:grid}}
-#btnPick svg{width:22px;height:22px;stroke-width:2}
 /* Mehrere Blöcke ausgewählt (multiselect.ts): Umriss wie beim gewählten Block, nur kräftiger; dazu eine Leiste oben */
 .bw-picked > .blocklyPath{stroke:#FFD945!important;stroke-width:4px!important}
 .ws-wrap.picking #blocklyDiv .blocklyMainBackground{cursor:crosshair}
@@ -101,6 +95,15 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-run button.gamepad{position:absolute;right:8px;bottom:calc(100% + 14px);background:#00A645;width:48px;height:48px}
 .ws-run button.gamepad svg{width:30px;height:30px}
 .ws-run button.gamepad[aria-pressed="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 6px #00A645}
+/* Mehrere Blöcke auswählen: nur bei Bedienung mit dem Finger (mit Tastatur genügt die Umschalttaste). Der Knopf sitzt
+   über dem Startknopf, gleich groß wie der Controller-Knopf – ist der zu sehen, rückt die Auswahl einen Platz höher. */
+.ws-run button.pick{display:none;position:absolute;right:8px;bottom:calc(100% + 14px);width:48px;height:48px;background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
+.ws-run button.pick svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.ws-run button.pick[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (pointer:coarse){
+  .ws-run button.pick{display:grid}
+  .ws-wrap.has-pad .ws-run button.pick{bottom:calc(100% + 82px)}
+}
 .ws-run button:hover:not(:disabled){transform:scale(1.06)}
 .ws-run button:disabled{background:var(--rule);color:var(--muted);cursor:default;box-shadow:none}
 .ws-run button.busy{animation:run-busy 1s ease-in-out infinite}
@@ -286,6 +289,10 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
   overflow:hidden;text-overflow:ellipsis;max-width:260px}
 .pad .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
 .pad .btn:hover{border-color:#fff}
+/* schließt den Streifen – am Tablet der einzige Weg, ihn wieder loszuwerden */
+.pad .pad-close{margin-left:auto;min-width:36px;padding-left:0;padding-right:0;font-weight:700}
+/* die Tastatur-Hinweise braucht es ohne Tastatur nicht */
+@media (pointer:coarse){.pad-note{display:none}}
 
 /* Steuerfeld als Controller: bildschirmfüllend, Joystick und Tasten in einem Raster */
 .padv{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;background:var(--code-bg);color:var(--code-ink);outline:none;
@@ -740,7 +747,7 @@ details.run a{color:#7CC8FF}
   main.code-closed aside.code{display:flex}
   .ws-tools{right:14px;bottom:106px}   /* über den runden Knöpfen */
   .ws-run{right:14px;bottom:20px}
-  .ws-run button.gamepad{position:static}
+  .ws-run button.gamepad,.ws-run button.pick{position:static}
   .ws-connect{right:14px;top:12px}
   .connect-btn{width:54px;height:54px}
   .connect-btn svg{width:38px;height:38px}
@@ -778,7 +785,7 @@ details.run a{color:#7CC8FF}
   .ws-tools button.zoom-level{width:76px;padding:0}
   .bar .btn{min-height:44px}
   .ws-run button{width:68px;height:68px}
-  .ws-run button.stop,.ws-run button.gamepad{width:54px;height:54px}
+  .ws-run button.stop,.ws-run button.gamepad,.ws-run button.pick{width:54px;height:54px}
   .code-toggle{height:150px}
   .term-head{padding:8px 14px}
   .term-head .btn{padding:8px 12px;min-height:38px}
@@ -873,18 +880,13 @@ html[data-layout^="phone"] .ws-run button{width:54px;height:54px}
 html[data-layout^="phone"] .ws-run button svg{width:28px;height:28px}
 html[data-layout^="phone"] .ws-run button.stop{width:42px;height:42px}
 html[data-layout^="phone"] .ws-run button.stop svg{width:24px;height:24px}
-html[data-layout^="phone"] .ws-run button.gamepad{position:absolute;right:7px;width:40px;height:40px}
+html[data-layout^="phone"] .ws-run button.gamepad,html[data-layout^="phone"] .ws-run button.pick{position:absolute;right:7px;width:40px;height:40px}
 html[data-layout^="phone"] .ws-run button.gamepad svg{width:25px;height:25px}
+html[data-layout^="phone"] .ws-run button.pick svg{width:22px;height:22px}
 
-/* »Auswählen« bleibt auf dem Handy als einziger Knopf der Leiste: hochkant unten rechts über dem
-   Werkzeugkasten, quer links neben Stopp. Die Leiste der Auswahl rückt hochkant darüber – oben
-   sitzen dort Start und Stopp. */
+/* Die Leiste der Auswahl sitzt hochkant unten über dem Werkzeugkasten – oben sind dort Start und Stopp. */
 @media (pointer:coarse){
-  html[data-layout^="phone"] .ws-tools{display:flex;max-width:none}
-  html[data-layout^="phone"] .ws-tools > :not(#btnPick){display:none}
-  html[data-layout="phone-portrait"] .ws-tools{right:calc(var(--lane) + 10px);bottom:64px}
-  html[data-layout="phone-landscape"] .ws-tools{right:calc(var(--lane) + var(--grip) + 128px);bottom:18px}
-  html[data-layout="phone-portrait"] .ws-picked{top:auto;bottom:116px;gap:5px;padding:5px 5px 5px 12px;font-size:13px}
+  html[data-layout="phone-portrait"] .ws-picked{top:auto;bottom:64px;gap:5px;padding:5px 5px 5px 12px;font-size:13px}
   html[data-layout="phone-portrait"] .ws-picked button{padding:0 10px;font-size:13px}
   html[data-layout="phone-portrait"] .ws-picked button.close{padding:0}
 }
@@ -942,7 +944,8 @@ html[data-layout="phone-portrait"] .connect-btn{width:58px;height:58px}
 html[data-layout="phone-portrait"] .connect-btn svg{width:42px;height:42px}
 /* Start und Stopp oben rechts – unten liegt die Leiste der Kategorien */
 html[data-layout="phone-portrait"] .ws-run{top:10px;bottom:auto;right:calc(var(--lane) + 10px)}
-html[data-layout="phone-portrait"] .ws-run button.gamepad{top:calc(100% + 10px);bottom:auto}
+html[data-layout="phone-portrait"] .ws-run button.gamepad,html[data-layout="phone-portrait"] .ws-run button.pick{top:calc(100% + 10px);bottom:auto}
+html[data-layout="phone-portrait"] .ws-wrap.has-pad .ws-run button.pick{top:calc(100% + 58px);bottom:auto}
 
 /* --- Handy quer --- */
 /* flache Kopfleiste in einer Zeile; die Höhe ist hier knapp */
@@ -965,7 +968,8 @@ html[data-layout="phone-landscape"] .connect-btn svg{width:32px;height:32px}
 html[data-layout="phone-landscape"] .ws-connect{top:8px;left:auto;right:calc(var(--lane) + var(--grip) + 8px)}
 html[data-layout="phone-landscape"] .code-toggle{height:118px;top:42%;gap:10px}
 html[data-layout="phone-landscape"] .ws-run{bottom:12px;right:calc(var(--lane) + var(--grip) + 8px)}
-html[data-layout="phone-landscape"] .ws-run button.gamepad{bottom:calc(100% + 10px);top:auto}
+html[data-layout="phone-landscape"] .ws-run button.gamepad,html[data-layout="phone-landscape"] .ws-run button.pick{bottom:calc(100% + 10px);top:auto}
+html[data-layout="phone-landscape"] .ws-wrap.has-pad .ws-run button.pick{bottom:calc(100% + 58px);top:auto}
 /* Kategorien etwas dichter – trotzdem rollt die Liste, wenn die Höhe nicht reicht */
 html[data-layout="phone-landscape"] .blocklyToolbox{padding:6px 0!important}
 html[data-layout="phone-landscape"] .blocklyToolboxCategory{line-height:32px!important;margin-bottom:5px!important;padding:0 12px 0 9px!important;border-left-width:8px}
