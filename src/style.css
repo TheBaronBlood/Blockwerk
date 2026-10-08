@@ -77,6 +77,9 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 /* feste Breite: Die Anzeige ändert ihre Größe nicht, wenn aus zwei Ziffern drei werden */
 .ws-tools button.zoom-level{width:68px;padding:0;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ws-tools button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* »Auswählen« gibt es nur bei Bedienung mit dem Finger (Tablet, Handy) – mit Tastatur genügt die Umschalttaste */
+#btnPick{display:none}
+@media (pointer:coarse){#btnPick{display:grid}}
 /* Mehrere Blöcke ausgewählt (multiselect.ts): Umriss wie beim gewählten Block, nur kräftiger; dazu eine Leiste oben */
 .bw-picked > .blocklyPath{stroke:#FFD945!important;stroke-width:4px!important}
 .ws-wrap.picking #blocklyDiv .blocklyMainBackground{cursor:crosshair}
@@ -824,6 +827,20 @@ html[data-layout^="phone"] .ws-run button.stop{width:42px;height:42px}
 html[data-layout^="phone"] .ws-run button.stop svg{width:24px;height:24px}
 html[data-layout^="phone"] .ws-run button.gamepad{position:absolute;right:7px;width:40px;height:40px}
 html[data-layout^="phone"] .ws-run button.gamepad svg{width:25px;height:25px}
+
+/* »Auswählen« bleibt auf dem Handy als einziger Knopf der Leiste: hochkant unten rechts über dem
+   Werkzeugkasten, quer links neben Stopp. Die Leiste der Auswahl rückt hochkant darüber – oben
+   sitzen dort Start und Stopp. */
+@media (pointer:coarse){
+  html[data-layout^="phone"] .ws-tools{display:flex;max-width:none}
+  html[data-layout^="phone"] .ws-tools > :not(#btnPick){display:none}
+  html[data-layout^="phone"] .ws-tools button.wide{height:42px;border-radius:21px;padding:0 14px}
+  html[data-layout="phone-portrait"] .ws-tools{right:calc(var(--lane) + 10px);bottom:64px}
+  html[data-layout="phone-landscape"] .ws-tools{right:calc(var(--lane) + var(--grip) + 128px);bottom:18px}
+  html[data-layout="phone-portrait"] .ws-picked{top:auto;bottom:116px;gap:5px;padding:5px 5px 5px 12px;font-size:13px}
+  html[data-layout="phone-portrait"] .ws-picked button{padding:0 10px;font-size:13px}
+  html[data-layout="phone-portrait"] .ws-picked button.close{padding:0}
+}
 
 /* Kopfleiste: kompakte Knöpfe; »Neu« nur als Zeichen, »Hilfe« nur als Wort */
 html[data-layout^="phone"] .bar .btn{min-height:38px;padding:5px 10px;font-size:14.5px;gap:6px;border-radius:10px}
