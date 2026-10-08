@@ -70,15 +70,21 @@ aussieht. So wird der Umstieg von Blöcken auf Python ein Schritt, den man mitle
 
 Der **Simulator** lässt das Programm auf einer Bahn im Fenster laufen. Der Roboter entsteht aus
 dem Programm – Räder, bis zu vier Farbsensoren, Abstandssensor, Kraftsensor – und fährt über
-eine Bahn mit schwarzer Linie: den mitgelieferten Rundkurs oder ein eigenes Bild. Hindernisse
-lassen sich frei setzen, der Hub zeigt Lichtmatrix und Tasten. Beim »Umbauen« lassen sich die
-Sensoren versetzen und drehen, mit Raster und Symmetrie. Mehr dazu unter
-[Programme ohne Roboter ausprobieren](#programme-ohne-roboter-ausprobieren).
+eine Bahn mit schwarzer Linie. Die Bahn baut man selbst **aus Platten wie bei RoboCup Junior
+Rescue Line**: Gerade, Kurve, Abzweig, Kreuzung, Lücke und mehr, mit grünen Punkten an den
+Kreuzungen. Hindernisse lassen sich frei setzen, der Hub zeigt Lichtmatrix und Tasten. Beim
+»Umbauen« lassen sich die Sensoren versetzen und drehen, mit Raster und Symmetrie. Mehr dazu
+unter [Programme ohne Roboter ausprobieren](#programme-ohne-roboter-ausprobieren).
 
-| Simulator | Umbauen |
+| Simulator |
+|:---:|
+| <img src="docs/bilder/simulator.png" alt="Simulator: links ein Linienfolger aus Blöcken, rechts der Roboter auf einer Bahn aus Platten mit zwei grünen Punkten – er hält vor einem Hindernis, der Kegel des Abstandssensors ist rot" width="700"> |
+| Der Linienfolger hält vor dem Hindernis; der Hub zeigt das Herz aus dem Programm. |
+
+| Bahn bauen | Umbauen |
 |:---:|:---:|
-| <img src="docs/bilder/simulator.png" alt="Simulator: links ein Linienfolger aus Blöcken, rechts der Roboter auf dem Rundkurs – er hält vor einem Hindernis, der Kegel des Abstandssensors ist rot" width="560"> | <img src="docs/bilder/simulator-umbauen.png" alt="Umbauen: der Roboter groß auf einem Raster, zwei Farbsensoren spiegelbildlich, einer mit Drehknopf" width="270"> |
-| Der Linienfolger hält vor dem Hindernis; der Hub zeigt das Herz aus dem Programm. | Sensoren versetzen und drehen. |
+| <img src="docs/bilder/bahn-bauen.png" alt="Bahn bauen: oben die Platten zur Auswahl, darunter die Bahn auf einem Raster, an zwei Abzweigen grüne Punkte" width="330"> | <img src="docs/bilder/simulator-umbauen.png" alt="Umbauen: der Roboter groß auf einem Raster, zwei Farbsensoren spiegelbildlich, einer mit Drehknopf" width="330"> |
+| Platten legen und drehen, grüne Punkte in die Ecken der Kreuzungen. | Sensoren versetzen und drehen. |
 
 ### Mit dem Hub
 
@@ -216,10 +222,18 @@ dran ist, ist markiert, Ausgaben stehen im Terminal.
   Programm abfragt, sitzt vorn (höchstens vier), dazu Abstandssensor und Kraftsensor. Wer ohne
   »Fahrbasis einrichten« zwei einzelne Motoren dreht, fährt mit diesen – der linke ist dabei
   gespiegelt eingebaut wie am üblichen Roboter.
-- **Die Bahn** ist ein Rundkurs mit schwarzer Linie; »Bahn laden …« nimmt ein eigenes Bild von
-  oben. Der Regler »Roboter« stellt ein, wie groß der Roboter darauf ist. Roboter und Hindernisse
-  lassen sich ziehen, der Roboter am Punkt vor ihm drehen, ein Hindernis an seiner Ecke größer
-  und kleiner ziehen; ein Doppelklick räumt es weg.
+- **Die Bahn** besteht aus Platten von 30 cm, wie bei RoboCup Junior Rescue Line; am Anfang liegt
+  ein Rundkurs. »Bahn bauen« zeigt die Platten zur Auswahl – Gerade, Kurve, Ecke, Abzweig,
+  Kreuzung, Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende und die rote Ziellinie: Ein Tipp
+  auf ein Feld legt die gewählte Platte, noch ein Tipp dreht sie. Mit dem **grünen Punkt** tippt
+  man an einem Abzweig oder einer Kreuzung in die Ecke, in die er soll – der Farbsensor sieht dort
+  Grün und an der Ziellinie Rot. Die Bahn darf zwei bis acht Platten breit und zwei bis sechs hoch
+  sein; es gibt Vorlagen, und sie lässt sich als Datei speichern und weitergeben. Sie bleibt
+  gemerkt, samt Hindernissen und dem Platz des Roboters.
+- **Ein eigenes Bild** geht auch: »Bahn laden …« nimmt ein Foto oder eine Zeichnung von oben. Der
+  Regler »Roboter« stellt ein, wie groß der Roboter darauf ist.
+- **Roboter und Hindernisse** lassen sich ziehen, der Roboter am Punkt vor ihm drehen, ein
+  Hindernis an seiner Ecke größer und kleiner ziehen; ein Doppelklick räumt es weg.
 - **Der Hub** neben der Bahn zeigt die Lichtmatrix und das Statuslicht, seine Tasten lassen sich
   drücken. Ein Doppelklick auf ihn zeigt nur noch den Hub.
 - **Umbauen** zeigt den Roboter groß. Sensoren lassen sich versetzen und am Knopf drehen: auf
@@ -231,8 +245,9 @@ dran ist, ist markiert, Ausgaben stehen im Terminal.
 Der Simulator führt die Blöcke aus, nicht den Python-Code. Blöcke aus Erweiterungen, den
 Xbox-Controller und die LEGO-Fernbedienung überspringt er (das Steuerfeld von Blockwerk geht).
 Er taugt, um die Logik eines Programms zu prüfen – Kreuzungen, Lücken, Halt vor der Wand –, nicht
-zum Feinabstimmen eines Reglers: Der Roboter fährt ohne Anlauf und ohne Messfehler. Was noch
-fehlt, steht in der [Roadmap](ROADMAP.md) unter Meilenstein 10.
+zum Feinabstimmen eines Reglers: Der Roboter fährt ohne Anlauf und ohne Messfehler. Die Bahn ist
+flach – Rampe, Wippe und der Raum mit den Opfern fehlen. Was sonst noch fehlt, steht in der
+[Roadmap](ROADMAP.md) unter Meilenstein 10.
 
 ### Hub am USB-Kabel
 
