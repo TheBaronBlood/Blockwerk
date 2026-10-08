@@ -69,7 +69,10 @@ const PLATFORMS = [
   'Programm für den Computer: Electron bringt Chromium und weitere Bibliotheken mit. Deren Lizenztexte liegen dem Programm in der Datei LICENSES.chromium.html bei – unter Windows und Linux im Programmordner, unter macOS im Programmpaket (Contents/Resources).',
   'App für Android: enthält außerdem die AndroidX-Bibliotheken und die Kotlin-Laufzeit (Apache License 2.0 – der Text steht oben bei Blockly) sowie die Dateisystem-Bibliothek von Ionic (MIT).',
   'App für iPadOS: enthält außerdem die Dateisystem-Bibliothek von Ionic (MIT).',
-  'Der Klang beim Zusammenstecken der Blöcke (snap.mp3) stammt von Pixabay und steht unter der Pixabay-Inhaltslizenz (https://pixabay.com/service/license-summary/), nicht unter der MIT-Lizenz: Er darf als Teil von Blockwerk benutzt und weitergegeben, aber nicht für sich allein angeboten oder verkauft werden.',
+  // Die Klänge liegen in public/klang/. Keiner von ihnen steht unter der MIT-Lizenz von Blockwerk.
+  'Die Klänge beim Zusammenstecken und beim Löschen der Blöcke (snap.wav, snap.mp3, wosh.wav) stammen von Pixabay und stehen unter der Pixabay-Inhaltslizenz (https://pixabay.com/service/license-summary/), nicht unter der MIT-Lizenz: Sie dürfen als Teil von Blockwerk benutzt und weitergegeben, aber nicht für sich allein angeboten oder verkauft werden.',
+  'Die Klänge für die Kategorien der Blockliste sowie für »Hub verbunden« und »Hub getrennt« (bong.wav, conected.wav, disconected.wav) stammen aus dem Paket »Interface Sounds« von Kenney (https://kenney.nl/assets/interface-sounds) und sind gemeinfrei (Creative Commons Zero, CC0); conected.wav ist der rückwärts abgespielte Klang von disconected.wav.',
+  'Der Klang der Knöpfe (cursor.wav) ist »Cursor 1« aus dem »Ultimate UI SFX Pack« von JDSherbert (https://jdsherbert.itch.io/ultimate-ui-sfx-pack), © 2023 JDSherbert. Er steht nicht unter der MIT-Lizenz, sondern unter der Lizenz, die dem Paket beiliegt; sie verlangt die Nennung des Urhebers.',
   'LEGO und SPIKE sind Marken der LEGO Gruppe. Blockwerk ist kein Produkt von LEGO oder Pybricks und wird von beiden weder unterstützt noch geprüft.'
 ].join('\n\n');
 
