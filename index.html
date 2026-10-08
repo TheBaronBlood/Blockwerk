@@ -82,7 +82,14 @@
       <button type="button" id="zoomIn" aria-label="Vergrößern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
       <button type="button" class="wide" id="tidy">Aufräumen</button>
       <!-- mehrere Blöcke auswählen (multiselect.ts); mit Tastatur geht dasselbe mit gedrückter Umschalttaste -->
-      <button type="button" class="wide" id="btnPick" aria-pressed="false" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">Auswählen</button>
+      <!-- das Zeichen: ein Auswahlrahmen um zwei Blöcke -->
+      <button type="button" id="btnPick" aria-pressed="false" aria-label="Mehrere Blöcke auswählen" title="Mehrere Blöcke auswählen: Blöcke antippen oder auf der freien Fläche einen Rahmen aufziehen. Mit der Tastatur genügt es, Umschalt gedrückt zu halten.">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="3" stroke-dasharray="3.2 2.9"/>
+          <rect x="6.5" y="7" width="11" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+          <rect x="6.5" y="13" width="7.5" height="4" rx="1.3" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
     </div>
     <!-- erscheint, sobald Blöcke ausgewählt sind -->
     <div class="ws-picked hidden" id="wsPicked" role="toolbar" aria-label="Ausgewählte Blöcke">

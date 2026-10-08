@@ -68,8 +68,8 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-wrap{--lane:11px;--grip:24px}
 #blocklyDiv{position:absolute;inset:0}
 .blocklyMainWorkspaceScrollbar.blocklyScrollbarVertical .blocklyScrollbarBackground{opacity:1;fill:var(--bg)}
-/* (»Auswählen« rutscht in eine zweite Reihe darüber – nebeneinander reichte die Leiste bei schmaler Arbeitsfläche unter den Werkzeugkasten) */
-.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:290px}
+/* (passt die Reihe nicht – mit dem Auswahl-Knopf bei Fingerbedienung –, rutscht er in eine zweite darüber statt unter den Werkzeugkasten) */
+.ws-tools{position:absolute;right:calc(var(--lane) + 162px);bottom:38px;display:flex;gap:8px;z-index:5;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:calc(100% - var(--lane) - 322px)}
 .ws-tools button{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-size:18px;line-height:1;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .ws-tools button.wide{width:auto;border-radius:19px;padding:0 14px;font-size:14px}
 /* Lupen als Zeichnung: sitzt genau in der Mitte, anders als ein Schriftzeichen */
@@ -80,6 +80,7 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 /* »Auswählen« gibt es nur bei Bedienung mit dem Finger (Tablet, Handy) – mit Tastatur genügt die Umschalttaste */
 #btnPick{display:none}
 @media (pointer:coarse){#btnPick{display:grid}}
+#btnPick svg{width:22px;height:22px;stroke-width:2}
 /* Mehrere Blöcke ausgewählt (multiselect.ts): Umriss wie beim gewählten Block, nur kräftiger; dazu eine Leiste oben */
 .bw-picked > .blocklyPath{stroke:#FFD945!important;stroke-width:4px!important}
 .ws-wrap.picking #blocklyDiv .blocklyMainBackground{cursor:crosshair}
@@ -723,7 +724,7 @@ details.run a{color:#7CC8FF}
   .bar{gap:10px}
   .actions{gap:10px}
   .tabs button{padding:14px 10px}
-  .ws-tools{gap:10px;max-width:340px}
+  .ws-tools{gap:10px}
   .ws-tools button{width:46px;height:46px;font-size:20px}
   .ws-tools button.wide{border-radius:23px;padding:0 16px}
   /* (die Zoom-Anzeige hat eine feste Breite – mit dem Rand der breiten Knöpfe rutschte das Prozentzeichen unter die Zahl) */
@@ -834,7 +835,6 @@ html[data-layout^="phone"] .ws-run button.gamepad svg{width:25px;height:25px}
 @media (pointer:coarse){
   html[data-layout^="phone"] .ws-tools{display:flex;max-width:none}
   html[data-layout^="phone"] .ws-tools > :not(#btnPick){display:none}
-  html[data-layout^="phone"] .ws-tools button.wide{height:42px;border-radius:21px;padding:0 14px}
   html[data-layout="phone-portrait"] .ws-tools{right:calc(var(--lane) + 10px);bottom:64px}
   html[data-layout="phone-landscape"] .ws-tools{right:calc(var(--lane) + var(--grip) + 128px);bottom:18px}
   html[data-layout="phone-portrait"] .ws-picked{top:auto;bottom:116px;gap:5px;padding:5px 5px 5px 12px;font-size:13px}
