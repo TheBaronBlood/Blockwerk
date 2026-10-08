@@ -397,23 +397,25 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
 - **Bahn aus Platten** (`tiles.ts`, `trackEditor.ts`): »Bahn bauen« legt die Bahn aus Platten von
   30 cm zusammen, wie bei RoboCup Junior Rescue Line – Gerade, Kurve, Ecke, Abzweig, Kreuzung,
   Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende, rote Ziellinie. Ein Tipp legt eine Platte,
-  noch einer dreht sie; an Abzweig und Kreuzung kommen grüne Punkte in die Ecken. Zwei bis acht
+  noch einer dreht sie; an Abzweig, Kreuzung und Kreisel kommen grüne Punkte neben die Linie. Zwei bis acht
   Platten breit, zwei bis sechs hoch; Vorlagen, Speichern und Öffnen als Datei. Die Bahn bleibt
   gemerkt, samt Hindernissen und dem Platz des Roboters.
 - **Bahn und Hindernisse** (`world.ts`): Gerechnet wird auf einem Bild der Bahn von oben – dem der
   Platten oder einem eigenen, das sich laden lässt; die Größe des Roboters darauf ist einstellbar.
   Reflexion und Farbe liest der Sensor aus dem Bild. Hindernisse sind Rechtecke zum Setzen, Ziehen und
   Vergrößern; der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt am
-  Hindernis oder per Knopf. Der Roboter fährt an ein Hindernis heran, nicht hinein.
+  Hindernis oder per Knopf. Der Roboter fährt an ein Hindernis heran, nicht hinein – und nicht
+  über den Rand der Bahn hinaus, den aber kein Sensor bemerkt (ein Klick schaltet ihn um). Die
+  Bahn lässt sich heranholen und verschieben.
 - **Ausführen** (`runner.ts`): Der Simulator läuft die Blöcke selbst ab, in simulierter Zeit –
   nicht den erzeugten Python-Code. Das weicht vom Entwurf unten ab: Es braucht kein zusätzliches
   Paket, markiert den laufenden Block und verträgt sich mit der Content-Security-Policy. Der
   Preis: Was der Generator tut, muss dort nachgezogen werden, und Blöcke aus Erweiterungen,
   Xbox-Controller und LEGO-Fernbedienung laufen nicht mit. Mehrere Ereignisse und Nachrichten
   gehen; ein eigener Block, der sich endlos selbst aufruft, bricht wie auf dem Hub ab.
-- **Hub** (`hubDisplay.ts`): neben der Bahn, mit Lichtmatrix (Bild, Muster, Zahl, Text),
-  Statuslicht und Tasten; die mittlere startet und beendet das Programm, ein Doppelklick zeigt
-  nur den Hub. Der Piepton ist zu hören, das Steuerfeld steuert auch den simulierten Roboter,
+- **Hub** (`hubDisplay.ts`): in der Ecke über der Bahn, mit Lichtmatrix (Bild, Muster, Zahl, Text)
+  und Tasten; die mittlere startet und beendet das Programm und leuchtet, solange es läuft. Ein
+  Doppelklick zeigt nur den Hub. Der Piepton ist zu hören, das Steuerfeld steuert auch den simulierten Roboter,
   das Tempo reicht von ¼× bis 4×.
 - **Umbauen** (`build.ts`): Der Roboter steht groß mit der Nase nach oben auf einem Raster im
   Abstand der LEGO-Noppen (8 mm). Sensoren lassen sich versetzen und in Schritten von 15 Grad

@@ -28,16 +28,20 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   - **Bahn bauen, wie bei RoboCup Junior Rescue Line:** Die Bahn besteht aus Platten von 30 cm –
     Gerade, Kurve, Ecke, Abzweig, Kreuzung, Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende
     und die rote Ziellinie. Ein Tipp auf ein Feld legt die gewählte Platte, noch ein Tipp dreht
-    sie. An Abzweig und Kreuzung kommen **grüne Punkte** in die Ecken, die der Farbsensor als Grün
-    sieht. Zwei bis acht Platten breit, zwei bis sechs hoch; es gibt Vorlagen, und die Bahn lässt
+    sie. An Abzweig, Kreuzung und Kreisel kommen **grüne Punkte** neben die Linie, die der
+    Farbsensor als Grün sieht. Zwei bis acht Platten breit, zwei bis sechs hoch; es gibt Vorlagen, und die Bahn lässt
     sich als Datei speichern und weitergeben. Am Anfang liegt ein Rundkurs.
   - **Eigenes Bild und Hindernisse:** »Bahn laden …« nimmt stattdessen ein eigenes Bild; wie groß
     der Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich setzen, ziehen und in
     der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt
     am Hindernis oder per Knopf. Neben der Reflexion steht, wenn der Farbsensor Grün, Rot, Blau
     oder Gelb sieht.
-  - **Der Hub** liegt neben der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text), Statuslicht und
-    Tasten zum Drücken; ein Doppelklick zeigt nur noch den Hub. Der Piepton ist zu hören, das
+  - **Rand und Heranholen:** Um die Bahn läuft ein Rand, gegen den der Roboter fährt und ansteht;
+    die Sensoren bemerken ihn nicht, ein Klick darauf schaltet ihn um. Die Bahn lässt sich mit
+    Mausrad oder zwei Fingern heranholen und verschieben.
+  - **Der Hub** liegt in der Ecke über der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text) und
+    Tasten zum Drücken; die mittlere leuchtet grün, solange das Programm läuft. Ein Doppelklick
+    zeigt nur noch den Hub. Der Piepton ist zu hören, das
     Steuerfeld steuert auch den simulierten Roboter, das Tempo reicht von ¼× bis 4×.
   - **Umbauen:** Der Roboter erscheint groß auf einem Raster im Abstand der LEGO-Noppen (8 mm).
     Sensoren lassen sich versetzen und in Schritten von 15 Grad drehen, auf Wunsch
