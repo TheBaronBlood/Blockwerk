@@ -185,6 +185,14 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-hub-buttons button{width:22px;height:14px;padding:0;border:0;border-radius:7px;background:#B9C0CB;cursor:pointer}
 .sim-hub-buttons button.center{width:22px;height:22px;border-radius:50%;background:var(--light,#D7DCE3);border:2px solid #AAB2BE}
 .sim-hub-buttons button.on,.sim-hub-buttons button:active{background:#6F7A8A}
+/* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
+.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset{display:none}
+.sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
+.sim.hub-only .sim-stage{container-type:size}
+.sim.hub-only .sim-matrix{gap:8px;padding:14px;border-radius:10px}
+.sim.hub-only .sim-hub-buttons{margin-top:9%}
+.sim.hub-only .sim-hub-buttons button{width:24%;height:auto;aspect-ratio:22/14;border-radius:999px}
+.sim.hub-only .sim-hub-buttons button.center{width:24%;aspect-ratio:1;border-radius:50%;border-width:4px}
 .pad{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.08);outline-offset:-3px}
 .pad-stick{position:relative;width:92px;height:92px;flex:0 0 auto;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);touch-action:none;cursor:grab}
 .pad-knob{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#0FBD8C;pointer-events:none}

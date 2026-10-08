@@ -85,7 +85,15 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     button.addEventListener('pointerup', release);
     button.addEventListener('pointercancel', release);
   }
-  center.addEventListener('click', () => { if (runner) finish(runner, '— Programm mit der mittleren Taste beendet —'); });
+  // die mittlere Taste startet das Programm und beendet es, wie am echten Hub
+  center.addEventListener('click', () => { if (runner) finish(runner, '— Programm mit der mittleren Taste beendet —'); else void start(); });
+  // Doppelklick auf den Hub (nicht auf seine Tasten): nur noch der Hub, groß – und wieder zurück
+  el('simHub').addEventListener('dblclick', (e) => {
+    if ((e.target as Element).closest('button')) return;
+    const only = root.classList.toggle('hub-only');
+    el('simHub').title = only ? 'Doppelklick: zurück zur Bahn' : 'Doppelklick: nur den Hub zeigen';
+    if (!only) layout();
+  });
 
   function useTrack(image: HTMLCanvasElement, pose: Pose){
     trackImage = image;
