@@ -73,7 +73,7 @@ jobs:
             release/*.dmg
 
   # App für Android als APK zum Installieren von Hand.
-  # Mit festem Schlüssel (README, »Android-Schlüssel«: vier Secrets im Repository) entsteht die
+  # Mit festem Schlüssel (docs/ENTWICKLUNG.md, »Android-Schlüssel«: vier Secrets im Repository) entsteht die
   # Release-Fassung, die sich über eine vorhandene Installation aktualisieren lässt. Ohne die
   # Secrets entsteht die Debug-Fassung mit einem Schlüssel, den jeder Lauf neu erzeugt – ein
   # Update geht dann nur nach dem Deinstallieren.
@@ -114,7 +114,7 @@ jobs:
           if ! printf '%s' "$TEXT" | base64 --decode > "$RUNNER_TEMP/blockwerk.jks"; then
             # Länge und fremde Zeichen verraten nichts über den Schlüssel, zeigen aber, was eingefügt wurde
             FREMD=$(( $(printf '%s' "$TEXT" | tr -d 'A-Za-z0-9+/=' | wc -c) ))
-            echo "::error::Das Secret ANDROID_KEYSTORE ist kein gültiges Base64: ${#TEXT} Zeichen, davon $FREMD, die in Base64 nicht vorkommen (eine Schlüsseldatei ergibt mehrere tausend Zeichen und beginnt mit MII). Es muss die Schlüsseldatei selbst enthalten, in Base64 umgewandelt (README, »Android-Schlüssel«) – nicht ihren Pfad, nicht den Befehl und nicht das Passwort."
+            echo "::error::Das Secret ANDROID_KEYSTORE ist kein gültiges Base64: ${#TEXT} Zeichen, davon $FREMD, die in Base64 nicht vorkommen (eine Schlüsseldatei ergibt mehrere tausend Zeichen und beginnt mit MII). Es muss die Schlüsseldatei selbst enthalten, in Base64 umgewandelt (docs/ENTWICKLUNG.md, »Android-Schlüssel«) – nicht ihren Pfad, nicht den Befehl und nicht das Passwort."
             exit 1
           fi
           # Lieber hier eine klare Meldung als später eine von Gradle: Welches der Secrets passt nicht?
@@ -139,7 +139,7 @@ jobs:
             fi
             fehler "Das Passwort stimmt, aber ANDROID_KEY_ALIAS passt nicht. In der Schlüsseldatei heißt der Eintrag: $NAMEN"
           fi
-          # eine PKCS12-Datei (so legt das README sie an) hat nur ein Passwort für Datei und Schlüssel
+          # eine PKCS12-Datei (so legt die Anleitung sie an) hat nur ein Passwort für Datei und Schlüssel
           if [ "$KEY_PASSWORD" != "$KEYSTORE_PASSWORD" ] && KT_PASS="$KEYSTORE_PASSWORD" keytool -list -keystore "$JKS" -storepass:env KT_PASS 2> /dev/null | grep -qi 'PKCS12'; then
             fehler "ANDROID_KEY_PASSWORD muss dasselbe Passwort enthalten wie ANDROID_KEYSTORE_PASSWORD – diese Art Schlüsseldatei hat nur eines."
           fi

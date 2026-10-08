@@ -20,6 +20,7 @@
   <a href="#herunterladen">Herunterladen</a> ·
   <a href="#erste-schritte">Erste Schritte</a> ·
   <a href="#was-blockwerk-kann">Funktionen</a> ·
+  <a href="#programme-ohne-roboter-ausprobieren">Simulator</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
   <a href="CHANGELOG.md">Versionen</a>
 </p>
@@ -27,7 +28,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/bilder/editor-dunkel.png">
-    <img src="docs/bilder/editor-hell.png" alt="Blockwerk: links das Programm aus Blöcken, rechts dasselbe Programm in Python" width="900">
+    <img src="docs/bilder/editor-hell.png" alt="Blockwerk: links das Programm aus Blöcken, rechts dasselbe Programm in Python – die Zeile zum gewählten Block ist markiert" width="900">
   </picture>
 </p>
 
@@ -42,33 +43,48 @@ aussieht. So wird der Umstieg von Blöcken auf Python ein Schritt, den man mitle
 
 ## Was Blockwerk kann
 
+### Blöcke stecken, Python lesen
+
 - **Blöcke → Python:** Fahren, Motoren, Sensoren, Licht und Ton, Steuerung, Operatoren,
-  Listen, Variablen, eigene Blöcke. Ein Klick auf eine Codezeile markiert den Block dazu.
-- **Simulator:** Programme ohne Roboter ausprobieren. Der Roboter entsteht aus dem Programm –
-  Räder, bis zu vier Farbsensoren, Abstandssensor, Kraftsensor – und fährt über eine Bahn mit
-  schwarzer Linie: den mitgelieferten Rundkurs oder ein eigenes Bild. Hindernisse lassen sich
-  frei setzen, der Hub zeigt Lichtmatrix und Tasten. Beim »Umbauen« lassen sich die Sensoren
-  versetzen und drehen, mit Raster und Symmetrie. Mehr dazu unter
-  [Programme ohne Roboter ausprobieren](#programme-ohne-roboter-ausprobieren).
-- **Mehrere Blöcke auf einmal:** mit gedrückter Umschalttaste anklicken oder einen Rahmen
-  aufziehen, dann kopieren, duplizieren oder löschen. Was zusammenhing, bleibt beim Einfügen
-  zusammen.
+  Listen, Variablen, eigene Blöcke. Ein Klick auf eine Codezeile markiert den Block dazu –
+  und wer einen Block wählt, sieht seine Zeilen im Code.
 - **Mehreres gleichzeitig:** Mehrere Ereignisse laufen nebeneinander, wie in der
   SPIKE-App – »wenn Programm startet«, »wenn …« mit jeder Bedingung und Nachrichten
   zwischen den Programmteilen. Mit nur einem Ereignis bleibt das Python so einfach wie
   zuvor.
+- **Mehrere Blöcke auf einmal:** mit gedrückter Umschalttaste anklicken oder einen Rahmen
+  aufziehen, dann kopieren, duplizieren oder löschen. Was zusammenhing, bleibt beim Einfügen
+  zusammen.
+- **SPIKE-Projekte öffnen:** `.llsp3`-Dateien (Wortblöcke) aus der SPIKE-App werden in
+  Blockwerk-Blöcke übersetzt; ein Bericht zeigt, was umgerechnet wurde.
+- **Erweiterungen:** eigene Blöcke mit eigenem Python-Code bauen (zum Beispiel einen
+  PID-Regler), mit Vorschau, und als Datei weitergeben. Anleitung:
+  [docs/ERWEITERUNGEN.md](docs/ERWEITERUNGEN.md).
+
+| Mehrere Blöcke auf einmal |
+|:---:|
+| <img src="docs/bilder/auswahl.png" alt="Drei Blöcke eines Programms sind ausgewählt; eine Leiste darüber bietet Duplizieren und Löschen" width="480"> |
+| Mit Umschalt gewählt: Die Leiste oben dupliziert oder löscht die ganze Auswahl. |
+
+### Ohne Roboter ausprobieren
+
+Der **Simulator** lässt das Programm auf einer Bahn im Fenster laufen. Der Roboter entsteht aus
+dem Programm – Räder, bis zu vier Farbsensoren, Abstandssensor, Kraftsensor – und fährt über
+eine Bahn mit schwarzer Linie: den mitgelieferten Rundkurs oder ein eigenes Bild. Hindernisse
+lassen sich frei setzen, der Hub zeigt Lichtmatrix und Tasten. Beim »Umbauen« lassen sich die
+Sensoren versetzen und drehen, mit Raster und Symmetrie. Mehr dazu unter
+[Programme ohne Roboter ausprobieren](#programme-ohne-roboter-ausprobieren).
+
+| Simulator | Umbauen |
+|:---:|:---:|
+| <img src="docs/bilder/simulator.png" alt="Simulator: links ein Linienfolger aus Blöcken, rechts der Roboter auf dem Rundkurs – er hält vor einem Hindernis, der Kegel des Abstandssensors ist rot" width="560"> | <img src="docs/bilder/simulator-umbauen.png" alt="Umbauen: der Roboter groß auf einem Raster, zwei Farbsensoren spiegelbildlich, einer mit Drehknopf" width="270"> |
+| Der Linienfolger hält vor dem Hindernis; der Hub zeigt das Herz aus dem Programm. | Sensoren versetzen und drehen. |
+
+### Mit dem Hub
+
 - **Direkt auf den Hub laden:** per Bluetooth, mit Terminal für die Ausgaben des Hubs. Bei
   einem Fehler wird der auslösende Block markiert. Mit der Beta-Firmware 4.1 von Pybricks
   geht es auch über das USB-Kabel.
-- **Fernsteuerung:** Steuerfeld mit Joystick und Tasten – auf dem Tablet als Controller
-  über den ganzen Bildschirm, frei anzuordnen –, dazu Xbox-Controller und
-  LEGO-Fernbedienung.
-- **Eingebaute Hilfe:** »Erste Schritte« in sieben Lektionen, eine Seite zu jedem Block mit
-  Python-Beispiel, Erklärungen zu den Python-Wörtern im Code und kurze Kapitel zum Umstieg
-  auf Python.
-- **Kurs der Robotik-AG:** die Module 0 bis 8 mit Aufgaben, Hilfekarten zum Aufdecken,
-  Bug-Jagd-Programmen und einem Quiz je Modul. Stolpersteine und Lösungen sieht nur, wer in
-  den Einstellungen »Kursleitung« einschaltet.
 - **Erkennt, was am Hub steckt:** Nach dem Verbinden zeigen die Blöcke in der Blockliste
   schon die richtigen Anschlüsse – der Kraftsensor »F«, wenn er an F steckt.
 - **Hub-Ansicht:** zeigt den Hub von oben und für jeden Anschluss, was dort steckt und was
@@ -77,26 +93,46 @@ aussieht. So wird der Umstieg von Blöcken auf Python ein Schritt, den man mitle
   Neigung. Sie läuft, solange kein eigenes Programm läuft: Blockwerk lädt dafür ein kleines
   Anzeige-Programm auf den Hub, das nichts bewegt, und legt beim Schließen wieder dein
   zuletzt geladenes Programm darauf.
-- **SPIKE-Projekte öffnen:** `.llsp3`-Dateien (Wortblöcke) aus der SPIKE-App werden in
-  Blockwerk-Blöcke übersetzt; ein Bericht zeigt, was umgerechnet wurde.
-- **Erweiterungen:** eigene Blöcke mit eigenem Python-Code bauen (zum Beispiel einen
-  PID-Regler), mit Vorschau, und als Datei weitergeben. Anleitung:
-  [docs/ERWEITERUNGEN.md](docs/ERWEITERUNGEN.md).
+- **Fernsteuerung:** Steuerfeld mit Joystick und Tasten – auf dem Tablet als Controller
+  über den ganzen Bildschirm, frei anzuordnen –, dazu Xbox-Controller und
+  LEGO-Fernbedienung.
 
-| Simulator | Umbauen |
+| Hub-Ansicht | Steuerfeld als Controller |
 |:---:|:---:|
-| <img src="docs/bilder/simulator.png" alt="Simulator: links ein Linienfolger aus Blöcken, rechts der Roboter auf dem Rundkurs – er hält vor einem Hindernis, der Kegel des Abstandssensors ist rot" width="560"> | <img src="docs/bilder/simulator-umbauen.png" alt="Umbauen: der Roboter groß auf einem Raster, zwei Farbsensoren spiegelbildlich, einer mit Drehknopf" width="270"> |
-| Der Linienfolger hält vor dem Hindernis; der Hub zeigt das Herz aus dem Programm. | Sensoren versetzen und drehen. |
+| <img src="docs/bilder/hub-ansicht.png" alt="Hub-Ansicht: der Hub von oben, links und rechts die Anschlüsse mit Motor, Farbsensor, Abstandssensor und Kraftsensor, darunter Akku und Neigung" width="420"> | <img src="docs/bilder/controller.png" alt="Controller-Ansicht beim Anordnen: Joystick und vier Tasten in einem Raster" width="420"> |
+| Was an den Anschlüssen hängt und was es gerade misst – hier mit dem Test-Hub. | Joystick und Tasten liegen in einem Raster und lassen sich verschieben. |
 
-| Hub-Ansicht |
+### Lernen
+
+- **Eingebaute Hilfe:** »Erste Schritte« in sieben Lektionen, eine Seite zu jedem Block mit
+  Python-Beispiel, Erklärungen zu den Python-Wörtern im Code und kurze Kapitel zum Umstieg
+  auf Python.
+- **Kurs der Robotik-AG:** die Module 0 bis 8 mit Aufgaben, Hilfekarten zum Aufdecken,
+  Bug-Jagd-Programmen und einem Quiz je Modul. Stolpersteine und Lösungen sieht nur, wer in
+  den Einstellungen »Kursleitung« einschaltet.
+
+| Eingebaute Hilfe |
 |:---:|
-| <img src="docs/bilder/hub-ansicht.png" alt="Hub-Ansicht: der Hub von oben, links und rechts die Anschlüsse mit Motor, Farbsensor, Abstandssensor und Kraftsensor, darunter Akku und Neigung" width="620"> |
-| Was an den Anschlüssen hängt und was es gerade misst – hier mit dem Test-Hub. |
+| <img src="docs/bilder/hilfe.png" alt="Hilfe mit den sieben Lektionen der ersten Schritte" width="620"> |
+| Lektionen, Blockseiten und Python-Kapitel, ohne Internet. |
 
-| Steuerfeld als Controller | Eingebaute Hilfe |
+### Auf Computer, Tablet und Handy
+
+- **Als Programm** für Windows, macOS und Linux – läuft ohne Internet und ohne Browser.
+- **Als App für Android**, auf Tablets und Handys, mit Bluetooth und USB-Kabel.
+- **Im Browser** (Chrome oder Edge), wenn jemand Blockwerk
+  [ins Netz stellt](docs/ENTWICKLUNG.md#im-netz-bereitstellen-cloudflare); am iPad geht das im
+  Browser »Bluefy«.
+- **Eine eigene Ansicht fürs Handy:** Hochkant liegen die Kategorien als Leiste am unteren
+  Rand; Python-Code, Hilfe und Simulator füllen den Bildschirm.
+
+| Auf dem Handy | Simulator auf dem Handy |
 |:---:|:---:|
-| <img src="docs/bilder/controller.png" alt="Controller-Ansicht beim Anordnen: Joystick und vier Tasten in einem Raster" width="430"> | <img src="docs/bilder/hilfe.png" alt="Hilfe mit den sieben Lektionen der ersten Schritte" width="430"> |
-| Joystick und Tasten liegen in einem Raster und lassen sich verschieben. | Lektionen, Blockseiten und Python-Kapitel, ohne Internet. |
+| <img src="docs/bilder/handy-bloecke.png" alt="Blockwerk hochkant auf dem Handy: oben das Programm, unten die Leiste der Kategorien mit aufgeklappten Fahrblöcken" width="230"> | <img src="docs/bilder/handy-simulator.png" alt="Der Simulator auf dem Handy: der Roboter folgt der Linie des Rundkurses" width="230"> |
+| Ein Tipp auf eine Kategorie klappt ihre Blöcke auf. | Der Linienfolger auf dem Rundkurs. |
+
+Welche Fassung was kann und was davon an echten Geräten erprobt ist, steht unter
+[Tablets](#tablets).
 
 ## Herunterladen
 
@@ -138,14 +174,14 @@ Internet und ohne Browser.
   Ordner kopieren, dort ausführbar machen und starten. Liegt neben der AppImage-Datei ein
   Ordner `Blockwerk-Daten`, legt Blockwerk seine Daten dort ab statt im Benutzerprofil.
   Für den Hub am **Kabel** braucht jeder PC einmalig die Freigabe durch einen Administrator
-  (das `.deb` oder die Datei `build/70-blockwerk-hub.rules`, siehe unten) – außer die
+  (das `.deb` oder die Datei `build/70-blockwerk-hub.rules`, siehe [Hub am USB-Kabel](#hub-am-usb-kabel)) – außer die
   Benutzer gehören zur Gruppe `dialout`. Bluetooth geht ohne.
 - **Android:** Die APK auf dem Gerät öffnen und die Installation erlauben. Ob sich eine
   neue Fassung über die vorhandene installieren lässt, hängt vom Schlüssel ab, mit dem die
   APK signiert ist: Ohne festen Schlüssel ist jede Fassung anders signiert, und die alte App
   muss vorher deinstalliert werden (die gespeicherten Programme gehen dabei verloren –
   vorher speichern). Mit festem Schlüssel entfällt das, siehe
-  [Android-Schlüssel](#android-schlüssel).
+  [Android-Schlüssel](docs/ENTWICKLUNG.md#android-schlüssel).
 - **Bluetooth:** Der Rechner braucht einen Bluetooth-Adapter (ab Version 4.0). Viele
   Standrechner haben keinen eingebaut – dann hilft ein USB-Bluetooth-Stecker.
 
@@ -235,7 +271,7 @@ Bluetooth lief mit der App auf einem echten Handy; das Kabel ist an einem echten
 nicht erprobt.
 
 **iPad:** Eine App gibt es nicht, aber einen Weg über den Browser: Wer Blockwerk im Netz
-bereitstellt ([siehe unten](#im-netz-bereitstellen-cloudflare)), kann es am iPad im Browser
+bereitstellt ([Anleitung](docs/ENTWICKLUNG.md#im-netz-bereitstellen-cloudflare)), kann es am iPad im Browser
 »Bluefy« aus dem App Store öffnen. Der bringt Bluetooth mit; Safari und Chrome können das am
 iPad nicht. Erprobt sind dort das Verbinden mit dem Hub und ein Programm mit dem Steuerfeld
 (ab 0.26.1).
@@ -260,72 +296,6 @@ Datenordner. Welcher das ist, bestimmst du:
 
 Projekte, die du mit »Speichern« sicherst, landen dort, wo du sie hinlegst.
 
-## Selbst bauen
-
-### Voraussetzungen
-
-- [Node.js](https://nodejs.org) ab Version 20
-- Python 3 (nur für die Tests, die den erzeugten Code prüfen)
-- Zum Laden auf den Hub im Browser: Chrome oder Edge und ein Hub mit Pybricks-Firmware
-
-### Im Browser
-
-```
-npm install
-npm run dev
-```
-
-Danach `http://localhost:5173` öffnen. In VS Code genügt **F5**.
-
-| Befehl | Wirkung |
-|--------|---------|
-| `npm run dev` | Entwicklungsserver; Änderungen erscheinen sofort |
-| `npm run build` | Typprüfung und fertige Version in `dist/` |
-| `npm run preview` | die fertige Version lokal ansehen (`http://localhost:4173`) |
-| `npm test` | alle Tests |
-
-Der Inhalt von `dist/` lässt sich auf jeden Webserver legen. Für Bluetooth muss die Seite
-über HTTPS (oder `localhost`) laufen.
-
-Wer Blockwerk selbst ins Netz stellt, kann dem Browser zusätzlich vorschreiben, dass nur
-Skripte der Seite selbst laufen – als Kopfzeile des Webservers (das Programm für den Computer
-setzt dieselbe Regel von sich aus):
-
-```
-Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'
-```
-
-### Im Netz bereitstellen (Cloudflare)
-
-So lässt sich Blockwerk für die AG als Link anbieten – ohne Installation, mit HTTPS (nötig für
-Bluetooth und Kabel). Die Kinder brauchen Chrome oder Edge.
-
-1. In Cloudflare: **Workers & Pages → Erstellen → Repository importieren**, dieses Repository
-   wählen. Der Projektname muss `blockwerk` sein – oder so, wie er in `wrangler.jsonc` steht.
-2. Build-Befehl `npm run build`, Bereitstellungsbefehl `npx wrangler deploy` (so schlägt
-   Cloudflare es vor). Was hochgeladen wird, steht in `wrangler.jsonc`: der Ordner `dist`.
-3. »Mit Cloudflare Access schützen« aus lassen, sonst kommt niemand ohne Anmeldung auf die
-   Seite. Vorschau-Builds braucht es nicht.
-4. Nach dem ersten Bau in den Einstellungen des Projekts unter **Domains** die eigene
-   Subdomain eintragen, zum Beispiel `blockwerk.deinedomain.de`. Liegt die Domain bei
-   Cloudflare, legt es den DNS-Eintrag selbst an.
-
-Jeder Push nach `main` baut danach neu – zu sehen im Projekt unter »Bereitstellungen« →
-»Neueste Builds«. Kommt dort nach einem Push nichts an, fehlt Cloudflare der Zugriff: Bei GitHub
-unter Settings → Applications → »Cloudflare Workers and Pages« → Configure muss das Repository
-unter »Repository access« ausgewählt sein. Ein öffentliches Repository kann Cloudflare auch ohne
-das lesen – der erste Bau klappt dann, aber von einem Push erfährt es nichts.
-
-Die Kopfzeilen (Inhaltsrichtlinie, Zugriff auf
-Bluetooth und Kabel, Zwischenspeicher) stehen in `public/_headers` und gelten automatisch.
-Wer mag, setzt bei den Build-Variablen `ELECTRON_SKIP_BINARY_DOWNLOAD` = `1`: Electron wird
-zum Bauen der Seite nicht gebraucht, das spart nur Zeit. Die Node-Version steht in
-`.node-version`. Dienste, die Skripte in die Seite einfügen (Web Analytics, Rocket Loader),
-bleiben aus – die Inhaltsrichtlinie sperrt sie.
-
-Das ältere »Cloudflare Pages« geht genauso: Build command `npm run build`, Build output
-directory `dist`. Vorab am eigenen Rechner ansehen: `npm run build`, dann `npx wrangler dev`.
-
 ### Was Blockwerk speichert und was ins Internet geht
 
 Blockwerk hat keinen Server, keine Konten und keine Auswertung der Nutzung. Programme,
@@ -335,121 +305,30 @@ nur auf Knopfdruck: »Über Blockwerk« → »Nach neuer Pybricks-Firmware suche
 der Pybricks-Fassungen bei GitHub ab. Schriften, Symbole und der Python-Übersetzer liegen
 Blockwerk bei.
 
-### Als Programm
+## Selbst bauen
+
+Es braucht [Node.js](https://nodejs.org) ab Version 20 – und Python 3, aber nur für die Tests,
+die den erzeugten Code prüfen.
+
+```
+npm install
+npm run dev
+```
+
+Danach `http://localhost:5173` öffnen; soll es auf den Hub gehen, in Chrome oder Edge. In
+VS Code genügt **F5**.
 
 | Befehl | Wirkung |
 |--------|---------|
+| `npm run dev` | Entwicklungsserver; Änderungen erscheinen sofort |
+| `npm run build` | Typprüfung und fertige Version in `dist/` |
+| `npm test` | alle Tests |
 | `npm run app` | Programm aus dem aktuellen Stand starten |
-| `npm run app:check` | Selbsttest: startet, prüft die Oberfläche, beendet sich |
-| `npm run dist` | Programm für das eigene Betriebssystem packen (Ausgabe in `../blockwerk-programm/`) |
+| `npm run dist` | Programm für das eigene Betriebssystem packen |
 
-Jedes Betriebssystem baut nur sein eigenes Paket. Alle auf einmal baut GitHub:
-unter **Actions → Programm bauen → Run workflow**. Nach einigen Minuten hängen die Dateien
-als »Artifacts« am Lauf.
-
-Bei einem Versions-Tag (`git push origin v0.23.0`) entsteht zusätzlich von selbst ein
-**Release**: mit den Programmen aller Systeme und den Änderungen seit der vorigen Version.
-Die Notizen bestehen aus dem Abschnitt der Version in `CHANGELOG.md` und der Liste der
-Commits, sortiert nach ihrer Art (`feat` → Neu, `fix` → Behoben, …). Zum Ansehen vorab:
-`node build/release-notes.mjs v0.23.0`.
-
-### App für Tablets bauen
-
-Dieselbe Oberfläche läuft als App auf Tablets – verpackt mit
-[Capacitor](https://capacitorjs.com).
-
-| Befehl | Wirkung |
-|--------|---------|
-| `npm run tablet` | Seite bauen und in die App-Projekte übernehmen (`cap sync`) |
-| `npm run tablet:android` | danach Android Studio öffnen (`android/`) |
-
-**Android** – braucht das Android-SDK und Java 21. Ohne Android Studio:
-`cd android && ./gradlew assembleDebug`, die Datei liegt dann unter
-`android/app/build/outputs/apk/debug/`.
-
-#### Android-Schlüssel
-
-Android installiert eine neue Fassung nur dann über eine vorhandene, wenn beide mit demselben
-Schlüssel signiert sind. Der Schlüssel kostet nichts und braucht kein Konto: Man erzeugt ihn
-einmal selbst, mit `keytool` aus Java – am Mac im Terminal, unter Windows in der PowerShell.
-
-**1. Schlüssel erzeugen,** in einem Ordner außerhalb des Projekts:
-
-```
-keytool -genkeypair -v -keystore blockwerk.jks -storetype PKCS12 -keyalg RSA -keysize 4096 -validity 10000 -alias blockwerk
-```
-
-`keytool` fragt nach einem Passwort (am besten nur Buchstaben und Ziffern), nach Name und Land
-und zum Schluss, ob alles stimmt – dort `ja` tippen, Enter allein heißt Nein. Es entsteht die
-Datei `blockwerk.jks`. **Datei und Passwort gehören nicht ins Repository** und an zwei sichere
-Orte: Wer beides hat, kann Updates unter diesem Namen signieren; geht eines verloren, müssen
-alle die App einmal deinstallieren, bevor eine neu signierte Fassung läuft.
-
-**2. Prüfen,** ob Passwort und Datei zusammenpassen:
-
-```
-keytool -list -keystore blockwerk.jks
-```
-
-Nach dem Passwort erscheint eine Zeile mit `blockwerk, …, PrivateKeyEntry`.
-
-**3. Die Datei als Text in die Zwischenablage legen.** Ein Secret kann nur Text sein, deshalb
-wird die Datei umgewandelt (Base64). Am Mac:
-
-```
-base64 -i blockwerk.jks | pbcopy
-```
-
-Unter Windows (PowerShell):
-
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\blockwerk.jks")) | Set-Clipboard
-```
-
-Der Befehl gibt nichts aus. In der Zwischenablage liegt danach ein langer Text, der mit `MII`
-beginnt – **dieser Text** kommt ins Secret, nicht der Befehl.
-
-**4. Vier Secrets anlegen** (GitHub → Settings → Secrets and variables → Actions → New
-repository secret):
-
-| Secret | Inhalt |
-|--------|--------|
-| `ANDROID_KEYSTORE` | der Text aus der Zwischenablage |
-| `ANDROID_KEYSTORE_PASSWORD` | das Passwort |
-| `ANDROID_KEY_ALIAS` | `blockwerk` |
-| `ANDROID_KEY_PASSWORD` | dasselbe Passwort noch einmal |
-
-**5. Ausprobieren:** Actions → Programm bauen → Run workflow. Im Job »Android-App bauen« muss
-der Schritt »App bauen (Release, fester Schlüssel)« laufen. Passt etwas nicht, bricht schon
-»Schlüssel bereitlegen« ab und nennt das Secret, an dem es liegt.
-
-Ab dann baut der Workflow die Release-Fassung mit diesem Schlüssel; ohne die Secrets entsteht
-wie bisher die Debug-Fassung. Am eigenen Rechner: dieselben Angaben als Umgebungsvariablen
-`BLOCKWERK_KEYSTORE` (Pfad zur Datei), `BLOCKWERK_KEYSTORE_PASSWORD`, `BLOCKWERK_KEY_ALIAS`,
-`BLOCKWERK_KEY_PASSWORD` setzen und `./gradlew assembleRelease` aufrufen.
-
-**iPad** – zurückgestellt (siehe [Tablets](#tablets)). Wer es trotzdem versuchen will:
-`npm run tablet:ios` öffnet das Projekt in Xcode; dort unter *Signing & Capabilities* das
-eigene Team wählen. Mit einer kostenlosen Apple-ID läuft die App sieben Tage.
-
-Nach einer Änderung am Logo: `npx electron build/render-app-icons.cjs`.
-
-### Aufbau
-
-| Ordner | Inhalt |
-|--------|--------|
-| `src/` | Quelltext: Blöcke, Python-Generator, Oberfläche |
-| `src/hub/` | Verbindung über Bluetooth und USB-Kabel, Kompilieren, Terminal-Auswertung, Steuerfeld, Hub-Ansicht |
-| `src/sim/` | Simulator: Bahn und Sensoren, Roboter aus dem Programm, Ausführen der Blöcke, Ansicht |
-| `src/docs/` | Hilfetexte zu Blöcken und Python |
-| `src/spike/` | Import von SPIKE-Projekten |
-| `src/ext/` | Erweiterungen: Dateiformat, Editor, Anbindung an den Generator |
-| `tests/` | Tests (Vitest) |
-| `referenz/` | SPIKE-Projekte der AG: Kursprogramme und Testmaterial für den Import (ohne die Klänge und Bilder der SPIKE-App) |
-| `electron/` | Hülle für die Programm-Version (Fenster, Hub-Auswahl) |
-| `android/`, `ios/` | App-Projekte: Android (gepflegt) und iPad (zurückgestellt) |
-| `docs/` | Anleitung für Erweiterungen, Bilder dieser Seite |
-| `legacy/` | die ursprüngliche Version als einzelne HTML-Datei |
+Alles Weitere steht in [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md): Blockwerk im Netz
+bereitstellen (Cloudflare), Programme und Releases bauen, die App für Tablets samt
+Android-Schlüssel und der Aufbau des Quelltexts.
 
 ## Mehr lesen
 
@@ -457,6 +336,8 @@ Nach einer Änderung am Logo: `npx electron build/render-app-icons.cjs`.
   Hardware erprobt wurde
 - [CHANGELOG.md](CHANGELOG.md) – was sich von Version zu Version geändert hat
 - [docs/ERWEITERUNGEN.md](docs/ERWEITERUNGEN.md) – eigene Blöcke bauen
+- [docs/ENTWICKLUNG.md](docs/ENTWICKLUNG.md) – Blockwerk selbst bauen, ins Netz stellen, als Programm und
+  App packen; der Aufbau des Quelltexts
 
 Fehler gefunden oder eine Idee? Unter
 [Issues](https://github.com/TheBaronBlood/blockwerk/issues) ist der richtige Ort dafür.

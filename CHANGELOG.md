@@ -52,6 +52,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Behoben: Bei Bedienung mit dem Finger rutschte in der Zoom-Anzeige das Prozentzeichen unter die
   Zahl. Auch in der Hub-Ansicht bleiben Zahl und Einheit jetzt in einer Zeile.
 - Geändert: README und `lizenzen.txt` nennen Herkunft und Lizenz aller Klänge.
+- Geändert: Die README ist neu geordnet – was Blockwerk kann, steht nach Themen sortiert und mit
+  neuen Bildern der heutigen Oberfläche da (Editor, Simulator, Umbauen, Mehrfachauswahl, Hilfe,
+  Handy). Wie man Blockwerk selbst baut, ins Netz stellt und als Programm oder App packt, steht
+  jetzt in `docs/ENTWICKLUNG.md`.
 - Geprüft im Browserfenster am Computer – auch die gebaute Seite mit ihrer
   Content-Security-Policy – und mit Fenstern im Handy- und Tablet-Format samt den
   Berührungsereignissen des Browsers; an echten Tablets und Handys noch nicht erprobt.
