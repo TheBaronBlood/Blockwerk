@@ -96,13 +96,13 @@ main{flex:1 1 auto;display:flex;min-height:0;position:relative}
 .ws-run button.gamepad svg{width:30px;height:30px}
 .ws-run button.gamepad[aria-pressed="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 6px #00A645}
 /* Mehrere Blöcke auswählen: nur bei Bedienung mit dem Finger (mit Tastatur genügt die Umschalttaste). Der Knopf sitzt
-   über dem Startknopf; der Controller-Knopf rückt dann einen Platz höher. */
+   über dem Startknopf, gleich groß wie der Controller-Knopf – ist der zu sehen, rückt die Auswahl einen Platz höher. */
 .ws-run button.pick{display:none;position:absolute;right:8px;bottom:calc(100% + 14px);width:48px;height:48px;background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
 .ws-run button.pick svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .ws-run button.pick[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 @media (pointer:coarse){
   .ws-run button.pick{display:grid}
-  .ws-run button.gamepad{bottom:calc(100% + 82px)}
+  .ws-wrap.has-pad .ws-run button.pick{bottom:calc(100% + 82px)}
 }
 .ws-run button:hover:not(:disabled){transform:scale(1.06)}
 .ws-run button:disabled{background:var(--rule);color:var(--muted);cursor:default;box-shadow:none}
@@ -945,7 +945,7 @@ html[data-layout="phone-portrait"] .connect-btn svg{width:42px;height:42px}
 /* Start und Stopp oben rechts – unten liegt die Leiste der Kategorien */
 html[data-layout="phone-portrait"] .ws-run{top:10px;bottom:auto;right:calc(var(--lane) + 10px)}
 html[data-layout="phone-portrait"] .ws-run button.gamepad,html[data-layout="phone-portrait"] .ws-run button.pick{top:calc(100% + 10px);bottom:auto}
-@media (pointer:coarse){html[data-layout="phone-portrait"] .ws-run button.gamepad{top:calc(100% + 58px)}}
+html[data-layout="phone-portrait"] .ws-wrap.has-pad .ws-run button.pick{top:calc(100% + 58px);bottom:auto}
 
 /* --- Handy quer --- */
 /* flache Kopfleiste in einer Zeile; die Höhe ist hier knapp */
@@ -969,7 +969,7 @@ html[data-layout="phone-landscape"] .ws-connect{top:8px;left:auto;right:calc(var
 html[data-layout="phone-landscape"] .code-toggle{height:118px;top:42%;gap:10px}
 html[data-layout="phone-landscape"] .ws-run{bottom:12px;right:calc(var(--lane) + var(--grip) + 8px)}
 html[data-layout="phone-landscape"] .ws-run button.gamepad,html[data-layout="phone-landscape"] .ws-run button.pick{bottom:calc(100% + 10px);top:auto}
-@media (pointer:coarse){html[data-layout="phone-landscape"] .ws-run button.gamepad{bottom:calc(100% + 58px)}}
+html[data-layout="phone-landscape"] .ws-wrap.has-pad .ws-run button.pick{bottom:calc(100% + 58px);top:auto}
 /* Kategorien etwas dichter – trotzdem rollt die Liste, wenn die Höhe nicht reicht */
 html[data-layout="phone-landscape"] .blocklyToolbox{padding:6px 0!important}
 html[data-layout="phone-landscape"] .blocklyToolboxCategory{line-height:32px!important;margin-bottom:5px!important;padding:0 12px 0 9px!important;border-left-width:8px}
