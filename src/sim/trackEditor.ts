@@ -81,8 +81,8 @@ export interface TrackEditor {
 
 const TOOLS: {tool: Tool; name: string}[] = [
   ...TILE_KINDS.map(kind => ({tool:kind as Tool, name:TILE_NAMES[kind]})),
-  {tool:'green', name:'Grüner Punkt: an Abzweig oder Kreuzung in die Ecke tippen, in die er soll'},
-  {tool:'erase', name:'Radierer: leert ein Feld'}
+  {tool:'green', name:'Grüner Punkt'},
+  {tool:'erase', name:'Radierer'}
 ];
 
 export function initTrackEditor(root: HTMLElement, host: TrackEditorHost): TrackEditor {
@@ -100,7 +100,7 @@ export function initTrackEditor(root: HTMLElement, host: TrackEditorHost): Track
     palette.appendChild(button);
     return {tool:t, button};
   });
-  const mark = () => { for (const b of buttons) b.button.setAttribute('aria-checked', String(b.tool === tool)); refresh(); };
+  const mark = () => { for (const b of buttons) b.button.setAttribute('aria-checked', String(b.tool === tool)); };
 
   // ---- Größe ----
   const resize = (cols: number, rows: number) => {
@@ -137,14 +137,12 @@ export function initTrackEditor(root: HTMLElement, host: TrackEditorHost): Track
     el('simCols').textContent = String(map.cols); el('simRows').textContent = String(map.rows);
     el<HTMLButtonElement>('simColsLess').disabled = map.cols <= L.minCols; el<HTMLButtonElement>('simColsMore').disabled = map.cols >= L.maxCols;
     el<HTMLButtonElement>('simRowsLess').disabled = map.rows <= L.minRows; el<HTMLButtonElement>('simRowsMore').disabled = map.rows >= L.maxRows;
-    const how = tool === 'green' ? 'An einem Abzweig oder einer Kreuzung in die Ecke tippen: Dort erscheint der grüne Punkt, ein zweiter Tipp nimmt ihn weg.'
-      : tool === 'erase' ? 'Auf ein Feld tippen leert es.'
-      : `»${TILE_NAMES[tool]}«: auf ein Feld tippen legt die Platte, noch ein Tipp dreht sie.`;
-    hint.textContent = how + (open ? ` – ${open === 1 ? 'Ein Linienende läuft' : open + ' Linienenden laufen'} noch ins Leere.` : '');
+    // (nur, was man der Bahn nicht ansieht: Linien, die nirgends ankommen)
+    hint.textContent = open === 1 ? '1 Linienende läuft ins Leere' : open ? `${open} Linienenden laufen ins Leere` : '';
   }
 
   const act = (next: TileMap) => { if (next !== host.map()) host.change(next); };
-  mark();
+  mark(); refresh();
   return {
     tap(at){ act(tapTile(host.map(), tool, at)); },
     turn(at){ const cell = cellAt(host.map(), at); if (cell) act(turnTile(host.map(), cell.col, cell.row)); },

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------
 // Simulator – Bahn aus Platten, wie bei RoboCup Junior Rescue Line: quadratische Platten von 30 cm
-// mit schwarzer Linie, auf ein Raster gelegt und gedreht. An Abzweigen und Kreuzungen sagen
-// grüne Punkte in den Ecken, wohin es geht (links, rechts, mit zweien: umkehren). Gerechnet wird
+// mit schwarzer Linie, auf ein Raster gelegt und gedreht. An Abzweigen, Kreuzungen und am Kreisel
+// sagen grüne Punkte neben der Linie, wohin es geht (links, rechts, mit zweien: umkehren). Gerechnet wird
 // in Millimetern; gezeichnet wird daraus in trackEditor.ts. (Ohne DOM.)
 // ---------------------------------------------------------------
 import type { Point, Pose } from './world';
@@ -19,8 +19,9 @@ export const TILE_NAMES: Record<TileKind, string> = {
 };
 
 /**
- * Eine Platte: `turn` dreht sie in Vierteldrehungen im Uhrzeigersinn. `green` sind die grünen Punkte
- * in ihren vier Ecken neben der Kreuzung, als Bitmaske im Uhrzeigersinn ab oben links (1, 2, 4, 8) –
+ * Eine Platte: `turn` dreht sie in Vierteldrehungen im Uhrzeigersinn. `green` sind ihre grünen Punkte als
+ * Bitmaske: an Abzweig und Kreuzung die vier Ecken im Uhrzeigersinn ab oben links (1, 2, 4, 8), am Kreisel
+ * je Einfahrt zwei, links und rechts der Linie (ab der oberen Einfahrt im Uhrzeigersinn, acht Stellen) –
  * gezählt an der ungedrehten Platte: Sie drehen sich mit.
  */
 export interface Tile { kind: TileKind; turn: number; green?: number }
@@ -58,12 +59,6 @@ const LINES: Record<TileKind, Point[][]> = {
   end:[[pt(C, T), pt(C, C)], [pt(110, C), pt(190, C)]],
   goal:[[pt(C, 0), pt(C, T)]]
 };
-/** Wo grüne Punkte liegen dürfen: dort, wo sich Linien treffen. */
-export const takesGreen = (kind: TileKind) => kind === 'tee' || kind === 'cross';
-/** Die Mitte eines grünen Punkts in der Ecke `corner` (0 oben links, weiter im Uhrzeigersinn): direkt an beiden Linien. */
-const GREEN_AT = (LINE_MM + GREEN_MM) / 2;
-const greenCentre = (corner: number): Point => pt(C + (corner === 1 || corner === 2 ? GREEN_AT : -GREEN_AT), C + (corner >= 2 ? GREEN_AT : -GREEN_AT));
-
 const turns = (turn: number) => ((Math.round(turn) % 4) + 4) % 4;
 /** Dreht einen Punkt der Platte um ihre Mitte, in Vierteldrehungen im Uhrzeigersinn. */
 function spin(p: Point, turn: number): Point {
@@ -71,6 +66,22 @@ function spin(p: Point, turn: number): Point {
   for (let i = 0; i < turns(turn); i++) [x, y] = [T - y, x];
   return pt(x, y);
 }
+
+/** So weit neben der Mitte einer Linie liegt die Mitte eines grünen Punkts: direkt an ihrem Rand. */
+const GREEN_AT = (LINE_MM + GREEN_MM) / 2;
+/** Am Kreisel: so weit unter der Oberkante der Platte liegt ein grüner Punkt neben der Einfahrt – knapp vor dem Kreis. */
+const GREEN_AT_CIRCLE = 52;
+/**
+ * Wo auf einer Platte grüne Punkte liegen können, ungedreht. An Abzweig und Kreuzung sind es die vier Ecken
+ * (ab oben links im Uhrzeigersinn), direkt an beiden Linien; am Kreisel je Einfahrt zwei, links und rechts der Linie.
+ */
+function greenSpots(kind: TileKind): Point[] {
+  if (kind === 'tee' || kind === 'cross') return [0, 1, 2, 3].map(corner => pt(C + (corner === 1 || corner === 2 ? GREEN_AT : -GREEN_AT), C + (corner >= 2 ? GREEN_AT : -GREEN_AT)));
+  if (kind === 'circle') return [0, 1, 2, 3].flatMap(entry => [pt(C - GREEN_AT, GREEN_AT_CIRCLE), pt(C + GREEN_AT, GREEN_AT_CIRCLE)].map(p => spin(p, entry)));
+  return [];
+}
+/** Ob eine Platte grüne Punkte bekommen kann: dort, wo sich Linien treffen. */
+export const takesGreen = (kind: TileKind) => greenSpots(kind).length > 0;
 
 /** Was auf dieser Platte zu zeichnen ist – gedreht, wie sie liegt. */
 export function tileShapes(tile: Tile): TileShapes {
@@ -81,7 +92,7 @@ export function tileShapes(tile: Tile): TileShapes {
   };
   // die Ziellinie: ein roter Streifen quer über die Platte
   if (tile.kind === 'goal') square(pt(C, C), T, GREEN_MM, 'red');
-  if (takesGreen(tile.kind)) for (let corner = 0; corner < 4; corner++) if ((tile.green ?? 0) & (1 << corner)) square(greenCentre(corner), GREEN_MM, GREEN_MM, 'green');
+  greenSpots(tile.kind).forEach((spot, i) => { if ((tile.green ?? 0) & (1 << i)) square(spot, GREEN_MM, GREEN_MM, 'green'); });
   return {lines:LINES[tile.kind].map(line => line.map(p => spin(p, turn))), rects};
 }
 
@@ -111,8 +122,8 @@ function withTile(map: TileMap, col: number, row: number, tile: Tile | null): Ti
 
 /**
  * Ein Tipp auf die Bahn mit einem Werkzeug. Eine Platte setzt sich auf das Feld; liegt dort schon dieselbe,
- * dreht sie sich um eine Vierteldrehung. Der grüne Punkt schaltet an Abzweig und Kreuzung den Punkt in der
- * Ecke um, in die getippt wurde. Liefert die Bahn unverändert zurück, wenn der Tipp nichts bewirkt.
+ * dreht sie sich um eine Vierteldrehung. Der grüne Punkt schaltet an Abzweig, Kreuzung und Kreisel den Punkt
+ * um, der dem Tipp am nächsten liegt. Liefert die Bahn unverändert zurück, wenn der Tipp nichts bewirkt.
  */
 export function tapTile(map: TileMap, tool: Tool, at: Point): TileMap {
   const cell = cellAt(map, at);
@@ -120,11 +131,12 @@ export function tapTile(map: TileMap, tool: Tool, at: Point): TileMap {
   const tile = tileAt(map, cell.col, cell.row);
   if (tool === 'erase') return tile ? withTile(map, cell.col, cell.row, null) : map;
   if (tool === 'green'){
-    if (!tile || !takesGreen(tile.kind)) return map;
-    const dx = at.x - (cell.col + 0.5) * T, dy = at.y - (cell.row + 0.5) * T;
-    // die Ecke auf der Bahn – und welche das an der ungedrehten Platte ist
-    const seen = dy < 0 ? (dx < 0 ? 0 : 1) : (dx < 0 ? 3 : 2), corner = (seen - turns(tile.turn) + 4) % 4;
-    const green = (tile.green ?? 0) ^ (1 << corner);
+    const spots = tile ? greenSpots(tile.kind) : [];
+    if (!tile || !spots.length) return map;
+    // die Stelle, die dem Tipp am nächsten liegt – so, wie die Platte gedreht ist
+    const x = at.x - cell.col * T, y = at.y - cell.row * T;
+    const far = spots.map(spot => { const p = spin(spot, tile.turn); return Math.hypot(p.x - x, p.y - y); });
+    const green = (tile.green ?? 0) ^ (1 << far.indexOf(Math.min(...far)));
     return withTile(map, cell.col, cell.row, green ? {...tile, green} : {kind:tile.kind, turn:tile.turn});
   }
   if (tile?.kind === tool) return withTile(map, cell.col, cell.row, {...tile, turn:turns(tile.turn + 1)});
@@ -185,7 +197,7 @@ export function readTileMap(value: unknown): TileMap | null {
     if (raw === null){ tiles.push(null); continue; }
     const t = raw as Partial<Tile>;
     if (!t || typeof t !== 'object' || !TILE_KINDS.includes(t.kind as TileKind) || !Number.isInteger(t.turn)) return null;
-    const green = takesGreen(t.kind as TileKind) && Number.isInteger(t.green) ? (t.green as number) & 15 : 0;
+    const green = Number.isInteger(t.green) ? (t.green as number) & ((1 << greenSpots(t.kind as TileKind).length) - 1) : 0;
     tiles.push(green ? {kind:t.kind as TileKind, turn:turns(t.turn as number), green} : {kind:t.kind as TileKind, turn:turns(t.turn as number)});
   }
   return {cols, rows, tiles};

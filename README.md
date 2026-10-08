@@ -226,16 +226,22 @@ dran ist, ist markiert, Ausgaben stehen im Terminal.
   ein Rundkurs. »Bahn bauen« zeigt die Platten zur Auswahl – Gerade, Kurve, Ecke, Abzweig,
   Kreuzung, Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende und die rote Ziellinie: Ein Tipp
   auf ein Feld legt die gewählte Platte, noch ein Tipp dreht sie. Mit dem **grünen Punkt** tippt
-  man an einem Abzweig oder einer Kreuzung in die Ecke, in die er soll – der Farbsensor sieht dort
-  Grün und an der Ziellinie Rot. Die Bahn darf zwei bis acht Platten breit und zwei bis sechs hoch
+  man an einem Abzweig, einer Kreuzung oder einem Kreisel neben die Linie, wo er hin soll – der
+  Farbsensor sieht dort Grün und an der Ziellinie Rot. Die Bahn darf zwei bis acht Platten breit und zwei bis sechs hoch
   sein; es gibt Vorlagen, und sie lässt sich als Datei speichern und weitergeben. Sie bleibt
   gemerkt, samt Hindernissen und dem Platz des Roboters.
 - **Ein eigenes Bild** geht auch: »Bahn laden …« nimmt ein Foto oder eine Zeichnung von oben. Der
   Regler »Roboter« stellt ein, wie groß der Roboter darauf ist.
 - **Roboter und Hindernisse** lassen sich ziehen, der Roboter am Punkt vor ihm drehen, ein
   Hindernis an seiner Ecke größer und kleiner ziehen; ein Doppelklick räumt es weg.
-- **Der Hub** neben der Bahn zeigt die Lichtmatrix und das Statuslicht, seine Tasten lassen sich
-  drücken. Ein Doppelklick auf ihn zeigt nur noch den Hub.
+- **Der Rand** um die Bahn hält den Roboter auf: Er fährt dagegen und steht an. Die Sensoren
+  bemerken den Rand nicht. Ein Klick auf den Rand schaltet ihn aus und wieder ein.
+- **Heranholen:** Mausrad oder zwei Finger holen die Bahn heran, an freier Stelle lässt sie sich
+  verschieben; die Knöpfe oben rechts tun dasselbe. Fährt der Roboter dabei aus dem Bild, wandert
+  die Bahn mit.
+- **Der Hub** liegt in der Ecke über der Bahn und zeigt die Lichtmatrix; seine Tasten lassen sich
+  drücken. Die mittlere leuchtet grün, solange das Programm läuft – oder in der Farbe, die der
+  Block »Statuslicht« einstellt. Ein Doppelklick auf den Hub zeigt nur noch ihn.
 - **Umbauen** zeigt den Roboter groß. Sensoren lassen sich versetzen und am Knopf drehen: auf
   einem Raster im Abstand der LEGO-Noppen (8 mm), in Schritten von 15 Grad, auf Wunsch
   spiegelbildlich. Mit Tastatur: <kbd>Alt</kbd> ohne Einrasten, <kbd>Umschalt</kbd> nur eine

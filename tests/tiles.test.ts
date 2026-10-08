@@ -75,6 +75,31 @@ describe('grüne Punkte', () => {
     map = tapTile(map, 'green', at(0, 0, -40, 40));   // unten links, wie man es sieht
     expect(tileShapes(tileAt(map, 0, 0)!).rects[0]).toMatchObject({x:115, y:160});
   });
+  it('am Kreisel: je Einfahrt zwei, links und rechts der Linie, knapp vor dem Kreis', () => {
+    // obere Einfahrt, links der Linie: neben der Linie (115 bis 140) und über dem Kreis
+    expect(tileShapes(tile('circle', 0, 1)).rects).toEqual([{x:115, y:39.5, w:25, h:25, color:'green'}]);
+    expect(tileShapes(tile('circle', 0, 2)).rects[0]).toMatchObject({x:160, y:39.5});
+    // die rechte Einfahrt: dieselben beiden Stellen, eine Vierteldrehung weiter
+    expect(tileShapes(tile('circle', 0, 4)).rects[0]).toMatchObject({x:235.5, y:115});
+    expect(tileShapes(tile('circle', 0, 8)).rects[0]).toMatchObject({x:235.5, y:160});
+    expect(tileShapes(tile('circle', 0, 255)).rects).toHaveLength(8);
+    // kein Punkt liegt auf einer Linie: weder auf der Einfahrt noch auf dem Kreis (Radius 75, Linie 20 breit)
+    for (const r of tileShapes(tile('circle', 0, 255)).rects){
+      const far = Math.max(...[[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].map(([x, y]) => Math.hypot(x - 150, y - 150)));
+      const near = Math.min(...[[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]].map(([x, y]) => Math.hypot(x - 150, y - 150)));
+      expect(near).toBeGreaterThan(85); expect(far).toBeLessThan(150);
+    }
+  });
+  it('am Kreisel setzt ein Tipp den Punkt, der ihm am nächsten liegt', () => {
+    let map = tapTile(empty(), 'circle', at(1, 0));
+    map = tapTile(map, 'green', at(1, 0, 25, -95));    // oben, rechts der Einfahrt
+    expect(tileAt(map, 1, 0)).toEqual({kind:'circle', turn:0, green:2});
+    map = tapTile(map, 'green', at(1, 0, -95, 20));    // links, unterhalb der Einfahrt: von der Mitte aus gesehen rechts der Linie
+    expect(tileShapes(tileAt(map, 1, 0)!).rects.map(r => [r.x, r.y])).toEqual([[160, 39.5], [39.5, 160]]);
+    map = tapTile(map, 'green', at(1, 0, 25, -95));
+    expect(tileShapes(tileAt(map, 1, 0)!).rects).toHaveLength(1);
+    expect(readTileMap({cols:2, rows:2, tiles:[{kind:'circle', turn:0, green:511}, null, null, null]})?.tiles[0]).toEqual({kind:'circle', turn:0, green:255});
+  });
   it('gibt es nur, wo sich Linien treffen', () => {
     const map = tapTile(empty(), 'straight', at(0, 0));
     expect(tapTile(map, 'green', at(0, 0, 40, 40))).toBe(map);

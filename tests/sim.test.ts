@@ -245,6 +245,32 @@ describe('Fahren', () => {
     // Sensor 85 mm vor der Achse, Hindernis beginnt bei x = 750
     expect(sim.pose.x).toBeCloseTo(750 - 85 - seen, 0);
   });
+  it('der Rand der Bahn hält den Roboter auf – Sensoren bemerken ihn nicht', async () => {
+    const field = track(1000, 600, () => WHITE);
+    const state = program(setup(), B('pb_drive_straight', null, {DIST:N(2000)}),
+      B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
+    const place = (fence: boolean) => (s: Simulation) => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; };
+    // der Stoßkreis (75 mm, 20 mm vor der Achse) bleibt auf der Bahn: Die Achse kommt bis 905
+    const held = await simulate(state, 4000, place(true));
+    expect(held.sim.blocked).toBe(true);
+    expect(held.sim.pose.x).toBeLessThanOrEqual(905); expect(held.sim.pose.x).toBeGreaterThan(903);
+    // … und weder Abstands- noch Kraftsensor merken etwas davon
+    const after = await simulate(state, 12000, place(true));
+    expect(after.out).toBe('2000\nFalse\n');
+    // ohne Rand fährt er von der Bahn herunter
+    const free = await simulate(state, 6000, place(false));
+    expect(free.sim.pose.x).toBeGreaterThan(1300); expect(free.sim.blocked).toBe(false);
+  });
+  it('am Rand geht es nicht weiter hinaus, zurück aber immer', async () => {
+    const field = track(1000, 600, () => WHITE);
+    // der Roboter steht schon halb über der Kante (von Hand dorthin gestellt)
+    const over = (dist: number) => simulate(program(setup(), B('pb_drive_straight', null, {DIST:N(dist)})), 2000, s => { s.track = field; s.pose = {x:980, y:300, heading:0}; });
+    expect((await over(100)).sim.pose.x).toBe(980);
+    expect((await over(-100)).sim.pose.x).toBeCloseTo(880, 3);
+    // drehen auf der Stelle geht am Rand auch: Der Stoßkreis rückt dabei von der Kante weg
+    const turned = await simulate(program(setup(), B('pb_drive_turn', null, {ANGLE:N(90)})), 2000, s => { s.track = field; s.pose = {x:905, y:300, heading:0}; });
+    expect(turned.sim.pose.heading).toBeCloseTo(90, 3);
+  });
   it('fährt nicht in ein Hindernis hinein', async () => {
     const {sim} = await simulate(program(setup(), B('pb_drive_straight', null, {DIST:N(1000)})), 3000, s => { s.obstacles = [box(400, 0)]; });
     expect(sim.blocked).toBe(true);
@@ -307,6 +333,9 @@ describe('Programm', () => {
   it('Statuslicht und Tasten des Hubs', async () => {
     const state = program(B('pb_light', {COLOR:'RED'}), B('pb_wait_until', null, {COND:{block:B('pb_button', {BUTTON:'LEFT'})}}), B('pb_light', {COLOR:'GREEN'}));
     expect((await simulate(state, 500)).sim.light).toBe('RED');
+    // ohne Block »Statuslicht« leuchtet die mittlere Taste grün, solange das Programm läuft; »aus« schaltet sie ab
+    expect((await simulate(program(B('pb_wait', null, {MS:N(100)})), 50)).sim.light).toBe('GREEN');
+    expect((await simulate(program(B('pb_light', {COLOR:'OFF'})), 50)).sim.light).toBeNull();
     const pressed = await simulate(state, 500, s => { s.buttons.add('LEFT'); });
     expect(pressed.sim.light).toBe('GREEN'); expect(pressed.running).toBe(false);
     expect((await simulate(state, 500, s => { s.buttons.add('RIGHT'); })).sim.light).toBe('RED');

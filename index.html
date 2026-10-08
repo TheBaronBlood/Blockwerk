@@ -185,11 +185,17 @@
         <label class="sim-check" title="Der Sensor auf der anderen Seite wandert und dreht spiegelbildlich mit"><input type="checkbox" id="simSymmetry" checked> Symmetrie</label>
         <button class="btn" id="simMountsReset" type="button" title="Setzt alle Sensoren an ihren üblichen Platz zurück, ungedreht">Alle zurücksetzen</button>
         <!-- nur mit Tastatur: die Zusatztasten, wie in Zeichenprogrammen üblich -->
-        <p class="sim-keys"><kbd>Alt</kbd> ohne Einrasten · <kbd>Umschalt</kbd> nur eine Richtung, beim Drehen 45° · <kbd>Strg</kbd> ohne Spiegeln · <kbd>R</kbd> dreht, Pfeiltasten versetzen</p>
+        <p class="sim-keys"><kbd>Alt</kbd> frei · <kbd>Umschalt</kbd> gerade, 45° · <kbd>Strg</kbd> einzeln · <kbd>R</kbd> dreht</p>
       </div>
       <p class="sim-info" id="simInfo"></p>
       <div class="sim-stage">
         <canvas id="simCanvas"></canvas>
+        <!-- die Bahn heranholen und wieder ganz zeigen (auch: Mausrad, zwei Finger) -->
+        <div class="sim-zoom" role="group" aria-label="Bahn heranholen">
+          <button type="button" id="simZoomOut" aria-label="Bahn wegrücken" title="Wegrücken">−</button>
+          <button type="button" id="simZoomIn" aria-label="Bahn heranholen" title="Heranholen">+</button>
+          <button type="button" id="simZoomFit" aria-label="Ganze Bahn zeigen" title="Ganze Bahn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
         <!-- der Hub: Lichtmatrix und Tasten; die mittlere beendet wie am echten Hub das Programm -->
         <div class="sim-hub" id="simHub" role="group" aria-label="Hub" title="Doppelklick: nur den Hub zeigen">
           <div class="sim-matrix" id="simMatrix" role="img" aria-label="Lichtmatrix"></div>
