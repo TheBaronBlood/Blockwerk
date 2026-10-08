@@ -10,6 +10,7 @@
 import * as Blockly from 'blockly';
 import { toRows } from '../matrix';
 import { charPixels, DISPLAY_OFF, iconPixels, numberPixels, TEXT_OFF_MS, TEXT_ON_MS } from './hubDisplay';
+import { FORCE } from './robot';
 import type { Simulation } from './simulation';
 
 export interface RunnerIo {
@@ -19,6 +20,8 @@ export interface RunnerIo {
   error?(message: string, blockId: string | null): void;
   /** Der Block, der gerade läuft. */
   onBlock?(id: string): void;
+  /** »Piepton«: Frequenz in Hertz, Dauer in Millisekunden. */
+  beep?(frequency: number, ms: number): void;
   /** Steuerfeld: Joystick (x, y: −100 … 100) und Tasten (A–D). */
   pad?(name: string): number | boolean;
 }
@@ -221,7 +224,7 @@ export class Runner {
 
       case 'pb_reset_heading': sim.setHeading(await num('ANGLE')); return;
       case 'pb_timer_reset': this.timerZero = sim.time; return;
-      case 'pb_beep': return this.sleep(await num('DUR', 100));
+      case 'pb_beep': { const frequency = await num('FREQ', 500), ms = await num('DUR', 100); this.io.beep?.(frequency, ms); return this.sleep(ms); }
       case 'pb_print': this.io.print(pyStr(await this.val(b, 'TEXT', f) ?? '') + '\n'); return;
       case 'pb_display_icon': sim.display = iconPixels(b.getFieldValue('ICON')); return;
       case 'pb_display_pixels': sim.display = toRows(b.getFieldValue('PIXELS')).flat(); return;
@@ -381,9 +384,8 @@ export class Runner {
       case 'pb_pad_stick': return Number(this.io.pad?.(b.getFieldValue('AXIS')) ?? 0);
       case 'pb_pad_button': return !!this.io.pad?.(b.getFieldValue('BUTTON'));
       case 'pb_button': return sim.buttons.has(b.getFieldValue('BUTTON'));
-      // den Kraftsensor drückt im Simulator (noch) niemand
-      case 'pb_force_pressed': return false;
-      case 'pb_force': return 0;
+      case 'pb_force_pressed': return sim.forcePressed(port());
+      case 'pb_force': return sim.forcePressed(port()) ? FORCE.pressed : 0;
       case 'pb_xbox_button': case 'pb_remote_button': this.ignored.add(b.type); return false;
       default: this.ignored.add(b.type); return 0;
     }

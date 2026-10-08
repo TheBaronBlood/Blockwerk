@@ -232,6 +232,54 @@ describe('Programm', () => {
     expect(pressed.sim.light).toBe('GREEN'); expect(pressed.running).toBe(false);
     expect((await simulate(state, 500, s => { s.buttons.add('RIGHT'); })).sim.light).toBe('RED');
   });
+  it('Kraftsensor: von Hand gedrückt oder am Hindernis', async () => {
+    // »Halt vor der Wand«: wartet auf den Kraftsensor, fährt dann bis 100 mm vor das Hindernis
+    const waiting = await simulate(EXAMPLES.wand(), 3000, s => { s.obstacles = [box(800, 0)]; });
+    expect(waiting.sim.pose.x).toBe(0); expect(waiting.running).toBe(true);
+    const driven = await simulate(EXAMPLES.wand(), 20000, s => { s.obstacles = [box(800, 0)]; s.forceHeld.add('E'); });
+    expect(driven.running).toBe(false); expect(driven.sim.ultrasonic('D')).toBeLessThan(100);
+    // fährt gegen das Hindernis: Der Sensor vorn wird gedrückt
+    const bump = program(setup(), B('pb_drive_drive', null, {SPEED:N(200), RATE:N(0)}),
+      B('pb_wait_until', null, {COND:{block:B('pb_force_pressed', {PORT:'E'})}}), B('pb_drive_stop', {MODE:'brake'}),
+      B('pb_print', null, {TEXT:{block:B('pb_force', {PORT:'E'})}}));
+    const hit = await simulate(bump, 10000, s => { s.obstacles = [box(400, 0)]; });
+    expect(hit.out).toBe('10\n'); expect(hit.running).toBe(false);
+    expect(hit.sim.pose.x).toBeGreaterThan(230);
+  });
+  it('versetzte Sensoren sehen an ihrem neuen Platz', async () => {
+    const line = track(400, 200, (_, y) => y >= 130 && y < 150 ? BLACK : WHITE);
+    const state = program(B('pb_print', null, {TEXT:{block:B('pb_reflection', {PORT:'C'})}}));
+    expect((await simulate(state, 100, s => { s.track = line; s.pose = {x:50, y:100, heading:0}; })).out).toBe('100\n');
+    // 40 mm nach rechts versetzt: Bei Blick nach rechts ist das unten – über der Linie
+    const moved = await simulate(state, 100, s => { s.track = line; s.pose = {x:50, y:100, heading:0}; s.mounts = {C:{x:100, y:40}}; });
+    expect(moved.out).toBe('0\n');
+    expect(moved.sim.colorPoints()[0]).toMatchObject({x:expect.closeTo(150, 3), y:expect.closeTo(140, 3)});
+    // der Abstandssensor misst ab seinem Platz
+    const far = program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}));
+    expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; })).out).toBe('415\n');
+    expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; s.mounts = {D:{x:0, y:0}}; })).out).toBe('500\n');
+    // ein Platz für einen Anschluss, an dem das Programm nichts kennt, zählt nicht
+    expect((await simulate(state, 100, s => { s.mounts = {F:{x:0, y:0}}; })).sim.mount('F')).toBeNull();
+  });
+  it('Piepton: meldet Ton und Dauer und wartet so lange', async () => {
+    const ws = new Blockly.Workspace();
+    Blockly.serialization.workspaces.load(program(B('pb_beep', null, {FREQ:N(880), DUR:N(200)}), B('pb_print', null, {TEXT:T('danach')})), ws);
+    const beeps: number[][] = [], out: string[] = [];
+    const runner = new Runner(ws, new Simulation(robotFromWorkspace(ws)), {print:t => out.push(t), beep:(f, ms) => beeps.push([f, ms])});
+    await runner.start(); await runner.advance(150);
+    expect(beeps).toEqual([[880, 200]]); expect(out).toEqual([]);
+    await runner.advance(100); ws.dispose();
+    expect(out).toEqual(['danach\n']);
+  });
+  it('Steuerfeld steuert den Roboter', async () => {
+    const ws = new Blockly.Workspace();
+    Blockly.serialization.workspaces.load(EXAMPLES.steuerfeld(), ws);
+    const sim = new Simulation(robotFromWorkspace(ws));
+    const runner = new Runner(ws, sim, {print:() => {}, pad:(name) => name === 'y' ? 100 : name === 'x' ? 0 : false});
+    await runner.start(); await runner.advance(1000); runner.stop(); ws.dispose();
+    // Joystick ganz vorn: 300 mm/s
+    expect(sim.pose.x).toBeGreaterThan(280); expect(sim.pose.x).toBeLessThan(300.001);
+  });
   it('eine endlose Schleife ohne Warten hält die Uhr nicht an', async () => {
     const {sim, running} = await simulate(program(B('pb_forever')), 500);
     expect(running).toBe(true); expect(sim.time).toBe(500);

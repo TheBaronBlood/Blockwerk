@@ -4,7 +4,7 @@
 // und fragt Sensoren ab. (Ohne DOM.)
 // ---------------------------------------------------------------
 import { DISPLAY_OFF, type Pixels } from './hubDisplay';
-import { BUMPER, COLOR_SPOT, colorSensorPoints, ULTRA, type SimRobot } from './robot';
+import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimRobot } from './robot';
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
 
 export interface SimMotor { angle: number; speed: number }
@@ -29,6 +29,11 @@ export class Simulation {
   display: Pixels = [...DISPLAY_OFF];
   light: string | null = null;
   readonly buttons = new Set<string>();
+  /** Kraftsensoren (Anschlüsse), die gerade von Hand gedrückt werden. */
+  readonly forceHeld = new Set<string>();
+  /** Sensoren, die jemand versetzt hat: Anschluss → Platz am Roboter (Millimeter, x nach vorn, y nach rechts). */
+  mounts: Record<string, Point> = {};
+  private defaults: {robot: SimRobot; mounts: Record<string, Point>} | null = null;
   private headingZero = 0;
   private readonly motors: Record<string, SimMotor> = {};
 
@@ -70,9 +75,17 @@ export class Simulation {
   }
   private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
 
+  /** Wo der Sensor an diesem Anschluss am Roboter sitzt – null, wenn der Simulator dort keinen kennt. */
+  mount(port: string): Point | null {
+    if (this.defaults?.robot !== this.robot) this.defaults = {robot:this.robot, mounts:defaultMounts(this.robot)};
+    const usual = this.defaults.mounts[port];
+    return usual ? this.mounts[port] ?? usual : null;
+  }
+  /** Wo der Sensor an diesem Anschluss gerade über der Bahn steht. */
+  sensorPoint(port: string): Point | null { const at = this.mount(port); return at && toWorld(this.pose, this.scale, at); }
   /** Wo die Farbsensoren gerade über der Bahn stehen, in der Reihenfolge von `robot.colors`. */
-  colorPoints(): Point[] { return colorSensorPoints(this.robot.colors.length).map(p => toWorld(this.pose, this.scale, p)); }
-  private colorPoint(port: string): Point | null { return this.colorPoints()[this.robot.colors.indexOf(port)] ?? null; }
+  colorPoints(): Point[] { return this.robot.colors.map(port => this.sensorPoint(port)!); }
+  private colorPoint(port: string): Point | null { return this.robot.colors.includes(port) ? this.sensorPoint(port) : null; }
 
   /** Reflexion am Farbsensor in Prozent. Ein Sensor, den der Simulator nicht kennt, sieht Weiß. */
   reflection(port: string): number {
@@ -84,7 +97,12 @@ export class Simulation {
     return at ? colorAt(this.track, at, COLOR_SPOT * this.scale) : 'WHITE';
   }
   /** Wo der Abstandssensor sitzt. */
-  ultraPoint(): Point { return toWorld(this.pose, this.scale, ULTRA.at); }
+  ultraPoint(): Point { return (this.robot.ultra && this.sensorPoint(this.robot.ultra)) || toWorld(this.pose, this.scale, ULTRA.at); }
+  /** Ob der Kraftsensor gedrückt ist: von Hand oder weil er an ein Hindernis stößt. */
+  forcePressed(port: string): boolean {
+    if (!this.robot.force.includes(port)) return false;
+    return this.forceHeld.has(port) || touches(this.obstacles, this.sensorPoint(port)!, FORCE.reach * this.scale);
+  }
   /** Abstand am Abstandssensor in Millimetern; ohne Hindernis im Kegel 2000 wie am echten Sensor. */
   ultrasonic(port: string): number {
     if (port !== this.robot.ultra) return ULTRA.nothing;

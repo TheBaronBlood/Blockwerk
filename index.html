@@ -138,7 +138,13 @@
         <button class="btn" id="simReset" type="button" title="Stellt den Roboter dorthin zurück, wo er beim Start stand">Zurück</button>
         <button class="btn" id="simObstacle" type="button" title="Hindernis vor den Roboter stellen – Doppelklick räumt es wieder weg">+ Hindernis</button>
         <button class="btn" id="simImage" type="button" title="Ein Bild der Bahn laden, von oben gesehen">Bahn laden …</button>
+        <button class="btn" id="simBuild" type="button" aria-pressed="false" title="Roboter groß zeigen und seine Sensoren versetzen">Umbauen</button>
         <label class="sim-scale" title="Wie groß der Roboter auf der Bahn ist">Roboter <input type="range" id="simScale" min="0.3" max="3" step="0.05" value="1"></label>
+        <label class="sim-scale" title="Zeitlupe und Zeitraffer">Tempo
+          <select class="btn" id="simSpeed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        </label>
+        <!-- je Kraftsensor des Programms ein Knopf zum Drücken -->
+        <span class="sim-force" id="simForce"></span>
         <input type="file" id="simFile" accept="image/*" class="hidden">
       </div>
       <p class="sim-info" id="simInfo"></p>

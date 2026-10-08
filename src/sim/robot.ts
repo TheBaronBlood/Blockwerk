@@ -85,6 +85,23 @@ export const ULTRA = {at:{x:85, y:0} as Point, halfAngle:17.5, range:2000, nothi
 /** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
 export const BUMPER = {at:{x:20, y:0} as Point, radius:75};
 
+/** Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit er tastet und was er gedrückt meldet (Newton). */
+export const FORCE = {front:92, spacing:30, reach:12, pressed:10};
+/** So weit von der Mitte zwischen den Rädern darf ein Sensor beim Umbauen sitzen. */
+export const MOUNT_LIMIT = 220;
+
+/**
+ * Wo jeder Sensor sitzt, solange ihn niemand versetzt hat: Farbsensoren nebeneinander vorn, der
+ * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Anschluss → Platz am Roboter.
+ */
+export function defaultMounts(robot: SimRobot): Record<string, Point> {
+  const mounts: Record<string, Point> = {};
+  robot.force.forEach((port, i) => { mounts[port] = {x:FORCE.front, y:(i - (robot.force.length - 1) / 2) * FORCE.spacing}; });
+  if (robot.ultra) mounts[robot.ultra] = {...ULTRA.at};
+  colorSensorPoints(robot.colors.length).forEach((p, i) => { mounts[robot.colors[i]] = p; });
+  return mounts;
+}
+
 /** Wo die Farbsensoren sitzen: nebeneinander vor dem Roboter, um die Mitte verteilt. */
 export const colorSensorPoints = (count: number): Point[] =>
   Array.from({length:count}, (_, i) => ({x:COLOR_FRONT, y:(i - (count - 1) / 2) * COLOR_SPACING}));

@@ -1020,7 +1020,15 @@ async function recheckPorts(missing: DeviceAt | null){
 
 // Steuerfeld: schickt Joystick und Tasten an das laufende Programm
 const padEl = $('pad'), btnPadWs = $('btnPadWs');
-const pad = createPad((byte) => hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve());
+/** Stand des Steuerfelds für den Simulator – mitgelesen aus dem, was das Steuerfeld an den Hub schickt (padProtocol.ts). */
+const padState: Record<string, number | boolean> = {x:0, y:0, A:false, B:false, C:false, D:false};
+function trackPad(byte: number){
+  if (byte >= 150 && byte <= 170) padState.x = (byte - 160) * 10;
+  else if (byte >= 180 && byte <= 200) padState.y = (byte - 190) * 10;
+  else if (byte >= 65 && byte <= 68) padState[String.fromCharCode(byte)] = true;
+  else if (byte >= 97 && byte <= 100) padState[String.fromCharCode(byte - 32)] = false;
+}
+const pad = createPad((byte) => { trackPad(byte); return hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve(); });
 // der schmale Streifen unter dem Code: für Maus und Tastatur
 pad.bindStick(padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-knob')!);
 for (const b of PAD_BUTTONS) pad.bindButton(padEl.querySelector<HTMLElement>(`[data-pad="${b}"]`)!, b);
@@ -1102,6 +1110,9 @@ btnSim.addEventListener('click', async () => {
     const { initSimView } = await import('./sim/view');
     simView ??= initSimView($('sim'), {
       ws, toast, print:termWrite,
+      pad:(name) => padState[name] ?? 0, soundOn:() => settings().sounds,
+      // fragt das Programm das Steuerfeld ab, klappt es auf
+      onStart:() => { if (currentUsesPad) showPad(true); },
       showBlock:(id) => { const b = ws.getBlockById(id); if (b){ Blockly.common.setSelected(b as Blockly.BlockSvg); ws.centerOnBlock(id); } }
     });
   }

@@ -5,10 +5,10 @@
 // Gerechnet wird in simulation.ts und runner.ts; hier wird nur gezeichnet und bedient.
 // ---------------------------------------------------------------
 import type * as Blockly from 'blockly';
-import { BODY, BUMPER, COLOR_SPOT, describeRobot, robotFromWorkspace, ULTRA } from './robot';
+import { BODY, BUMPER, COLOR_SPOT, describeRobot, MOUNT_LIMIT, robotFromWorkspace, ULTRA } from './robot';
 import { Runner } from './runner';
 import { Simulation } from './simulation';
-import { toWorld, type Obstacle, type Point, type Pose } from './world';
+import { forward, toWorld, type Obstacle, type Point, type Pose } from './world';
 
 export interface SimViewOptions {
   ws: Blockly.WorkspaceSvg;
@@ -17,6 +17,12 @@ export interface SimViewOptions {
   toast(message: string): void;
   /** Markiert den Block, an dem das Programm gescheitert ist. */
   showBlock(id: string): void;
+  /** Stand des Steuerfelds: Joystick (x, y) und Tasten (A–D). */
+  pad(name: string): number | boolean;
+  /** Ob Blockwerk gerade Klänge abspielt (Einstellungen). */
+  soundOn(): boolean;
+  /** Ein Programm startet im Simulator. */
+  onStart(): void;
 }
 export interface SimView {
   /** Das Programm hat sich geändert: Der Roboter wird neu aus den Blöcken gelesen. */
@@ -32,6 +38,10 @@ const MAX_TRACK_PX = 1600;
 /** Abstand des Drehpunkts vor dem Roboter und die Größe der Anfasser, in Bildschirmpunkten. */
 const TURN_HANDLE_MM = 150, HANDLE_PX = 9;
 const MIN_OBSTACLE = 20;
+/** Beim Umbauen füllt der Roboter die Ansicht: So viele Millimeter um ihn herum sind zu sehen. */
+const BUILD_SPAN_MM = 380;
+/** Hier merkt sich der Simulator, wie der Roboter gebaut ist: versetzte Sensoren und seine Größe. */
+const STORE_KEY = 'blockwerk-sim-v1';
 /** So breit ist der Streifen links, in dem der Hub liegt – die Bahn beginnt daneben. */
 const HUB_LANE_PX = 112;
 
@@ -46,7 +56,7 @@ function startTrack(): HTMLCanvasElement {
   return canvas;
 }
 
-type Drag = {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
+type Drag = {kind: 'sensor'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
 
 export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const el = <T extends HTMLElement>(id: string) => root.querySelector<T>('#' + id)!;
@@ -61,6 +71,32 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let activeBlock: string | null = null;
   let shown = false;
   let nextObstacle = 1;
+  let building = false;           // Umbauen: der Roboter groß, seine Sensoren lassen sich versetzen
+  let tempo = 1;                  // Zeitlupe und Zeitraffer
+
+  // Wie der Roboter gebaut ist, bleibt über das Neuladen hinweg
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {mounts?: Record<string, Point>; scale?: number};
+    if (stored.mounts && typeof stored.mounts === 'object') sim.mounts = stored.mounts;
+    if (typeof stored.scale === 'number' && stored.scale > 0){ sim.scale = stored.scale; scaleInput.value = String(stored.scale); }
+  } catch { /* ohne Speicher beginnt der Roboter, wie er ist */ }
+  const remember = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify({mounts:sim.mounts, scale:sim.scale})); } catch { /* gilt dann bis zum Neuladen */ } };
+  /** Alle Sensoren, die der Roboter laut Programm hat (Anschlüsse). */
+  const sensorPorts = () => [...sim.robot.colors, ...(sim.robot.ultra ? [sim.robot.ultra] : []), ...sim.robot.force];
+
+  // ---- Ton ----
+  let audio: AudioContext | null = null;
+  function beep(frequency: number, ms: number){
+    if (!opts.soundOn() || !(ms > 0)) return;
+    try {
+      audio ??= new AudioContext();
+      const tone = audio.createOscillator(), volume = audio.createGain();
+      tone.type = 'square'; tone.frequency.value = Math.max(40, Math.min(12000, frequency));
+      volume.gain.value = 0.05;
+      tone.connect(volume).connect(audio.destination);
+      tone.start(); tone.stop(audio.currentTime + ms / 1000 / tempo);
+    } catch { /* ohne Tonausgabe bleibt es still */ }
+  }
 
   // ---- Hub: Lichtmatrix, Statuslicht und Tasten ----
   const LIGHTS: Record<string, string> = {GREEN:'#00B94D', RED:'#DA3041', BLUE:'#0082DD', YELLOW:'#FFD945', WHITE:'#FFFFFF'};
@@ -113,8 +149,14 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     const room = Math.max(w - HUB_LANE_PX, 60);
-    const k = Math.min(room / trackImage.width, h / trackImage.height) * 0.96;
-    view = {k, ox:w - room + (room - trackImage.width * k) / 2, oy:(h - trackImage.height * k) / 2};
+    if (building){
+      // der Roboter in die Mitte, so groß es geht
+      const k = Math.min(room, h) / (BUILD_SPAN_MM * sim.scale), mid = toWorld(sim.pose, sim.scale, {x:30, y:0});
+      view = {k, ox:w - room / 2 - mid.x * k, oy:h / 2 - mid.y * k};
+    } else {
+      const k = Math.min(room / trackImage.width, h / trackImage.height) * 0.96;
+      view = {k, ox:w - room + (room - trackImage.width * k) / 2, oy:(h - trackImage.height * k) / 2};
+    }
     draw();
   }
   const turnHandle = () => toWorld(sim.pose, sim.scale, {x:TURN_HANDLE_MM, y:0});
@@ -159,7 +201,19 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     g.beginPath(); g.roundRect(BODY.back, -half, BODY.front - BODY.back, 2 * half, 10); g.fill(); g.stroke();
     // Pfeil: Hier ist vorn
     g.fillStyle = '#5E4B00'; g.beginPath(); g.moveTo(BODY.front - 12, 0); g.lineTo(BODY.front - 34, -14); g.lineTo(BODY.front - 34, 14); g.closePath(); g.fill();
-    if (robot.ultra){ g.fillStyle = '#2CADCD'; g.beginPath(); g.roundRect(ULTRA.at.x - 8, -22, 12, 44, 4); g.fill(); }
+    // einzelne Motoren (ein Greifarm etwa): eine Scheibe mit Zeiger, die sich mitdreht
+    robot.motors.forEach((port, i) => {
+      const y = (i - (robot.motors.length - 1) / 2) * 34, a = sim.motor(port).angle * Math.PI / 180;
+      g.fillStyle = '#0082DD'; g.beginPath(); g.arc(BODY.back + 24, y, 14, 0, 2 * Math.PI); g.fill();
+      g.strokeStyle = '#fff'; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(BODY.back + 24, y); g.lineTo(BODY.back + 24 + 11 * Math.cos(a), y + 11 * Math.sin(a)); g.stroke(); g.lineCap = 'butt';
+    });
+    const ultraAt = robot.ultra && sim.mount(robot.ultra);
+    if (ultraAt){ g.fillStyle = '#2CADCD'; g.beginPath(); g.roundRect(ultraAt.x - 8, ultraAt.y - 22, 12, 44, 4); g.fill(); }
+    for (const port of robot.force){
+      const at = sim.mount(port)!;
+      g.fillStyle = sim.forcePressed(port) ? '#FF8A95' : '#DA3041'; g.beginPath(); g.roundRect(at.x - 6, at.y - 12, 12, 24, 4); g.fill();
+    }
     g.restore();
 
     // Farbsensoren: gefüllt mit dem, was sie gerade sehen
@@ -176,8 +230,24 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     g.beginPath(); g.moveTo(sim.pose.x, sim.pose.y); g.lineTo(t.x, t.y); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(t.x, t.y, HANDLE_PX * px * 0.7, 0, 2 * Math.PI); g.fillStyle = '#19D1E5'; g.fill();
 
+    // beim Umbauen steht an jedem Sensor sein Anschluss
+    if (building){
+      g.font = `700 ${13 * px}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const port of sensorPorts()){
+        // Farbsensoren tragen ihn vor sich, der Abstandssensor links, Kraftsensoren rechts – so überdecken sie sich nicht
+        const p = sim.sensorPoint(port)!, turn = robot.colors.includes(port) ? 0 : port === robot.ultra ? -90 : 90;
+        const out = forward(sim.pose.heading + turn), far = (turn ? 34 : 20) * px;
+        const x = p.x + out.x * far, y = p.y + out.y * far;
+        g.fillStyle = '#16171D'; g.beginPath(); g.arc(x, y, 10 * px, 0, 2 * Math.PI); g.fill();
+        g.fillStyle = '#fff'; g.fillText(port, x, y);
+      }
+    }
+
     const parts = robot.colors.map(p => `Farbsensor ${p}: ${sim.reflection(p)} %`);
     if (robot.ultra) parts.push(`Abstand ${robot.ultra}: ${sim.ultrasonic(robot.ultra)} mm`);
+    for (const p of robot.force) parts.push(`Kraftsensor ${p}: ${sim.forcePressed(p) ? 'gedrückt' : 'frei'}`);
+    for (const p of robot.motors) parts.push(`Motor ${p}: ${Math.round(sim.motor(p).angle)}°`);
+    if (building) parts.unshift(sensorPorts().length ? 'Umbauen: Sensoren ziehen – Doppelklick setzt einen zurück' : 'Umbauen: Das Programm benutzt noch keinen Sensor');
     if (runner) parts.push(`Zeit: ${(sim.time / 1000).toFixed(1)} s`);
     if (sim.blocked) parts.push('steht am Hindernis an');
     values.textContent = parts.join(' · ');
@@ -185,8 +255,25 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   }
 
   // ---- Roboter aus dem Programm ----
+  const forceBox = el('simForce');
+  let forceShown = '';
+  /** Je Kraftsensor ein Knopf zum Drücken von Hand. */
+  function forceButtons(){
+    const ports = sim.robot.force.join();
+    if (ports === forceShown) return;
+    forceShown = ports; forceBox.textContent = ''; sim.forceHeld.clear();
+    for (const port of sim.robot.force){
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'btn'; button.textContent = 'Kraftsensor ' + port; button.title = 'Gedrückt halten: drückt den Kraftsensor';
+      button.addEventListener('pointerdown', (e) => { sim.forceHeld.add(port); try { button.setPointerCapture(e.pointerId); } catch { /* geht auch ohne */ } draw(); });
+      const release = () => setTimeout(() => { sim.forceHeld.delete(port); draw(); }, 80);
+      button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release);
+      forceBox.appendChild(button);
+    }
+  }
   function readRobot(){
     sim.robot = robotFromWorkspace(opts.ws);
+    forceButtons();
     info.textContent = 'Roboter laut Programm: ' + describeRobot(sim.robot) + (sim.robot.notes.length ? ' – ' + sim.robot.notes.join(' ') : '');
     draw();
   }
@@ -202,11 +289,25 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (message) opts.print(message + '\n', 't-info');
     readRobot();
   }
+  const btnBuild = el('simBuild');
+  function setBuilding(on: boolean){
+    building = on;
+    btnBuild.setAttribute('aria-pressed', String(on));
+    layout();
+  }
+  btnBuild.addEventListener('click', () => {
+    if (!building && runner) finish(runner, '— Simulation angehalten —');
+    setBuilding(!building);
+  });
+  el<HTMLSelectElement>('simSpeed').addEventListener('change', (e) => { tempo = Number((e.target as HTMLSelectElement).value) || 1; });
+
   async function start(){
+    if (building) setBuilding(false);
     readRobot();
     home = {...sim.pose};
     const mine: Runner = runner = new Runner(opts.ws, sim, {
       print:(text) => opts.print(text),
+      beep, pad:(name) => opts.pad(name),
       onBlock:(id) => { activeBlock = id; },
       error:(message, blockId) => {
         opts.print(message + '\n', 't-err');
@@ -216,6 +317,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     });
     btnRun.textContent = '■ Stopp'; btnRun.classList.remove('primary');
     opts.print('— Simulation gestartet —\n', 't-info');
+    opts.onStart();
     if (!sim.robot.drive) opts.print('→ Das Programm benutzt weder Fahrblöcke noch zwei Motoren: Der Roboter im Simulator hat keine Räder und bleibt stehen.\n', 't-hint');
     await mine.start();
     let last = performance.now(), highlighted: string | null = null;
@@ -223,7 +325,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (runner !== mine) return;
       // ein Fenster im Hintergrund holt die verpasste Zeit nicht in einem Sprung nach
       const ms = Math.min(now - last, 100); last = now;
-      await mine.advance(ms);
+      await mine.advance(ms * tempo);
       if (runner !== mine) return;
       if (activeBlock !== highlighted) opts.ws.highlightBlock(highlighted = activeBlock);
       draw();
@@ -238,7 +340,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   });
 
   // ---- Einstellen ----
-  scaleInput.addEventListener('input', () => { sim.scale = Number(scaleInput.value); draw(); });
+  scaleInput.addEventListener('input', () => { sim.scale = Number(scaleInput.value); remember(); if (building) layout(); else draw(); });
   el('simObstacle').addEventListener('click', () => {
     // vor den Roboter, damit man es sieht – und der Abstandssensor auch
     const at = toWorld(sim.pose, sim.scale, {x:350, y:0}), size = 120 * sim.scale;
@@ -273,6 +375,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const inside = (o: Obstacle, p: Point) => Math.abs(p.x - o.x) <= o.w / 2 && Math.abs(p.y - o.y) <= o.h / 2;
   /** Was unter dem Zeiger liegt – das Oberste zuerst. */
   function grab(p: Point): Drag | null {
+    if (building){
+      const port = sensorPorts().reverse().find(s => near(p, sim.sensorPoint(s)!, 16));
+      return port ? {kind:'sensor', port} : null;
+    }
     if (near(p, turnHandle(), HANDLE_PX * 1.6)) return {kind:'turn'};
     const body = toWorld(sim.pose, sim.scale, BUMPER.at);
     if (Math.hypot(p.x - body.x, p.y - body.y) <= Math.max(BUMPER.radius * sim.scale, 14 / view.k)) return {kind:'robot', dx:sim.pose.x - p.x, dy:sim.pose.y - p.y};
@@ -292,7 +398,13 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   canvas.addEventListener('pointermove', (e) => {
     const p = world(e);
     if (!drag){ const over = grab(p); canvas.style.cursor = !over ? '' : over.kind === 'size' ? 'nwse-resize' : over.kind === 'turn' ? 'crosshair' : 'grab'; return; }
-    if (drag.kind === 'robot') sim.pose = {...sim.pose, x:p.x + drag.dx, y:p.y + drag.dy};
+    if (drag.kind === 'sensor'){
+      // zurück in Millimeter am Roboter: x nach vorn, y nach rechts
+      const f = forward(sim.pose.heading), dx = (p.x - sim.pose.x) / sim.scale, dy = (p.y - sim.pose.y) / sim.scale;
+      const limit = (v: number) => Math.round(Math.max(-MOUNT_LIMIT, Math.min(MOUNT_LIMIT, v)));
+      sim.mounts[drag.port] = {x:limit(dx * f.x + dy * f.y), y:limit(dy * f.x - dx * f.y)};
+    }
+    else if (drag.kind === 'robot') sim.pose = {...sim.pose, x:p.x + drag.dx, y:p.y + drag.dy};
     else if (drag.kind === 'turn') sim.pose = {...sim.pose, heading:Math.atan2(p.y - sim.pose.y, p.x - sim.pose.x) * 180 / Math.PI};
     else if (drag.kind === 'move'){ drag.o.x = p.x + drag.dx; drag.o.y = p.y + drag.dy; }
     else {
@@ -303,12 +415,19 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     }
     draw();
   });
-  const drop = () => { drag = null; };
+  const drop = () => { if (drag?.kind === 'sensor') remember(); drag = null; };
   canvas.addEventListener('pointerup', drop);
   canvas.addEventListener('pointercancel', drop);
   // Doppelklick räumt ein Hindernis wieder weg
   canvas.addEventListener('dblclick', (e) => {
-    const p = world(e), hit = [...sim.obstacles].reverse().find(o => inside(o, p));
+    const p = world(e);
+    if (building){
+      // ein versetzter Sensor geht zurück an seinen üblichen Platz
+      const port = sensorPorts().reverse().find(s => near(p, sim.sensorPoint(s)!, 16));
+      if (port){ delete sim.mounts[port]; remember(); draw(); }
+      return;
+    }
+    const hit = [...sim.obstacles].reverse().find(o => inside(o, p));
     if (hit){ sim.obstacles = sim.obstacles.filter(o => o !== hit); draw(); }
   });
 

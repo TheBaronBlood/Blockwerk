@@ -174,6 +174,11 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-bar .btn.primary{background:#00B94D;border-color:#00B94D;color:#fff}
 .sim-scale{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#9AA6B5}
 .sim-scale input{width:110px;accent-color:var(--accent)}
+.sim-bar select.btn{padding:5px 8px;background:var(--code-bg)}
+.sim-bar .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.sim-force{display:contents}
+.sim-force .btn{border-color:#DA3041}
+.sim-force .btn:active{background:#DA3041}
 .sim-info{margin:0;padding:2px 14px 6px;font-size:13px;line-height:1.4;color:#9AA6B5;min-height:1.4em}
 .sim-stage{flex:1 1 auto;min-height:120px;position:relative;overflow:hidden;background:#23262D}
 .sim-stage canvas{position:absolute;inset:0;display:block;touch-action:none}
@@ -186,7 +191,7 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-hub-buttons button.center{width:22px;height:22px;border-radius:50%;background:var(--light,#D7DCE3);border:2px solid #AAB2BE}
 .sim-hub-buttons button.on,.sim-hub-buttons button:active{background:#6F7A8A}
 /* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
-.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset{display:none}
+.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild{display:none}
 .sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
 .sim.hub-only .sim-stage{container-type:size}
 .sim.hub-only .sim-matrix{gap:8px;padding:14px;border-radius:10px}

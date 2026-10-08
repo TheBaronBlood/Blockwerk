@@ -405,8 +405,13 @@ erste Ansicht im Codebereich (Knopf »Simulator«).
 - Der Hub liegt neben der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text), Statuslicht und Tasten
   zum Drücken; die mittlere beendet das Programm.
 
-**Offen:** Kraftsensor drücken, Ton, Steuerfeld, Rampen beim
-Anfahren, Bahn und Hindernisse merken, eigenes einklappbares Fenster statt im Codebereich.
+- Kraftsensor: drückt am Hindernis und per Knopf von Hand; der Piepton ist zu hören; das Steuerfeld
+  steuert auch den simulierten Roboter; Zeitlupe und Zeitraffer; einzelne Motoren als Scheibe mit Zeiger.
+- »Umbauen«: Der Roboter erscheint groß, seine Sensoren lassen sich an einen anderen Platz ziehen
+  (gemerkt über das Neuladen hinweg, wie die Größe des Roboters).
+
+**Offen:** Rampen beim Anfahren, Bahn und Hindernisse merken, Spur des Roboters, Blickrichtung des
+Abstandssensors, eigenes einklappbares Fenster statt im Codebereich.
 
 **Ursprünglicher Entwurf:**
 - Echtes Python im Browser (MicroPython als WebAssembly) mit einem nachgebauten
