@@ -3,6 +3,7 @@
 // melden. `step()` lässt Zeit vergehen; das Programm (runner.ts) stellt nur Geschwindigkeiten ein
 // und fragt Sensoren ab. (Ohne DOM.)
 // ---------------------------------------------------------------
+import { DISPLAY_OFF, type Pixels } from './hubDisplay';
 import { BUMPER, COLOR_SPOT, colorSensorPoints, ULTRA, type SimRobot } from './robot';
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
 
@@ -24,6 +25,10 @@ export class Simulation {
   angle = 0;
   /** Der Roboter steht an einem Hindernis an: Die Räder drehen durch. */
   blocked = false;
+  /** Der Hub: Lichtmatrix, Farbe des Statuslichts (null: aus) und die Tasten, die gerade gedrückt sind (LEFT, RIGHT). */
+  display: Pixels = [...DISPLAY_OFF];
+  light: string | null = null;
+  readonly buttons = new Set<string>();
   private headingZero = 0;
   private readonly motors: Record<string, SimMotor> = {};
 
@@ -35,6 +40,7 @@ export class Simulation {
   reset(){
     this.time = this.speed = this.rate = this.distance = this.angle = 0;
     this.blocked = false; this.headingZero = this.pose.heading;
+    this.display = [...DISPLAY_OFF]; this.light = null;
     for (const port of Object.keys(this.motors)) delete this.motors[port];
   }
   /** Hält alles an, was sich dreht (Ende des Programms). */
@@ -45,7 +51,13 @@ export class Simulation {
     const dt = ms / 1000;
     this.time += ms;
     for (const m of Object.values(this.motors)) m.angle += m.speed * dt;
-    if (!this.robot.drive || (!this.speed && !this.rate)){ this.blocked = false; return; }
+    const d = this.robot.drive;
+    if (d?.direct){
+      // einzelne Motoren als Räder: aus den beiden Drehzahlen wird Fahrt und Drehung
+      const mm = Math.PI * d.wheel / 360, left = -this.motor(d.left).speed * mm, right = this.motor(d.right).speed * mm;
+      this.speed = (left + right) / 2; this.rate = (left - right) / d.axle * 180 / Math.PI;
+    }
+    if (!d || (!this.speed && !this.rate)){ this.blocked = false; return; }
     const ds = this.speed * dt, turn = this.rate * dt;
     this.distance += ds; this.angle += turn;
     // auf einem Kreisbogen: geradeaus in der mittleren Richtung dieses Schritts

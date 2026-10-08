@@ -7,7 +7,14 @@ import type * as Blockly from 'blockly';
 import { PORT_BLOCKS, type PortKind } from '../ports';
 import type { Point } from './world';
 
-export interface SimDrive { left: string; right: string; wheel: number; axle: number }
+export interface SimDrive {
+  left: string; right: string; wheel: number; axle: number;
+  /**
+   * Das Programm hat keine Fahrbasis, sondern dreht die beiden Motoren einzeln. Dann gilt der übliche
+   * Aufbau: Der linke Motor sitzt gespiegelt – dreht er vorwärts, fährt sein Rad rückwärts.
+   */
+  direct: boolean;
+}
 export interface SimRobot {
   /** Die Fahrbasis – null, wenn das Programm nicht fährt. */
   drive: SimDrive | null;
@@ -24,7 +31,7 @@ export interface SimRobot {
 
 export const MAX_COLOR_SENSORS = 4;
 /** Wie beim Generator: ohne Block »Fahrbasis einrichten« gelten diese Werte. */
-const DEFAULT_DRIVE: SimDrive = {left:'A', right:'B', wheel:56, axle:112};
+const DEFAULT_DRIVE: SimDrive = {left:'A', right:'B', wheel:56, axle:112, direct:false};
 const HATS = ['pb_start', 'pb_when', 'pb_when_message', 'procedures_defnoreturn', 'procedures_defreturn'];
 
 /** Die Blöcke, die zum Programm gehören: alles unter einem Ereignis und in eigenen Blöcken. */
@@ -39,23 +46,26 @@ export function robotFromWorkspace(ws: Blockly.Workspace): SimRobot {
   let drive: SimDrive | null = null;
   for (const b of programBlocks(ws)){
     if (b.type === 'pb_drive_setup'){
-      drive = {left:b.getFieldValue('LEFT_PORT'), right:b.getFieldValue('RIGHT_PORT'), wheel:Number(b.getFieldValue('WHEEL')), axle:Number(b.getFieldValue('AXLE'))};
+      drive = {left:b.getFieldValue('LEFT_PORT'), right:b.getFieldValue('RIGHT_PORT'), wheel:Number(b.getFieldValue('WHEEL')), axle:Number(b.getFieldValue('AXLE')), direct:false};
     } else if (b.type.startsWith('pb_drive_')) drive ??= DEFAULT_DRIVE;
     else if (PORT_BLOCKS[b.type]) found[PORT_BLOCKS[b.type]].add(b.getFieldValue('PORT'));
   }
   const sorted = (ports: Set<string>) => [...ports].sort();
-  const colors = sorted(found.color), ultras = sorted(found.ultra), notes: string[] = [];
+  const colors = sorted(found.color), ultras = sorted(found.ultra), motors = sorted(found.motor), notes: string[] = [];
+  // ohne Fahrbasis sind die ersten beiden Motoren die Räder (wie bei den Vorgaben der Blockliste, ports.ts)
+  if (!drive && motors.length >= 2) drive = {...DEFAULT_DRIVE, left:motors[0], right:motors[1], direct:true};
   if (colors.length > MAX_COLOR_SENSORS) notes.push(`Der Simulator kennt höchstens ${MAX_COLOR_SENSORS} Farbsensoren – die an ${colors.slice(MAX_COLOR_SENSORS).join(', ')} sehen immer Weiß.`);
   if (ultras.length > 1) notes.push(`Der Simulator kennt einen Abstandssensor – der an ${ultras.slice(1).join(', ')} sieht nie etwas.`);
   return {
     drive, colors:colors.slice(0, MAX_COLOR_SENSORS), ultra:ultras[0] ?? null, force:sorted(found.force),
-    motors:sorted(found.motor).filter(p => p !== drive?.left && p !== drive?.right), notes
+    motors:motors.filter(p => p !== drive?.left && p !== drive?.right), notes
   };
 }
 
 /** Ein Satz dazu, was der Simulator am Roboter erkannt hat. */
 export function describeRobot(robot: SimRobot): string {
-  const parts = [robot.drive ? `Räder an ${robot.drive.left} und ${robot.drive.right}` : 'keine Räder'];
+  const d = robot.drive;
+  const parts = [!d ? 'keine Räder' : d.direct ? `Räder an den Motoren ${d.left} (links, gespiegelt eingebaut) und ${d.right} (rechts)` : `Räder an ${d.left} und ${d.right}`];
   if (robot.colors.length) parts.push(`${robot.colors.length === 1 ? 'Farbsensor' : robot.colors.length + ' Farbsensoren'} an ${robot.colors.join(', ')}`);
   if (robot.ultra) parts.push(`Abstandssensor an ${robot.ultra}`);
   if (robot.force.length) parts.push(`Kraftsensor an ${robot.force.join(', ')}`);
@@ -67,7 +77,7 @@ export function describeRobot(robot: SimRobot): string {
 /** Der Körper (der Hub mit dem Rahmen darum). */
 export const BODY = {back:-45, front:85, minWidth:60};
 /** Abstand der Farbsensoren voneinander und von der Achse. */
-const COLOR_SPACING = 24, COLOR_FRONT = 100;
+const COLOR_SPACING = 40, COLOR_FRONT = 100;
 /** Halber Durchmesser des Flecks, den ein Farbsensor sieht. */
 export const COLOR_SPOT = 5;
 /** Der Abstandssensor: wo er sitzt, halber Öffnungswinkel in Grad, Reichweite und der Wert ohne Hindernis. */

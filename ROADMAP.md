@@ -401,7 +401,11 @@ erste Ansicht im Codebereich (Knopf »Simulator«).
 - Größe des Roboters auf der Bahn einstellbar; Roboter und Hindernisse mit dem Zeiger
   verschieben, Hindernisse in der Größe ändern, eigenes Bild als Bahn laden.
 
-**Offen:** Kraftsensor und Hub-Tasten drücken, Lichtmatrix und Ton, Steuerfeld, Rampen beim
+- Ohne Fahrbasis sind zwei einzelne Motoren die Räder (der linke gespiegelt, wie üblich eingebaut).
+- Der Hub liegt neben der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text), Statuslicht und Tasten
+  zum Drücken; die mittlere beendet das Programm.
+
+**Offen:** Kraftsensor drücken, Ton, Steuerfeld, Rampen beim
 Anfahren, Bahn und Hindernisse merken, eigenes einklappbares Fenster statt im Codebereich.
 
 **Ursprünglicher Entwurf:**

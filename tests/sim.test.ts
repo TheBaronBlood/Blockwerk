@@ -3,7 +3,8 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
-import { describeRobot, robotFromWorkspace } from '../src/sim/robot';
+import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
+import { colorSensorPoints, describeRobot, robotFromWorkspace } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
 import { Simulation } from '../src/sim/simulation';
 import { colorAt, coneDistance, reflectionAt, type Obstacle, type Track } from '../src/sim/world';
@@ -51,7 +52,18 @@ describe('Roboter aus dem Programm', () => {
     expect(describeRobot(robot)).toBe('keine Räder · Motor an C');
   });
   it('Fahrblöcke ohne »Fahrbasis einrichten« nehmen die Vorgabe', () => {
-    expect(robotOf(program(B('pb_drive_straight', null, {DIST:N(100)}))).drive).toEqual({left:'A', right:'B', wheel:56, axle:112});
+    expect(robotOf(program(B('pb_drive_straight', null, {DIST:N(100)}))).drive).toEqual({left:'A', right:'B', wheel:56, axle:112, direct:false});
+  });
+  it('ohne Fahrbasis sind zwei einzelne Motoren die Räder', () => {
+    const robot = robotOf(program(B('pb_motor_run', {PORT:'B'}, {SPEED:N(500)}), B('pb_motor_run', {PORT:'A'}, {SPEED:N(500)}), B('pb_motor_run', {PORT:'C'}, {SPEED:N(500)})));
+    expect(robot.drive).toMatchObject({left:'A', right:'B', direct:true});
+    expect(robot.motors).toEqual(['C']);
+    expect(describeRobot(robot)).toContain('Räder an den Motoren A (links, gespiegelt eingebaut) und B (rechts)');
+  });
+  it('Farbsensoren sitzen nebeneinander um die Mitte, 40 mm auseinander', () => {
+    expect(colorSensorPoints(1).map(p => p.y)).toEqual([0]);
+    expect(colorSensorPoints(2).map(p => p.y)).toEqual([-20, 20]);
+    expect(colorSensorPoints(4).map(p => p.y)).toEqual([-60, -20, 20, 60]);
   });
   it('nimmt höchstens vier Farbsensoren', () => {
     const robot = robotOf(program(...'ABCDE'.split('').map(p => B('pb_print', null, {TEXT:{block:B('pb_reflection', {PORT:p})}}))));
@@ -122,6 +134,18 @@ describe('Fahren', () => {
     expect(sim.pose).toEqual({x:0, y:0, heading:0});
     expect(sim.motor('C').angle).toBeCloseTo(0);
   });
+  it('einzelne Motoren als Räder: der linke läuft gespiegelt', async () => {
+    const run = (a: number, b: number) => program(B('pb_motor_run', {PORT:'A'}, {SPEED:N(a)}), B('pb_motor_run', {PORT:'B'}, {SPEED:N(b)}), B('pb_wait', null, {MS:N(1000)}));
+    // 360 Grad/s am 56-mm-Rad sind eine Radumdrehung je Sekunde: 176 mm
+    const ahead = (await simulate(run(-360, 360), 1000)).sim;
+    expect(ahead.pose.x).toBeCloseTo(Math.PI * 56, 0); expect(ahead.pose.heading).toBeCloseTo(0, 3);
+    // beide »vorwärts«: Der Roboter dreht sich auf der Stelle nach links
+    const spin = (await simulate(run(360, 360), 1000)).sim;
+    expect(spin.pose.x).toBeCloseTo(0, 3); expect(spin.pose.heading).toBeCloseTo(-180, 0);
+    // nach dem Programm steht er
+    const after = (await simulate(run(-360, 360), 3000)).sim;
+    expect(after.pose.x).toBeLessThan(180);
+  });
   it('Linienfolger bleibt an der Kante der Linie', async () => {
     // schwarzer Streifen von y = 190 bis 210; der Sensor (100 mm vor der Achse) beginnt knapp darüber im Weißen
     const line = track(1600, 400, (_, y) => y >= 190 && y < 210 ? BLACK : WHITE);
@@ -181,6 +205,32 @@ describe('Programm', () => {
     const {out, sim} = await simulate(state, 1000);
     expect(out).toBe('Uhr\nempfangen\nStart fertig\n');
     expect(sim.time).toBe(1000);   // die Zeit läuft nur einmal, nicht je Ereignis
+  });
+  it('Lichtmatrix: Bild, Zahl, Text und aus', async () => {
+    expect((await simulate(program(B('pb_display_icon', {ICON:'HEART'})), 100)).sim.display).toEqual(iconPixels('HEART'));
+    expect(iconPixels('HEART').filter(p => p).length).toBe(16);
+    expect((await simulate(program(B('pb_display_number', null, {NUM:N(42)})), 100)).sim.display).toEqual(numberPixels(42));
+    expect((await simulate(program(B('pb_display_icon', {ICON:'HEART'}), B('pb_display_off')), 100)).sim.display.some(p => p)).toBe(false);
+    // jeder Buchstabe steht 500 ms, dann 50 ms Pause – das Programm wartet so lange
+    const text = program(B('pb_display_text', null, {TEXT:T('Hi')}), B('pb_print', null, {TEXT:T('fertig')}));
+    expect((await simulate(text, 300)).sim.display).toEqual(charPixels('H'));
+    expect((await simulate(text, 800)).sim.display).toEqual(charPixels('I'));
+    expect((await simulate(text, 1000)).out).toBe('');
+    expect((await simulate(text, 1200)).out).toBe('fertig\n');
+  });
+  it('Zahlen auf der Lichtmatrix: ein- und zweistellig, negativ, zu groß', () => {
+    expect(numberPixels(7)).toEqual(charPixels('7'));
+    expect(numberPixels(-7).slice(10, 12)).toEqual([100, 100]);
+    expect(numberPixels(-42)[12]).toBe(50);
+    expect(numberPixels(100)).toEqual(charPixels('>'));
+    expect(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => numberPixels(10 + d).join())).size).toBe(10);
+  });
+  it('Statuslicht und Tasten des Hubs', async () => {
+    const state = program(B('pb_light', {COLOR:'RED'}), B('pb_wait_until', null, {COND:{block:B('pb_button', {BUTTON:'LEFT'})}}), B('pb_light', {COLOR:'GREEN'}));
+    expect((await simulate(state, 500)).sim.light).toBe('RED');
+    const pressed = await simulate(state, 500, s => { s.buttons.add('LEFT'); });
+    expect(pressed.sim.light).toBe('GREEN'); expect(pressed.running).toBe(false);
+    expect((await simulate(state, 500, s => { s.buttons.add('RIGHT'); })).sim.light).toBe('RED');
   });
   it('eine endlose Schleife ohne Warten hält die Uhr nicht an', async () => {
     const {sim, running} = await simulate(program(B('pb_forever')), 500);

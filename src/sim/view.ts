@@ -32,6 +32,8 @@ const MAX_TRACK_PX = 1600;
 /** Abstand des Drehpunkts vor dem Roboter und die Größe der Anfasser, in Bildschirmpunkten. */
 const TURN_HANDLE_MM = 150, HANDLE_PX = 9;
 const MIN_OBSTACLE = 20;
+/** So breit ist der Streifen links, in dem der Hub liegt – die Bahn beginnt daneben. */
+const HUB_LANE_PX = 112;
 
 /** Die Bahn für den Anfang: eine schwarze Linie als Rundkurs. */
 function startTrack(): HTMLCanvasElement {
@@ -60,6 +62,31 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let shown = false;
   let nextObstacle = 1;
 
+  // ---- Hub: Lichtmatrix, Statuslicht und Tasten ----
+  const LIGHTS: Record<string, string> = {GREEN:'#00B94D', RED:'#DA3041', BLUE:'#0082DD', YELLOW:'#FFD945', WHITE:'#FFFFFF'};
+  const matrix = el('simMatrix'), center = el('simHubCenter');
+  const dots = Array.from({length:25}, () => matrix.appendChild(document.createElement('i')));
+  let shownHub = '';
+  function drawHub(){
+    const now = sim.display.join() + sim.light;
+    if (now === shownHub) return;
+    shownHub = now;
+    dots.forEach((dot, i) => dot.style.setProperty('--on', String(sim.display[i] / 100)));
+    if (sim.light) center.style.setProperty('--light', LIGHTS[sim.light] ?? '#fff'); else center.style.removeProperty('--light');
+  }
+  for (const button of root.querySelectorAll<HTMLElement>('[data-hub]')){
+    const name = button.dataset.hub!;
+    button.addEventListener('pointerdown', (e) => {
+      sim.buttons.add(name); button.classList.add('on');
+      try { button.setPointerCapture(e.pointerId); } catch { /* ohne Zeigerbindung geht es trotzdem */ }
+    });
+    // Ein kurzer Tipp soll nicht zwischen zwei Bildern verloren gehen: Die Taste bleibt einen Moment gedrückt
+    const release = () => setTimeout(() => { sim.buttons.delete(name); button.classList.remove('on'); }, 80);
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+  }
+  center.addEventListener('click', () => { if (runner) finish(runner, '— Programm mit der mittleren Taste beendet —'); });
+
   function useTrack(image: HTMLCanvasElement, pose: Pose){
     trackImage = image;
     sim.track = {width:image.width, height:image.height, data:image.getContext('2d')!.getImageData(0, 0, image.width, image.height).data};
@@ -77,8 +104,9 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (!w || !h) return;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-    const k = Math.min(w / trackImage.width, h / trackImage.height) * 0.96;
-    view = {k, ox:(w - trackImage.width * k) / 2, oy:(h - trackImage.height * k) / 2};
+    const room = Math.max(w - HUB_LANE_PX, 60);
+    const k = Math.min(room / trackImage.width, h / trackImage.height) * 0.96;
+    view = {k, ox:w - room + (room - trackImage.width * k) / 2, oy:(h - trackImage.height * k) / 2};
     draw();
   }
   const turnHandle = () => toWorld(sim.pose, sim.scale, {x:TURN_HANDLE_MM, y:0});
@@ -145,6 +173,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (runner) parts.push(`Zeit: ${(sim.time / 1000).toFixed(1)} s`);
     if (sim.blocked) parts.push('steht am Hindernis an');
     values.textContent = parts.join(' · ');
+    drawHub();
   }
 
   // ---- Roboter aus dem Programm ----
@@ -179,7 +208,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     });
     btnRun.textContent = '■ Stopp'; btnRun.classList.remove('primary');
     opts.print('— Simulation gestartet —\n', 't-info');
-    if (!sim.robot.drive) opts.print('→ Das Programm benutzt keine Fahrblöcke: Der Roboter im Simulator hat keine Räder und bleibt stehen.\n', 't-hint');
+    if (!sim.robot.drive) opts.print('→ Das Programm benutzt weder Fahrblöcke noch zwei Motoren: Der Roboter im Simulator hat keine Räder und bleibt stehen.\n', 't-hint');
     await mine.start();
     let last = performance.now(), highlighted: string | null = null;
     const frame = async (now: number) => {

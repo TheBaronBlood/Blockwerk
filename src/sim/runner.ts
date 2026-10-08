@@ -8,6 +8,8 @@
 // kann Minuten in Millisekunden durchspielen. (Ohne DOM.)
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
+import { toRows } from '../matrix';
+import { charPixels, DISPLAY_OFF, iconPixels, numberPixels, TEXT_OFF_MS, TEXT_ON_MS } from './hubDisplay';
 import type { Simulation } from './simulation';
 
 export interface RunnerIo {
@@ -221,8 +223,19 @@ export class Runner {
       case 'pb_timer_reset': this.timerZero = sim.time; return;
       case 'pb_beep': return this.sleep(await num('DUR', 100));
       case 'pb_print': this.io.print(pyStr(await this.val(b, 'TEXT', f) ?? '') + '\n'); return;
-      // Lichtmatrix, Statuslicht und die Fernsteuergeräte am Hub zeigt der Simulator (noch) nicht
-      case 'pb_display_text': case 'pb_display_number': case 'pb_display_icon': case 'pb_display_pixels': case 'pb_display_off': case 'pb_light': return;
+      case 'pb_display_icon': sim.display = iconPixels(b.getFieldValue('ICON')); return;
+      case 'pb_display_pixels': sim.display = toRows(b.getFieldValue('PIXELS')).flat(); return;
+      case 'pb_display_number': sim.display = numberPixels(await num('NUM')); return;
+      case 'pb_display_off': sim.display = [...DISPLAY_OFF]; return;
+      case 'pb_display_text':
+        // Buchstabe für Buchstabe; das Programm wartet, bis der Text durch ist
+        for (const char of pyStr(await this.val(b, 'TEXT', f) ?? '')){
+          sim.display = charPixels(char); await this.sleep(TEXT_ON_MS);
+          sim.display = [...DISPLAY_OFF]; await this.sleep(TEXT_OFF_MS);
+        }
+        return;
+      case 'pb_light': { const color = b.getFieldValue('COLOR') as string; sim.light = color === 'OFF' ? null : color; return; }
+      // die Fernsteuergeräte am Hub gibt es im Simulator nicht
       case 'pb_xbox_rumble': case 'pb_remote_light': case 'pb_unsupported': this.ignored.add(b.type); return;
 
       case 'pb_wait': return this.sleep(await num('MS'));
@@ -367,8 +380,9 @@ export class Runner {
       case 'pb_timer': return Math.round(sim.time - this.timerZero);
       case 'pb_pad_stick': return Number(this.io.pad?.(b.getFieldValue('AXIS')) ?? 0);
       case 'pb_pad_button': return !!this.io.pad?.(b.getFieldValue('BUTTON'));
-      // Tasten und Kraftsensor drückt im Simulator (noch) niemand
-      case 'pb_force_pressed': case 'pb_button': return false;
+      case 'pb_button': return sim.buttons.has(b.getFieldValue('BUTTON'));
+      // den Kraftsensor drückt im Simulator (noch) niemand
+      case 'pb_force_pressed': return false;
       case 'pb_force': return 0;
       case 'pb_xbox_button': case 'pb_remote_button': this.ignored.add(b.type); return false;
       default: this.ignored.add(b.type); return 0;
