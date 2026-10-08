@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------
-// Simulator – die Ansicht: Bahn, Roboter und Hindernisse von oben, daneben der Hub, dazu Start,
-// Stopp und die Einstellungen. Roboter und Hindernisse lassen sich mit dem Zeiger verschieben,
-// der Roboter am Punkt vor ihm drehen, ein Hindernis an seiner Ecke in der Größe ändern.
+// Simulator – die Ansicht: Bahn, Roboter und Hindernisse von oben, darüber in der Ecke der Hub,
+// dazu Start, Stopp und die Einstellungen. Roboter und Hindernisse lassen sich mit dem Zeiger
+// verschieben, der Roboter am Punkt vor ihm drehen, ein Hindernis an seiner Ecke in der Größe
+// ändern. Die Bahn lässt sich heranholen (Mausrad, zwei Finger) und an freier Stelle verschieben.
 // »Umbauen« zeigt den Roboter groß mit der Nase nach oben; dort lassen sich seine Sensoren
 // versetzen (build.ts). »Bahn bauen« legt die Bahn aus Platten zusammen (tiles.ts, trackEditor.ts).
 // Gerechnet wird in simulation.ts und runner.ts; hier wird nur gezeichnet und bedient.
@@ -41,15 +42,15 @@ const MAX_TRACK_PX = 1600;
 /** Abstand des Drehpunkts vor dem Roboter und die Größe der Anfasser, in Bildschirmpunkten. */
 const TURN_HANDLE_MM = 150, HANDLE_PX = 9;
 const MIN_OBSTACLE = 20;
-/** So viel Platz braucht der Hub in seiner Ecke unten links – die Bahn liegt daneben oder darüber. */
-const HUB_LANE = {w:112, h:146};
+/** So weit lässt sich die Bahn heranholen, und so viel der Fläche füllt sie, wenn sie ganz zu sehen ist. */
+const MAX_ZOOM = 8, FIT = 0.94;
 /** Beim Umbauen füllt der Roboter die Ansicht: so viele Millimeter sind zu sehen, um diesen Punkt am Roboter. */
 const BUILD_SPAN_MM = 340, BUILD_CENTER: Point = {x:32, y:0};
 /** So weit vor dem gewählten Sensor sitzt der Knopf, an dem man ihn dreht (Bildschirmpunkte). */
 const KNOB_PX = 46;
 /**
  * Hier merkt sich der Simulator, wie der Roboter gebaut ist – versetzte Sensoren (je Gruppe von Sensoren), seine
- * Größe, Raster und Symmetrie – und die Bahn: ihre Platten, wo der Roboter beginnt und die Hindernisse.
+ * Größe, Raster und Symmetrie – und die Bahn: ihre Platten, ihr Rand, wo der Roboter beginnt und die Hindernisse.
  */
 const STORE_KEY = 'blockwerk-sim-v1';
 /** Farben, die der Farbsensor beim Namen nennt – neben der Reflexion steht, wenn er eine davon sieht (ein grüner Punkt, die rote Ziellinie). */
@@ -74,7 +75,8 @@ function onDoubleTap(target: HTMLElement, handler: (e: PointerEvent) => void){
   });
 }
 
-type Drag = {kind: 'sensor'; port: string; from: Mount} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
+/** `pan`: an freier Stelle angefasst – Ziehen verschiebt die herangeholte Bahn; beim Bauen der Bahn ist es ohne Ziehen ein Tipp auf ein Feld (`tap`). */
+type Drag = {kind: 'pan'; from: Point; cam: Point; moved: boolean; tap: Point | null} | {kind: 'sensor'; port: string; from: Mount} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
 
 export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const el = <T extends HTMLElement>(id: string) => root.querySelector<T>('#' + id)!;
@@ -99,6 +101,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let editing = false;            // Bahn bauen: Tipps auf die Bahn legen und drehen Platten
   let hover: Point | null = null; // beim Bauen der Bahn: wo der Zeiger gerade ist
   let tempo = 1;                  // Zeitlupe und Zeitraffer
+  let zoom = 1;                   // 1: die ganze Bahn ist zu sehen
+  let cam: Point | null = null;   // herangeholt: die Stelle der Bahn in der Mitte der Ansicht
+  /** Zwei Finger auf der Bahn: wie weit sie am Anfang auseinander waren, der Zoom dabei und die Stelle der Bahn zwischen ihnen. */
+  let pinch: {apart: number; zoom: number; under: Point} | null = null;
   let drag: Drag | null = null;
   /** Der Sensor, der beim Umbauen zuletzt angefasst wurde: Er zeigt seinen Drehknopf und hört auf die Tasten. */
   let selected: string | null = null;
@@ -110,7 +116,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let storedStart: Pose | null = null, storedObstacles: Obstacle[] = [];
   const finite = (...values: unknown[]) => values.every(v => typeof v === 'number' && Number.isFinite(v));
   try {
-    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]};
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: boolean};
+    if (typeof stored.fence === 'boolean') sim.fence = stored.fence;
     const map = readTileMap(stored.track);
     if (map){
       tileMap = map;
@@ -126,7 +133,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   gridInput.checked = build.grid; symmetryInput.checked = build.symmetry;
   const remember = () => {
     saved = saveMounts(sim.robot, saved, sim.mounts);
-    const store = {layouts:saved, scale:sim.scale, ...build, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
+    const store = {layouts:saved, scale:sim.scale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch { /* gilt dann bis zum Neuladen */ }
   };
   /** Alle Sensoren, die der Roboter laut Programm hat (Anschlüsse). */
@@ -152,11 +159,13 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const dots = Array.from({length:25}, () => matrix.appendChild(document.createElement('i')));
   let shownHub = '';
   function drawHub(){
-    const now = sim.display.join() + sim.light;
+    // die mittlere Taste leuchtet, solange ein Programm läuft: grün – oder in der Farbe, die das Programm einstellt
+    const light = runner ? sim.light : null, now = sim.display.join() + light;
     if (now === shownHub) return;
     shownHub = now;
     dots.forEach((dot, i) => dot.style.setProperty('--on', String(sim.display[i] / 100)));
-    if (sim.light) center.style.setProperty('--light', LIGHTS[sim.light] ?? '#fff'); else center.style.removeProperty('--light');
+    if (light) center.style.setProperty('--light', LIGHTS[light] ?? '#fff'); else center.style.removeProperty('--light');
+    center.classList.toggle('lit', !!light);
   }
   /** Ein Knopf zum Gedrückthalten. Ein kurzer Tipp soll nicht zwischen zwei Bildern verloren gehen: Er bleibt einen Moment gedrückt. */
   function holdButton(button: HTMLElement, set: (down: boolean) => void){
@@ -201,6 +210,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (runner) finish(runner, '— Simulation angehalten —');
     const size = mapSize(map), on = (p: Point) => p.x >= 0 && p.y >= 0 && p.x <= size.width && p.y <= size.height;
     const keep = !fresh && !usingImage;
+    if (!keep){ zoom = 1; cam = null; }
     tileMap = map; usingImage = false;
     useTrack(renderTiles(map), keep && on(sim.pose) ? sim.pose : startPose(map), keep ? sim.obstacles.filter(on) : []);
     editor.refresh(); remember(); layout();
@@ -211,28 +221,65 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let k = 1;
   /** Von der Bahn auf den Bildschirm und zurück. Beim Umbauen ist die Bahn gedreht: Die Nase des Roboters zeigt nach oben. */
   let toScreen = new DOMMatrix(), toTrack = new DOMMatrix();
+  /** Maßstab, bei dem die ganze Bahn in die Ansicht passt. Der Hub liegt in seiner Ecke über der Bahn. */
+  const fitScale = () => Math.min(stage.clientWidth / trackImage.width, stage.clientHeight / trackImage.height) * FIT;
+  const trackMid = (): Point => ({x:trackImage.width / 2, y:trackImage.height / 2});
+  /** Legt fest, wo die Bahn auf dem Bildschirm liegt – nach dem Zoomen, Schieben und wenn sich die Größe ändert. */
+  function place(){
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    if (building){
+      // der Roboter in die Mitte, so groß es geht
+      k = Math.min(w, h) / (BUILD_SPAN_MM * sim.scale);
+      const mid = toWorld(sim.pose, sim.scale, BUILD_CENTER);
+      toScreen = new DOMMatrix().translate(w / 2, h / 2).scale(k).rotate(-90 - sim.pose.heading).translate(-mid.x, -mid.y);
+    } else {
+      k = fitScale() * zoom;
+      // herangeholt lässt sich die Bahn schieben – aber nie weiter, als sie reicht
+      const hold = (want: number, size: number, seen: number) => seen >= size ? size / 2 : Math.max(seen / 2, Math.min(size - seen / 2, want));
+      const want = cam ?? trackMid(), at = {x:hold(want.x, trackImage.width, w / k), y:hold(want.y, trackImage.height, h / k)};
+      cam = zoom > 1 ? at : null;
+      toScreen = new DOMMatrix().translate(w / 2, h / 2).scale(k).translate(-at.x, -at.y);
+    }
+    toTrack = toScreen.inverse();
+  }
   function layout(){
     const dpr = window.devicePixelRatio || 1, w = stage.clientWidth, h = stage.clientHeight;
     if (!w || !h) return;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-    // Der Hub liegt unten links. Die Bahn bekommt den Platz neben ihm oder über ihm – je nachdem, wo sie größer wird.
-    // (Beim Bauen der Bahn ist der Hub ausgeblendet – dann gehört ihr die ganze Fläche.)
-    const lane = editing ? {w:0, h:0} : HUB_LANE;
-    const beside = {x:lane.w, y:0, w:Math.max(w - lane.w, 40), h}, above = {x:0, y:0, w, h:Math.max(h - lane.h, 40)};
-    const fit = (a: typeof beside) => building ? Math.min(a.w, a.h) : Math.min(a.w / trackImage.width, a.h / trackImage.height);
-    const area = fit(beside) >= fit(above) ? beside : above;
-    if (building){
-      k = fit(area) / (BUILD_SPAN_MM * sim.scale);
-      const mid = toWorld(sim.pose, sim.scale, BUILD_CENTER);
-      toScreen = new DOMMatrix().translate(area.x + area.w / 2, area.y + area.h / 2).scale(k).rotate(-90 - sim.pose.heading).translate(-mid.x, -mid.y);
-    } else {
-      k = fit(area) * 0.96;
-      toScreen = new DOMMatrix().translate(area.x + (area.w - trackImage.width * k) / 2, area.y + (area.h - trackImage.height * k) / 2).scale(k);
-    }
-    toTrack = toScreen.inverse();
-    draw();
+    place(); draw();
   }
+  /** Holt die Bahn heran oder rückt sie weg; die Stelle unter `at` (Bildschirmpunkte) bleibt, wo sie ist. */
+  function zoomAt(at: Point, factor: number){
+    if (building) return;
+    const under = toTrack.transformPoint(at);
+    zoom = Math.max(1, Math.min(MAX_ZOOM, zoom * factor));
+    const next = fitScale() * zoom;
+    cam = {x:under.x - (at.x - stage.clientWidth / 2) / next, y:under.y - (at.y - stage.clientHeight / 2) / next};
+    place(); draw();
+  }
+  /** Herangeholt und in Fahrt: Kommt der Roboter dem Rand der Ansicht nahe, wandert die Bahn mit. */
+  function follow(){
+    if (zoom <= 1 || building || drag || pinch) return;
+    const w = stage.clientWidth, h = stage.clientHeight, at = toScreen.transformPoint(sim.pose);
+    const past = (v: number, size: number) => { const edge = size * 0.22; return v < edge ? v - edge : v > size - edge ? v - (size - edge) : 0; };
+    const dx = past(at.x, w), dy = past(at.y, h);
+    if (!dx && !dy) return;
+    const now = cam ?? trackMid();
+    cam = {x:now.x + dx / k, y:now.y + dy / k};
+    place();
+  }
+  const zoomMid = (factor: number) => zoomAt({x:stage.clientWidth / 2, y:stage.clientHeight / 2}, factor);
+  el('simZoomIn').addEventListener('click', () => zoomMid(1.5));
+  el('simZoomOut').addEventListener('click', () => zoomMid(1 / 1.5));
+  el('simZoomFit').addEventListener('click', () => { zoom = 1; cam = null; place(); draw(); });
+  canvas.addEventListener('wheel', (e) => {
+    if (building) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    zoomAt({x:e.clientX - r.left, y:e.clientY - r.top}, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+  }, {passive:false});
   const turnHandle = () => toWorld(sim.pose, sim.scale, {x:TURN_HANDLE_MM, y:0});
   /** Wo der Drehknopf eines Sensors liegt: ein Stück vor ihm in seiner Blickrichtung. */
   const sensorKnob = (port: string): Point => {
@@ -251,7 +298,11 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     g.transform(m.a, m.b, m.c, m.d, m.e, m.f);
     const px = 1 / k;   // ein Bildschirmpunkt in Einheiten der Bahn
     g.drawImage(trackImage, 0, 0);
-    g.lineWidth = 2 * px; g.strokeStyle = 'rgba(255,255,255,.25)'; g.strokeRect(0, 0, trackImage.width, trackImage.height);
+    // der Rand der Bahn: durchgezogen hält er den Roboter auf, gestrichelt ist er abgeschaltet (ein Klick darauf schaltet um)
+    const rim = (sim.fence ? 5 : 1.5) * px;
+    g.lineWidth = rim; g.strokeStyle = sim.fence ? '#FFB515' : 'rgba(255,255,255,.4)';
+    if (!sim.fence) g.setLineDash([6 * px, 5 * px]);
+    g.strokeRect(-rim / 2, -rim / 2, trackImage.width + rim, trackImage.height + rim); g.setLineDash([]);
     if (editing){
       // Bahn bauen: die Felder als Raster, das Feld unter dem Zeiger hervorgehoben; Roboter und Hindernisse treten zurück
       g.beginPath();
@@ -377,7 +428,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
         parts.push(`Sensor ${selected}: ${Math.abs(at.x)} mm ${at.x < 0 ? 'hinter' : 'vor'} der Achse, ${at.y ? `${Math.abs(at.y)} mm ${at.y < 0 ? 'links' : 'rechts'}` : 'mittig'}`
           + (at.angle ? `, ${Math.abs(at.angle)}° nach ${at.angle < 0 ? 'links' : 'rechts'} gedreht` : ''));
       }
-      else parts.push(sensorPorts().length ? 'Sensor antippen: ziehen versetzt ihn, der Knopf dreht ihn – zweimal antippen setzt ihn zurück' : 'Das Programm benutzt noch keinen Sensor, den man versetzen könnte');
+      else if (!sensorPorts().length) parts.push('Das Programm benutzt noch keinen Sensor');
     } else if (!editing){
       // Anfasser zum Drehen
       const t = turnHandle();
@@ -392,7 +443,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     for (const p of robot.force) parts.push(`Kraftsensor ${p}: ${sim.forcePressed(p) ? 'gedrückt' : 'frei'}`);
     for (const p of robot.motors) parts.push(`Motor ${p}: ${Math.round(sim.motor(p).angle)}°`);
     if (runner) parts.push(`Zeit: ${(sim.time / 1000).toFixed(1).replace('.', ',')} s`);
-    if (sim.blocked) parts.push('steht am Hindernis an');
+    if (sim.blocked) parts.push('steht an');
     // umbrochen wird nur zwischen den Angaben – Zahl und Einheit bleiben zusammen
     const text = parts.map(part => part.replace(/ /g, NB)).join(' · ');
     if (text !== shownValues) values.textContent = shownValues = text;
@@ -501,7 +552,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       await mine.advance(ms * tempo);
       if (runner !== mine) return;
       if (activeBlock !== highlighted) opts.ws.highlightBlock(highlighted = activeBlock);
-      draw();
+      follow(); draw();
       if (mine.running) requestAnimationFrame(frame); else finish(mine, '— Simulation beendet —');
     };
     requestAnimationFrame(frame);
@@ -533,7 +584,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, image.width, image.height);
       ctx.drawImage(bitmap, 0, 0, image.width, image.height);
       if (runner) finish(runner, '— Simulation angehalten —');
-      usingImage = true;
+      usingImage = true; zoom = 1; cam = null;
       useTrack(image, {x:image.width / 2, y:image.height / 2, heading:0});
       layout();
       opts.toast('Bahn geladen. Zieh den Roboter auf die Linie und stell seine Größe ein.');
@@ -541,10 +592,16 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   });
 
   // ---- Zeiger: verschieben, drehen, Größe ändern, Sensoren versetzen ----
-  const world = (e: PointerEvent): Point => {
-    const r = canvas.getBoundingClientRect(), p = toTrack.transformPoint({x:e.clientX - r.left, y:e.clientY - r.top});
-    return {x:p.x, y:p.y};
-  };
+  /** Wo der Zeiger auf der Leinwand ist (Bildschirmpunkte) – und wo das auf der Bahn ist. */
+  const local = (e: PointerEvent): Point => { const r = canvas.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; };
+  const world = (e: PointerEvent): Point => { const p = toTrack.transformPoint(local(e)); return {x:p.x, y:p.y}; };
+  /** Finger auf der Leinwand: Zwei davon holen die Bahn heran und schieben sie. */
+  const fingers = new Map<number, Point>();
+  /** Ob der Zeiger auf dem Rand der Bahn liegt: auf dem Rahmen um sie herum, kaum darin. */
+  function onFence(p: Point): boolean {
+    const out = Math.max(-p.x, -p.y, p.x - trackImage.width, p.y - trackImage.height);
+    return out > 0 ? out <= 10 * reach / k : Math.min(p.x, p.y, trackImage.width - p.x, trackImage.height - p.y) <= 3 / k;
+  }
   const near = (a: Point, b: Point, px: number) => Math.hypot(a.x - b.x, a.y - b.y) <= px * reach / k;
   const inside = (o: Obstacle, p: Point) => Math.abs(p.x - o.x) <= o.w / 2 && Math.abs(p.y - o.y) <= o.h / 2;
   /** Der Sensor unter dem Zeiger (beim Umbauen). */
@@ -572,26 +629,57 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     return null;
   }
   canvas.addEventListener('pointerdown', (e) => {
-    if (editing){
-      // Bahn bauen: Der Tipp gilt dem Feld; die Leinwand bekommt die Tasten (R dreht, Entf leert)
-      e.preventDefault(); canvas.focus({preventScroll:true});
-      hover = world(e); editor.tap(hover);
+    fingers.set(e.pointerId, local(e));
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* ohne Zeigerbindung geht es trotzdem */ }
+    if (fingers.size === 2 && !building){
+      // der zweite Finger: ab jetzt wird herangeholt und geschoben – was der erste angefangen hat, gilt nicht mehr
+      const [a, b] = [...fingers.values()], under = toTrack.transformPoint({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2});
+      pinch = {apart:Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom, under:{x:under.x, y:under.y}};
+      drag = null;
       return;
     }
-    drag = grab(world(e));
+    if (fingers.size > 1) return;
+    const p = world(e), pan = (tap: Point | null): Drag => ({kind:'pan', from:local(e), cam:cam ?? trackMid(), moved:false, tap});
+    if (!building && onFence(p)){ sim.fence = !sim.fence; remember(); draw(); return; }
+    e.preventDefault();
+    if (editing){
+      // Bahn bauen: ohne Ziehen ist es ein Tipp auf das Feld; die Leinwand bekommt die Tasten (R dreht, Entf leert)
+      canvas.focus({preventScroll:true});
+      hover = p; drag = pan(p);
+      return;
+    }
+    drag = grab(p);
     if (building){
       // angefasst ist gewählt; daneben getippt wählt ab. Die Leinwand bekommt die Tasten (Pfeile, R).
       selected = drag?.kind === 'sensor' || drag?.kind === 'spin' ? drag.port : null;
       canvas.focus({preventScroll:true});
-      draw();
     }
-    if (!drag) return;
-    e.preventDefault();
-    try { canvas.setPointerCapture(e.pointerId); } catch { /* ohne Zeigerbindung geht es trotzdem */ }
+    else drag ??= pan(null);
     draw();
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (fingers.has(e.pointerId)) fingers.set(e.pointerId, local(e));
+    if (pinch && fingers.size >= 2){
+      const [a, b] = [...fingers.values()], mid = {x:(a.x + b.x) / 2, y:(a.y + b.y) / 2};
+      zoom = Math.max(1, Math.min(MAX_ZOOM, pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.apart));
+      const next = fitScale() * zoom;
+      cam = {x:pinch.under.x - (mid.x - stage.clientWidth / 2) / next, y:pinch.under.y - (mid.y - stage.clientHeight / 2) / next};
+      place(); draw();
+      return;
+    }
     const p = world(e);
+    if (drag?.kind === 'pan'){
+      const at = local(e);
+      if (Math.hypot(at.x - drag.from.x, at.y - drag.from.y) > 6) drag.moved = true;
+      if (drag.moved && zoom > 1){ cam = {x:drag.cam.x - (at.x - drag.from.x) / k, y:drag.cam.y - (at.y - drag.from.y) / k}; place(); }
+      if (editing) hover = p;
+      draw();
+      return;
+    }
+    // der Rand der Bahn: ein Klick schaltet ihn um
+    const rim = !building && onFence(p);
+    canvas.title = rim ? (sim.fence ? 'Rand der Bahn: an' : 'Rand der Bahn: aus') : '';
+    if (rim){ canvas.style.cursor = 'pointer'; return; }
     if (editing){ hover = p; canvas.style.cursor = cellAt(tileMap, p) ? 'pointer' : ''; draw(); return; }
     if (!drag){ const over = grab(p); canvas.style.cursor = !over ? '' : over.kind === 'size' ? 'nwse-resize' : over.kind === 'turn' || over.kind === 'spin' ? 'crosshair' : 'grab'; return; }
     if (drag.kind === 'sensor'){
@@ -619,8 +707,17 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     }
     draw();
   });
-  const drop = () => {
+  const drop = (e: PointerEvent) => {
+    fingers.delete(e.pointerId);
+    if (fingers.size < 2) pinch = null;
     if (!drag) return;
+    if (drag.kind === 'pan'){
+      // nicht gezogen: beim Bauen der Bahn ein Tipp auf das Feld
+      const tap = !drag.moved && e.type === 'pointerup' ? drag.tap : null;
+      drag = null;
+      if (tap) editor.tap(tap); else draw();
+      return;
+    }
     // wo der Roboter von Hand hingestellt wird, beginnt er – auch nach dem Neuladen
     if ((drag.kind === 'robot' || drag.kind === 'turn') && !runner) home = {...sim.pose};
     remember();

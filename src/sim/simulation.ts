@@ -24,8 +24,13 @@ export class Simulation {
   /** Was die Fahrbasis gezählt hat (»gefahrene Strecke«, »gedrehter Winkel«). */
   distance = 0;
   angle = 0;
-  /** Der Roboter steht an einem Hindernis an: Die Räder drehen durch. */
+  /** Der Roboter steht an einem Hindernis oder am Rand der Bahn an: Die Räder drehen durch. */
   blocked = false;
+  /**
+   * Die Bahn hat einen Rand: Der Roboter fährt nicht über ihre Kante hinaus, er steht dort an. Für die Sensoren
+   * gibt es den Rand nicht – weder der Abstandssensor noch der Kraftsensor bemerken ihn.
+   */
+  fence = true;
   /** Der Hub: Lichtmatrix, Farbe des Statuslichts (null: aus) und die Tasten, die gerade gedrückt sind (LEFT, RIGHT). */
   display: Pixels = [...DISPLAY_OFF];
   light: string | null = null;
@@ -46,7 +51,8 @@ export class Simulation {
   reset(){
     this.time = this.speed = this.rate = this.distance = this.angle = 0;
     this.blocked = false; this.headingZero = this.pose.heading;
-    this.display = [...DISPLAY_OFF]; this.light = null;
+    // solange ein Programm läuft, leuchtet die mittlere Taste grün – bis das Programm das Statuslicht umstellt
+    this.display = [...DISPLAY_OFF]; this.light = 'GREEN';
     for (const port of Object.keys(this.motors)) delete this.motors[port];
   }
   /** Hält alles an, was sich dreht (Ende des Programms). */
@@ -71,8 +77,15 @@ export class Simulation {
     const next: Pose = {x:this.pose.x + this.scale * ds * dir.x, y:this.pose.y + this.scale * ds * dir.y, heading:this.pose.heading + turn};
     // An ein Hindernis fährt der Roboter heran, hinein nicht. (Steht er schon darin – es wurde auf ihn
     // geschoben –, darf er wieder herausfahren.)
-    this.blocked = this.bumps(next) && !this.bumps(this.pose);
+    // Am Rand der Bahn ist Schluss: Weiter hinaus geht es nicht, zurück immer.
+    this.blocked = (this.bumps(next) && !this.bumps(this.pose)) || this.beyond(next) > this.beyond(this.pose) + 1e-9;
     if (!this.blocked) this.pose = next;
+  }
+  /** Wie weit der Roboter über den Rand der Bahn hinausragt (0: gar nicht – oder es gibt keinen Rand). */
+  private beyond(pose: Pose): number {
+    if (!this.fence || !this.track) return 0;
+    const at = toWorld(pose, this.scale, BUMPER.at), r = BUMPER.radius * this.scale;
+    return Math.max(0, r - at.x, r - at.y, at.x + r - this.track.width, at.y + r - this.track.height);
   }
   private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
 

@@ -220,7 +220,8 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-step .btn:disabled{opacity:.4;cursor:default}
 .sim-step output{min-width:1.2em;text-align:center;color:var(--code-ink);font-variant-numeric:tabular-nums}
 /* (der Hinweis zum gewählten Werkzeug gilt auch ohne Tastatur) */
-.sim-keys.sim-track-hint{display:block}
+/* (die Zeile bleibt auch leer stehen – sonst spränge die Bahn unter dem Zeiger, sobald der Hinweis kommt oder geht) */
+.sim-keys.sim-track-hint{display:block;color:#FFB515;min-height:1.7em}
 .sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
 .sim-check input{width:18px;height:18px;accent-color:var(--accent)}
 /* die Zusatztasten beim Umbauen – ohne Tastatur (Finger) gibt es sie nicht */
@@ -238,6 +239,14 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-hub-buttons button{width:22px;height:14px;padding:0;border:0;border-radius:7px;background:#B9C0CB;cursor:pointer}
 .sim-hub-buttons button.center{width:22px;height:22px;border-radius:50%;background:var(--light,#D7DCE3);border:2px solid #AAB2BE}
 .sim-hub-buttons button.on,.sim-hub-buttons button:active{background:#6F7A8A}
+/* läuft ein Programm, leuchtet die mittlere Taste */
+.sim-hub-buttons button.center.lit{border-color:color-mix(in srgb,var(--light) 70%,#000);box-shadow:0 0 0 2px color-mix(in srgb,var(--light) 35%,transparent),0 0 9px var(--light)}
+/* Heranholen: kleine Knöpfe oben rechts über der Bahn */
+.sim-zoom{position:absolute;right:8px;top:8px;display:flex;gap:4px}
+.sim-zoom button{width:30px;height:30px;padding:0;display:grid;place-items:center;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(22,23,29,.78);color:var(--code-ink);font-size:17px;font-weight:700;line-height:1;cursor:pointer}
+.sim-zoom button:hover{border-color:#fff}
+.sim-zoom svg{width:16px;height:16px}
+.sim.building .sim-zoom,.sim.hub-only .sim-zoom{display:none}
 /* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
 .sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild,.sim.hub-only .sim-tempo{display:none}
 .sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
