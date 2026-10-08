@@ -153,6 +153,7 @@
         <button class="btn primary" id="simRun" type="button">▶ Start</button>
         <button class="btn" id="simReset" type="button" title="Stellt den Roboter dorthin zurück, wo er beim Start stand">Zurück</button>
         <button class="btn" id="simObstacle" type="button" title="Hindernis vor den Roboter stellen – Doppelklick räumt es wieder weg">+ Hindernis</button>
+        <button class="btn" id="simTrack" type="button" aria-pressed="false" title="Die Bahn aus Platten zusammenlegen, wie bei RoboCup Junior Rescue Line – mit grünen Punkten an den Kreuzungen">Bahn bauen</button>
         <button class="btn" id="simImage" type="button" title="Ein Bild der Bahn laden, von oben gesehen">Bahn laden …</button>
         <button class="btn" id="simBuild" type="button" aria-pressed="false" title="Roboter groß zeigen und seine Sensoren versetzen – mit Raster und Symmetrie">Umbauen</button>
         <label class="sim-scale" title="Wie groß der Roboter auf der Bahn ist">Roboter <input type="range" id="simScale" min="0.3" max="3" step="0.05" value="1"></label>
@@ -162,6 +163,21 @@
         <!-- je Kraftsensor des Programms ein Knopf zum Drücken -->
         <span class="sim-force" id="simForce"></span>
         <input type="file" id="simFile" accept="image/*" class="hidden">
+      </div>
+      <!-- nur bei »Bahn bauen«: Platten zur Auswahl (die Knöpfe entstehen in trackEditor.ts), Größe, Vorlagen, Datei -->
+      <div class="sim-bar sim-track-bar">
+        <div class="sim-tiles" id="simTiles" role="radiogroup" aria-label="Platte oder Werkzeug wählen"></div>
+        <span class="sim-step" title="Wie viele Platten die Bahn breit ist">Spalten
+          <button class="btn" id="simColsLess" type="button" aria-label="eine Spalte weniger">−</button><output id="simCols">4</output><button class="btn" id="simColsMore" type="button" aria-label="eine Spalte mehr">+</button>
+        </span>
+        <span class="sim-step" title="Wie viele Platten die Bahn hoch ist">Zeilen
+          <button class="btn" id="simRowsLess" type="button" aria-label="eine Zeile weniger">−</button><output id="simRows">3</output><button class="btn" id="simRowsMore" type="button" aria-label="eine Zeile mehr">+</button>
+        </span>
+        <select class="btn" id="simTemplate" aria-label="Vorlage laden"><option value="">Vorlage …</option></select>
+        <button class="btn" id="simTrackSave" type="button" title="Die Bahn als Datei speichern, zum Weitergeben">Speichern</button>
+        <button class="btn" id="simTrackOpen" type="button" title="Eine gespeicherte Bahn öffnen">Öffnen …</button>
+        <input type="file" id="simTrackFile" accept=".json,application/json" class="hidden">
+        <p class="sim-keys sim-track-hint" id="simTrackHint" role="status"></p>
       </div>
       <!-- nur beim Umbauen: Raster (Abstand der LEGO-Noppen) und Symmetrie -->
       <div class="sim-bar sim-build-bar">

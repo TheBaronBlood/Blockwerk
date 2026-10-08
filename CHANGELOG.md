@@ -25,10 +25,17 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
     Farbsensor sitzt vorn (höchstens vier), dazu Abstandssensor und Kraftsensor. Ohne »Fahrbasis
     einrichten« sind zwei einzelne Motoren die Räder – der linke gespiegelt, wie er üblich
     eingebaut ist. Weitere Motoren zeigen eine Scheibe mit Zeiger.
-  - **Bahn und Hindernisse:** Ein Rundkurs mit schwarzer Linie ist dabei, »Bahn laden …« nimmt ein
-    eigenes Bild; wie groß der Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich
-    setzen, ziehen und in der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt,
-    der Kraftsensor drückt am Hindernis oder per Knopf.
+  - **Bahn bauen, wie bei RoboCup Junior Rescue Line:** Die Bahn besteht aus Platten von 30 cm –
+    Gerade, Kurve, Ecke, Abzweig, Kreuzung, Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende
+    und die rote Ziellinie. Ein Tipp auf ein Feld legt die gewählte Platte, noch ein Tipp dreht
+    sie. An Abzweig und Kreuzung kommen **grüne Punkte** in die Ecken, die der Farbsensor als Grün
+    sieht. Zwei bis acht Platten breit, zwei bis sechs hoch; es gibt Vorlagen, und die Bahn lässt
+    sich als Datei speichern und weitergeben. Am Anfang liegt ein Rundkurs.
+  - **Eigenes Bild und Hindernisse:** »Bahn laden …« nimmt stattdessen ein eigenes Bild; wie groß
+    der Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich setzen, ziehen und in
+    der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt
+    am Hindernis oder per Knopf. Neben der Reflexion steht, wenn der Farbsensor Grün, Rot, Blau
+    oder Gelb sieht.
   - **Der Hub** liegt neben der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text), Statuslicht und
     Tasten zum Drücken; ein Doppelklick zeigt nur noch den Hub. Der Piepton ist zu hören, das
     Steuerfeld steuert auch den simulierten Roboter, das Tempo reicht von ¼× bis 4×.
@@ -40,7 +47,8 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   - **Grenzen:** Der Simulator führt die Blöcke aus, nicht den Python-Code; Blöcke aus
     Erweiterungen, Xbox-Controller und LEGO-Fernbedienung überspringt er. Er taugt für die Logik
     eines Programms, nicht zum Feinabstimmen eines Reglers – der Roboter fährt ohne Anlauf und
-    ohne Messfehler. Bahn und Hindernisse sind nach dem Neuladen wieder die vom Anfang.
+    ohne Messfehler. Die Bahn ist flach: Rampe, Wippe und der Raum mit den Opfern fehlen. Bahn,
+    Hindernisse und der Platz des Roboters bleiben gemerkt – ein geladenes Bild nicht.
 - Neu: **Mehrere Blöcke auf einmal** – mit gedrückter Umschalttaste Blöcke anklicken oder auf der
   freien Fläche einen Rahmen aufziehen; bei Bedienung mit dem Finger schaltet ein Knopf an der
   Arbeitsfläche dasselbe ein. Strg+C, Strg+X, Strg+V und Entf gelten dann der ganzen Auswahl, eine

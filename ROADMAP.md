@@ -16,7 +16,7 @@ dabeisteht.
 | 7 | Sprachumschaltung Deutsch/Englisch | offen |
 | 8 | Hub am USB-Kabel | 🟢 läuft am echten Hub unter macOS (Beta-Firmware 4.1.0b5); Windows, Linux und Android stehen aus |
 | 9 | Erweiterungen: eigene Blöcke mit eigenem Python | 🟢 umgesetzt; ein Modul lief am echten Hub (Bluetooth und Kabel) |
-| 10 | Simulation des Roboters | 🟡 läuft im Browser: fahren, Linie, Hindernisse, Hub, Sensoren umbauen; an echten Tablets nicht erprobt, Bahn-Editor offen |
+| 10 | Simulation des Roboters | 🟡 läuft im Browser: fahren, Linie, Hindernisse, Hub, Sensoren umbauen, Bahn aus Rescue-Line-Platten bauen; an echten Tablets nicht erprobt |
 | 11 | App für Android (Tablets und Handys) | 🟡 umgesetzt; im Emulator geprüft, Bluetooth lief an einem echten Handy, das Kabel steht aus. iPad zurückgestellt |
 
 ---
@@ -394,9 +394,15 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
   Farbsensor sitzt vorn (höchstens vier), dazu Abstandssensor und Kraftsensor. Ohne Fahrbasis
   sind zwei einzelne Motoren die Räder – der linke gespiegelt, wie üblich eingebaut. Weitere
   Motoren zeigen eine Scheibe mit Zeiger.
-- **Bahn und Hindernisse** (`world.ts`): Die Bahn ist ein Bild von oben, ein Rundkurs ist dabei,
-  ein eigenes Bild lässt sich laden; die Größe des Roboters darauf ist einstellbar. Reflexion und
-  Farbe liest der Sensor aus dem Bild. Hindernisse sind Rechtecke zum Setzen, Ziehen und
+- **Bahn aus Platten** (`tiles.ts`, `trackEditor.ts`): »Bahn bauen« legt die Bahn aus Platten von
+  30 cm zusammen, wie bei RoboCup Junior Rescue Line – Gerade, Kurve, Ecke, Abzweig, Kreuzung,
+  Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende, rote Ziellinie. Ein Tipp legt eine Platte,
+  noch einer dreht sie; an Abzweig und Kreuzung kommen grüne Punkte in die Ecken. Zwei bis acht
+  Platten breit, zwei bis sechs hoch; Vorlagen, Speichern und Öffnen als Datei. Die Bahn bleibt
+  gemerkt, samt Hindernissen und dem Platz des Roboters.
+- **Bahn und Hindernisse** (`world.ts`): Gerechnet wird auf einem Bild der Bahn von oben – dem der
+  Platten oder einem eigenen, das sich laden lässt; die Größe des Roboters darauf ist einstellbar.
+  Reflexion und Farbe liest der Sensor aus dem Bild. Hindernisse sind Rechtecke zum Setzen, Ziehen und
   Vergrößern; der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt am
   Hindernis oder per Knopf. Der Roboter fährt an ein Hindernis heran, nicht hinein.
 - **Ausführen** (`runner.ts`): Der Simulator läuft die Blöcke selbst ab, in simulierter Zeit –
@@ -424,8 +430,9 @@ echten Roboter verglichen.
 
 **Offen:**
 - Rampen beim Anfahren und Bremsen, Messfehler der Sensoren.
-- Bahn und Hindernisse über das Neuladen hinweg merken; eine Spur, die zeigt, wo der Roboter fuhr.
-- Bahn-Editor mit Rescue-Line-Kacheln (Stufe 2 des Entwurfs).
+- Eine Spur, die zeigt, wo der Roboter fuhr.
+- Rescue Line über die flache Bahn hinaus: Rampe, Wippe, Bodenschwellen, der Raum mit den Opfern
+  und der silberne Streifen davor.
 - Ein eigenes einklappbares Fenster statt des Platzes im Codebereich; eine Seite in der Hilfe.
 **Ursprünglicher Entwurf:**
 - Echtes Python im Browser (MicroPython als WebAssembly) mit einem nachgebauten
