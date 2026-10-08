@@ -11,7 +11,7 @@ import type * as Blockly from 'blockly';
 import { ANGLE_STEP, ANGLE_STEP_COARSE, GRID_MM, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, type BuildOptions, type Mount, type SavedMounts } from './build';
 import { BODY, BUMPER, COLOR_SPOT, defaultMounts, describeRobot, robotFromWorkspace, ULTRA } from './robot';
 import { Runner } from './runner';
-import { Simulation } from './simulation';
+import { FENCES, Simulation, type Fence } from './simulation';
 import { cellAt, mapSize, readTileMap, startPose, TEMPLATES, TILE_MM, type TileMap } from './tiles';
 import { initTrackEditor, renderTiles } from './trackEditor';
 import { forward, toWorld, type Obstacle, type Point, type Pose } from './world';
@@ -53,6 +53,13 @@ const KNOB_PX = 46;
  * Größe, Raster und Symmetrie – und die Bahn: ihre Platten, ihr Rand, wo der Roboter beginnt und die Hindernisse.
  */
 const STORE_KEY = 'blockwerk-sim-v1';
+/** Der Rand der Bahn: seine Farbe und was der Zeiger darüber sagt. Rot ist die hohe Wand, Orange die niedrige, Gelb hält nur auf; ohne Rand bleibt ein gestrichelter Umriss. */
+const FENCE_LOOK: Record<Fence, {color: string; name: string}> = {
+  high:{color:'#DA3041', name:'Hohe Wand: Taster und Abstandssensor'},
+  low:{color:'#E67E17', name:'Niedrige Wand: nur Taster'},
+  hidden:{color:'#FFD945', name:'Rand: kein Sensor'},
+  off:{color:'rgba(255,255,255,.4)', name:'Kein Rand'}
+};
 /** Farben, die der Farbsensor beim Namen nennt – neben der Reflexion steht, wenn er eine davon sieht (ein grüner Punkt, die rote Ziellinie). */
 const SEEN: Record<string, string> = {GREEN:'Grün', RED:'Rot', BLUE:'Blau', YELLOW:'Gelb'};
 /** Geschütztes Leerzeichen: hält Zahl und Einheit in einer Zeile zusammen. */
@@ -116,8 +123,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let storedStart: Pose | null = null, storedObstacles: Obstacle[] = [];
   const finite = (...values: unknown[]) => values.every(v => typeof v === 'number' && Number.isFinite(v));
   try {
-    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: boolean};
-    if (typeof stored.fence === 'boolean') sim.fence = stored.fence;
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: Fence | boolean};
+    // (früher gab es den Rand nur an oder aus)
+    if (typeof stored.fence === 'boolean') sim.fence = stored.fence ? 'hidden' : 'off';
+    else if (FENCES.includes(stored.fence as Fence)) sim.fence = stored.fence as Fence;
     const map = readTileMap(stored.track);
     if (map){
       tileMap = map;
@@ -298,10 +307,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     g.transform(m.a, m.b, m.c, m.d, m.e, m.f);
     const px = 1 / k;   // ein Bildschirmpunkt in Einheiten der Bahn
     g.drawImage(trackImage, 0, 0);
-    // der Rand der Bahn: durchgezogen hält er den Roboter auf, gestrichelt ist er abgeschaltet (ein Klick darauf schaltet um)
-    const rim = (sim.fence ? 5 : 1.5) * px;
-    g.lineWidth = rim; g.strokeStyle = sim.fence ? '#FFB515' : 'rgba(255,255,255,.4)';
-    if (!sim.fence) g.setLineDash([6 * px, 5 * px]);
+    // der Rand der Bahn: rot die hohe Wand, orange die niedrige, gelb hält er nur auf, gestrichelt gibt es ihn nicht (ein Klick schaltet weiter)
+    const rim = (sim.fence === 'off' ? 1.5 : sim.fence === 'high' ? 7 : 5) * px;
+    g.lineWidth = rim; g.strokeStyle = FENCE_LOOK[sim.fence].color;
+    if (sim.fence === 'off') g.setLineDash([6 * px, 5 * px]);
     g.strokeRect(-rim / 2, -rim / 2, trackImage.width + rim, trackImage.height + rim); g.setLineDash([]);
     if (editing){
       // Bahn bauen: die Felder als Raster, das Feld unter dem Zeiger hervorgehoben; Roboter und Hindernisse treten zurück
@@ -640,7 +649,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     }
     if (fingers.size > 1) return;
     const p = world(e), pan = (tap: Point | null): Drag => ({kind:'pan', from:local(e), cam:cam ?? trackMid(), moved:false, tap});
-    if (!building && onFence(p)){ sim.fence = !sim.fence; remember(); draw(); return; }
+    if (!building && onFence(p)){ sim.fence = FENCES[(FENCES.indexOf(sim.fence) + 1) % FENCES.length]; canvas.title = FENCE_LOOK[sim.fence].name; remember(); draw(); return; }
     e.preventDefault();
     if (editing){
       // Bahn bauen: ohne Ziehen ist es ein Tipp auf das Feld; die Leinwand bekommt die Tasten (R dreht, Entf leert)
@@ -678,7 +687,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     }
     // der Rand der Bahn: ein Klick schaltet ihn um
     const rim = !building && onFence(p);
-    canvas.title = rim ? (sim.fence ? 'Rand der Bahn: an' : 'Rand der Bahn: aus') : '';
+    canvas.title = rim ? FENCE_LOOK[sim.fence].name : '';
     if (rim){ canvas.style.cursor = 'pointer'; return; }
     if (editing){ hover = p; canvas.style.cursor = cellAt(tileMap, p) ? 'pointer' : ''; draw(); return; }
     if (!drag){ const over = grab(p); canvas.style.cursor = !over ? '' : over.kind === 'size' ? 'nwse-resize' : over.kind === 'turn' || over.kind === 'spin' ? 'crosshair' : 'grab'; return; }

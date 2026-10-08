@@ -234,8 +234,10 @@ dran ist, ist markiert, Ausgaben stehen im Terminal.
   Regler »Roboter« stellt ein, wie groß der Roboter darauf ist.
 - **Roboter und Hindernisse** lassen sich ziehen, der Roboter am Punkt vor ihm drehen, ein
   Hindernis an seiner Ecke größer und kleiner ziehen; ein Doppelklick räumt es weg.
-- **Der Rand** um die Bahn hält den Roboter auf: Er fährt dagegen und steht an. Die Sensoren
-  bemerken den Rand nicht. Ein Klick auf den Rand schaltet ihn aus und wieder ein.
+- **Der Rand** um die Bahn hält den Roboter auf: Er fährt dagegen und steht an. Ein Klick auf den
+  Rand schaltet weiter – **Gelb:** kein Sensor bemerkt ihn; **Orange:** eine niedrige Wand, die nur
+  der Kraftsensor spürt; **Rot:** eine hohe Wand, die auch der Abstandssensor sieht; **gestrichelt:**
+  kein Rand, der Roboter fährt von der Bahn herunter.
 - **Heranholen:** Mausrad oder zwei Finger holen die Bahn heran, an freier Stelle lässt sie sich
   verschieben; die Knöpfe oben rechts tun dasselbe. Fährt der Roboter dabei aus dem Bild, wandert
   die Bahn mit.

@@ -36,8 +36,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
     der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt
     am Hindernis oder per Knopf. Neben der Reflexion steht, wenn der Farbsensor Grün, Rot, Blau
     oder Gelb sieht.
-  - **Rand und Heranholen:** Um die Bahn läuft ein Rand, gegen den der Roboter fährt und ansteht;
-    die Sensoren bemerken ihn nicht, ein Klick darauf schaltet ihn um. Die Bahn lässt sich mit
+  - **Rand und Heranholen:** Um die Bahn läuft ein Rand, gegen den der Roboter fährt und ansteht.
+    Ein Klick darauf schaltet weiter: gelb bemerkt ihn kein Sensor, orange ist er eine niedrige
+    Wand (nur der Kraftsensor), rot eine hohe (auch der Abstandssensor), gestrichelt gibt es ihn
+    nicht. Die Bahn lässt sich mit
     Mausrad oder zwei Fingern heranholen und verschieben.
   - **Der Hub** liegt in der Ecke über der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text) und
     Tasten zum Drücken; die mittlere leuchtet grün, solange das Programm läuft. Ein Doppelklick
