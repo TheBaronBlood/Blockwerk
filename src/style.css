@@ -190,6 +190,7 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-scale{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#9AA6B5}
 .sim-scale input{width:110px;accent-color:var(--accent)}
 .sim-bar select.btn{padding:5px 8px;background:var(--code-bg)}
+.sim.tracking .sim-stage canvas{cursor:pointer}
 .sim-bar .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .sim-force{display:contents}
 .sim-force .btn{border-color:#DA3041}
@@ -201,6 +202,25 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-build-bar{display:none;padding-top:0}
 .sim.building .sim-build-bar{display:flex}
 .sim.building #simReset,.sim.building #simObstacle,.sim.building #simImage,.sim.building .sim-tempo,.sim.building .sim-force{display:none}
+/* Bahn bauen: eine zweite Leiste mit den Platten; was nur zum Fahren und zum Roboter gehört, macht Platz */
+.sim-track-bar{display:none;padding-top:0}
+.sim.tracking .sim-track-bar{display:flex}
+.sim.tracking #simReset,.sim.tracking #simObstacle,.sim.tracking #simImage,.sim.tracking #simBuild,.sim.tracking .sim-scale,.sim.tracking .sim-force,
+.sim.tracking #simInfo,.sim.tracking #simValues,.sim.tracking .sim-hub{display:none}
+.sim.building #simTrack,.sim.hub-only #simTrack{display:none}
+.sim-tiles{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:4px}
+.sim-tiles button{flex:0 0 auto;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:8px;border:2px solid rgba(255,255,255,.18);background:transparent;cursor:pointer}
+.sim-tiles button:hover{border-color:rgba(255,255,255,.5)}
+.sim-tiles button[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 28%,transparent)}
+.sim-tiles canvas{display:block;border-radius:5px}
+.sim-step{display:flex;align-items:center;gap:6px;font-size:13.5px;color:#9AA6B5}
+.sim-step .btn{min-width:30px;min-height:30px;padding:3px 0;font-weight:700}
+.sim-track-bar select.btn{max-width:118px}
+.sim-track-bar .btn{padding-top:5px;padding-bottom:5px}
+.sim-step .btn:disabled{opacity:.4;cursor:default}
+.sim-step output{min-width:1.2em;text-align:center;color:var(--code-ink);font-variant-numeric:tabular-nums}
+/* (der Hinweis zum gewählten Werkzeug gilt auch ohne Tastatur) */
+.sim-keys.sim-track-hint{display:block}
 .sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
 .sim-check input{width:18px;height:18px;accent-color:var(--accent)}
 /* die Zusatztasten beim Umbauen – ohne Tastatur (Finger) gibt es sie nicht */
