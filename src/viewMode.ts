@@ -43,12 +43,18 @@ export function initViewMode(): ViewMode {
     const changed = next !== mode;
     mode = next;
     root.dataset.layout = next;
-    if (changed) for (const listener of listeners) listener(next);
+    // (scheitert ein Teil des Umbaus, sollen die übrigen trotzdem laufen)
+    if (changed) for (const listener of listeners){ try { listener(next); } catch (err){ console.error(err); } }
   };
+  // Beim Drehen melden manche Geräte die Größenänderung, bevor das Fenster seine neuen Maße hat – und danach
+  // nichts mehr. Deshalb kurz darauf noch einmal nachsehen; stimmt die Ansicht schon, kostet das nichts.
+  const settle = () => { apply(); for (const ms of [120, 400, 1000]) setTimeout(apply, ms); };
   mode = viewModeFor(window.innerWidth, window.innerHeight);
   root.dataset.layout = mode;
-  window.addEventListener('resize', apply);
-  window.addEventListener('orientationchange', () => setTimeout(apply, 0));
+  window.addEventListener('resize', settle);
+  window.addEventListener('orientationchange', settle);
+  window.matchMedia('(orientation: portrait)').addEventListener('change', settle);
+  window.visualViewport?.addEventListener('resize', settle);
   // nach dem Tippen nachholen, was währenddessen liegen blieb
   window.addEventListener('focusout', () => setTimeout(apply, 0));
   return mode;
