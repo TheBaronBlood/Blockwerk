@@ -16,6 +16,9 @@ export const PYBRICKS_CODE = 'https://code.pybricks.com';
 export const PYBRICKS_HOME = 'https://pybricks.com';
 export const PYBRICKS_SPONSOR = 'https://github.com/sponsors/pybricks';
 export const PYBRICKS_CODE_BETA = 'https://beta.pybricks.com';
+/** Wo Blockwerk entsteht – Quelltext, Versionen, Fehlermeldungen – und wer es schreibt. (Dieselbe Adresse wie `homepage` in package.json.) */
+export const BLOCKWERK_HOME = 'https://github.com/TheBaronBlood/blockwerk';
+export const BLOCKWERK_AUTHOR = 'https://github.com/TheBaronBlood';
 
 /** Versionen der Pakete, aus denen Blockwerk gebaut ist; setzt Vite beim Bauen ein. */
 declare const __VERSIONS__: {app: string; blockly: string; mpyCross: string; electron: string} | undefined;

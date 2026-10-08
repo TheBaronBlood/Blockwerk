@@ -1,7 +1,7 @@
 // Fenster »Über Blockwerk«: welche Fassungen hier zusammenarbeiten, was auf dem Hub läuft und
 // ob es bei Pybricks eine neuere Firmware gibt. Ins Internet geht es nur auf Knopfdruck.
 import {
-  apiNote, BUILD, firmwareState, isPrerelease, pickLatest, PYBRICKS_API, PYBRICKS_CODE, PYBRICKS_CODE_BETA,
+  apiNote, BLOCKWERK_AUTHOR, BLOCKWERK_HOME, BUILD, firmwareState, isPrerelease, pickLatest, PYBRICKS_API, PYBRICKS_CODE, PYBRICKS_CODE_BETA,
   PYBRICKS_HOME, PYBRICKS_MIN, PYBRICKS_RELEASES, PYBRICKS_SPONSOR, PYBRICKS_USB, type Latest, type Release
 } from './versions';
 import { tabletSystem, where } from './platform';
@@ -39,6 +39,12 @@ export function initAboutDialog(host: AboutHost): {open(): void} {
       </div>
       <div data-result></div>
       <h3>Eingebaut</h3><dl data-list="parts"></dl>
+      <h3>Blockwerk auf GitHub</h3>
+      <p class="settings-note">Dort liegen der Quelltext und alle Versionen – und dort ist Platz für Fehlermeldungen und Ideen. Blockwerk schreibt TheBaronBlood.</p>
+      <div class="settings-buttons">
+        <a class="btn" href="${BLOCKWERK_HOME}" target="_blank" rel="noopener">Blockwerk auf GitHub</a>
+        <a class="btn" href="${BLOCKWERK_AUTHOR}" target="_blank" rel="noopener">TheBaronBlood auf GitHub</a>
+      </div>
       <p class="settings-note">Blockwerk ist freie Software unter der MIT-Lizenz. Eingebaut sind unter anderem Blockly (Apache-2.0) und der Python-Übersetzer von Pybricks (MIT). Blockwerk gehört weder zu LEGO noch zu Pybricks.</p>
       <div class="settings-buttons">
         <button type="button" class="btn" data-act="copy">Angaben kopieren</button>
