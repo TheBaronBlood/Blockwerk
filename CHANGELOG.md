@@ -15,6 +15,47 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.29.0 – 8. Oktober 2026
+
+- Neu: **Simulator** – Programme ohne Roboter ausprobieren. Der Knopf »Simulator« über dem
+  Python-Code zeigt statt des Codes eine Bahn von oben; »Start« dort oder die mittlere Taste des
+  gezeichneten Hubs lässt das Programm laufen. Der Block, der gerade dran ist, ist markiert,
+  Ausgaben stehen im Terminal.
+  - **Der Roboter entsteht aus dem Programm:** Fahrblöcke geben ihm Räder, jeder abgefragte
+    Farbsensor sitzt vorn (höchstens vier), dazu Abstandssensor und Kraftsensor. Ohne »Fahrbasis
+    einrichten« sind zwei einzelne Motoren die Räder – der linke gespiegelt, wie er üblich
+    eingebaut ist. Weitere Motoren zeigen eine Scheibe mit Zeiger.
+  - **Bahn und Hindernisse:** Ein Rundkurs mit schwarzer Linie ist dabei, »Bahn laden …« nimmt ein
+    eigenes Bild; wie groß der Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich
+    setzen, ziehen und in der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt,
+    der Kraftsensor drückt am Hindernis oder per Knopf.
+  - **Der Hub** liegt neben der Bahn: Lichtmatrix (Bild, Muster, Zahl, Text), Statuslicht und
+    Tasten zum Drücken; ein Doppelklick zeigt nur noch den Hub. Der Piepton ist zu hören, das
+    Steuerfeld steuert auch den simulierten Roboter, das Tempo reicht von ¼× bis 4×.
+  - **Umbauen:** Der Roboter erscheint groß auf einem Raster im Abstand der LEGO-Noppen (8 mm).
+    Sensoren lassen sich versetzen und in Schritten von 15 Grad drehen, auf Wunsch
+    spiegelbildlich. Mit Tastatur: Alt ohne Einrasten, Umschalt nur eine Richtung (beim Drehen
+    45 Grad), Strg ohne Spiegeln, R dreht, die Pfeiltasten versetzen. Die Plätze bleiben gemerkt
+    und gelten für genau die Sensoren, für die sie eingestellt wurden.
+  - **Grenzen:** Der Simulator führt die Blöcke aus, nicht den Python-Code; Blöcke aus
+    Erweiterungen, Xbox-Controller und LEGO-Fernbedienung überspringt er. Er taugt für die Logik
+    eines Programms, nicht zum Feinabstimmen eines Reglers – der Roboter fährt ohne Anlauf und
+    ohne Messfehler. Bahn und Hindernisse sind nach dem Neuladen wieder die vom Anfang.
+- Neu: **Mehrere Blöcke auf einmal** – mit gedrückter Umschalttaste Blöcke anklicken oder auf der
+  freien Fläche einen Rahmen aufziehen; bei Bedienung mit dem Finger schaltet ein Knopf an der
+  Arbeitsfläche dasselbe ein. Strg+C, Strg+X, Strg+V und Entf gelten dann der ganzen Auswahl, eine
+  Leiste bietet »Duplizieren« und »Löschen«. Was untereinander hing, hängt nach dem Einfügen
+  wieder zusammen; getrennte Teile behalten ihren Abstand. Gemeinsam ziehen lassen sich mehrere
+  gewählte Blöcke noch nicht.
+- Geändert: Nach dem Kopieren oder Ausschneiden eines Blocks erscheint kein Hinweis mehr über der
+  Arbeitsfläche.
+- Behoben: Bei Bedienung mit dem Finger rutschte in der Zoom-Anzeige das Prozentzeichen unter die
+  Zahl. Auch in der Hub-Ansicht bleiben Zahl und Einheit jetzt in einer Zeile.
+- Geändert: README und `lizenzen.txt` nennen Herkunft und Lizenz aller Klänge.
+- Geprüft im Browserfenster am Computer – auch die gebaute Seite mit ihrer
+  Content-Security-Policy – und mit Fenstern im Handy- und Tablet-Format samt den
+  Berührungsereignissen des Browsers; an echten Tablets und Handys noch nicht erprobt.
+
 ## 0.28.0 – 8. Oktober 2026
 
 - Neu: **Eine eigene Ansicht für das Handy** – nach einem Entwurf des Autors. Blockwerk richtet sich
