@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { apiNote, BUILD, compareVersions, firmwareState, isPrerelease, parseVersion, pickLatest, PYBRICKS_API, usbHint } from '../src/versions';
+import { readFileSync } from 'node:fs';
+import { apiNote, BLOCKWERK_AUTHOR, BLOCKWERK_HOME, BUILD, compareVersions, firmwareState, isPrerelease, parseVersion, pickLatest, PYBRICKS_API, usbHint } from '../src/versions';
 
 // Ausschnitt aus der echten Antwort von GitHub (Oktober 2026), gekürzt auf die benutzten Felder
 const RELEASES = [
@@ -67,6 +68,14 @@ describe('Versionen', () => {
     expect(BUILD.mpyCross).toMatch(/^\d+\.\d+\.\d+/);
     expect(BUILD.app).toMatch(/^\d+\.\d+\.\d+/);
     expect(PYBRICKS_API).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
+
+describe('Blockwerk auf GitHub', () => {
+  it('»Über Blockwerk« verweist auf dieselbe Adresse wie package.json – und auf deren Besitzer', () => {
+    const { homepage } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+    expect(BLOCKWERK_HOME).toBe(homepage);
+    expect(BLOCKWERK_HOME.startsWith(BLOCKWERK_AUTHOR + '/')).toBe(true);
   });
 });
 

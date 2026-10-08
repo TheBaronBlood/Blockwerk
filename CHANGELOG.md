@@ -47,6 +47,8 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   Leiste bietet »Duplizieren« und »Löschen«. Was untereinander hing, hängt nach dem Einfügen
   wieder zusammen; getrennte Teile behalten ihren Abstand. Gemeinsam ziehen lassen sich mehrere
   gewählte Blöcke noch nicht.
+- Neu: »Über Blockwerk« führt zu **Blockwerk auf GitHub** – zum Quelltext mit allen Versionen und
+  zum Autor. Die Verweise stehen unter dem Dank an Pybricks.
 - Geändert: Nach dem Kopieren oder Ausschneiden eines Blocks erscheint kein Hinweis mehr über der
   Arbeitsfläche.
 - Behoben: Bei Bedienung mit dem Finger rutschte in der Zoom-Anzeige das Prozentzeichen unter die
