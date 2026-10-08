@@ -21,7 +21,8 @@
   --code-bg:#111216; --code-ink:#F8F8F0; --code-gutter:#495162;
 }
 *,*::before,*::after{box-sizing:inherit}
-html{height:100%}
+/* (nichts ragt seitlich über das Fenster hinaus – sonst verstellt der Browser beim Drehen die Vergrößerung der Seite) */
+html{height:100%;overflow:hidden}
 body{height:100%;margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;overflow:hidden}
 button,select,input{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
