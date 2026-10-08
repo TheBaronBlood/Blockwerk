@@ -5,7 +5,7 @@ import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '.
 import { N, T } from '../src/toolbox';
 import { mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts } from '../src/sim/build';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
-import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, type SimRobot } from '../src/sim/robot';
+import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
 import { Simulation } from '../src/sim/simulation';
 import { colorAt, coneDistance, reflectionAt, type Obstacle, type Track } from '../src/sim/world';
@@ -45,6 +45,17 @@ describe('Roboter aus dem Programm', () => {
     expect(robotOf(EXAMPLES.linie())).toMatchObject({drive:{left:'A', right:'B', wheel:56, axle:112}, colors:['C'], ultra:null});
     expect(robotOf(EXAMPLES.wand())).toMatchObject({ultra:'D', force:['E'], colors:[]});
     expect(describeRobot(robotOf(EXAMPLES.wand()))).toBe('Räder an A und B · Abstandssensor an D · Kraftsensor an E');
+  });
+  it('die Übersicht über der Bahn: je Teil ein kurzes Schildchen, ausführlich im Tooltip', () => {
+    expect(robotParts(robotOf(EXAMPLES.wand()))).toEqual([
+      {kind:'wheels', text:'Räder A·B', title:'Fahrbasis: Räder an A und B'},
+      {kind:'ultra', text:'Abstand D', title:'Abstandssensor an D'},
+      {kind:'force', text:'Kraft E', title:'Kraftsensor an E'}]);
+    expect(robotParts(robotOf(EXAMPLES.motor())).map(p => p.text)).toEqual(['keine Räder', 'Motor C']);
+    // zwei einzelne Motoren als Räder: Im Tooltip steht, dass der linke gespiegelt sitzt
+    const direct = robotParts(robotOf(program(B('pb_motor_run', {PORT:'A'}, {SPEED:N(1)}), B('pb_motor_run', {PORT:'B'}, {SPEED:N(1)}), B('pb_print', null, {TEXT:{block:B('pb_reflection', {PORT:'C'})}}))));
+    expect(direct.map(p => p.text)).toEqual(['Räder A·B', 'Farbe C']);
+    expect(direct[0].title).toContain('gespiegelt');
   });
   it('ohne Fahrblöcke gibt es keine Räder', () => {
     const robot = robotOf(EXAMPLES.motor());

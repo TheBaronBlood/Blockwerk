@@ -31,8 +31,8 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
     sie. An Abzweig, Kreuzung und Kreisel kommen **grüne Punkte** neben die Linie, die der
     Farbsensor als Grün sieht. Zwei bis acht Platten breit, zwei bis sechs hoch; es gibt Vorlagen, und die Bahn lässt
     sich als Datei speichern und weitergeben. Am Anfang liegt ein Rundkurs.
-  - **Eigenes Bild und Hindernisse:** »Bahn laden …« nimmt stattdessen ein eigenes Bild; wie groß
-    der Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich setzen, ziehen und in
+  - **Eigenes Bild und Hindernisse:** »Bild« nimmt stattdessen ein eigenes Bild; wie groß der
+    Roboter darauf ist, stellt ein Regler ein. Hindernisse lassen sich setzen, ziehen und in
     der Größe ändern. Der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt
     am Hindernis oder per Knopf. Neben der Reflexion steht, wenn der Farbsensor Grün, Rot, Blau
     oder Gelb sieht.
@@ -50,6 +50,9 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
     spiegelbildlich. Mit Tastatur: Alt ohne Einrasten, Umschalt nur eine Richtung (beim Drehen
     45 Grad), Strg ohne Spiegeln, R dreht, die Pfeiltasten versetzen. Die Plätze bleiben gemerkt
     und gelten für genau die Sensoren, für die sie eingestellt wurden.
+  - **Die Leiste** ist in Gruppen geordnet – laufen lassen, Tempo, Bahn, Roboter –, jeder Knopf mit
+    einem Zeichen. Was der Roboter laut Programm hat, steht darunter als kurze Schildchen (Räder,
+    Farbe, Abstand, Kraft, Motor); ausführlich im Tooltip.
   - **Grenzen:** Der Simulator führt die Blöcke aus, nicht den Python-Code; Blöcke aus
     Erweiterungen, Xbox-Controller und LEGO-Fernbedienung überspringt er. Er taugt für die Logik
     eines Programms, nicht zum Feinabstimmen eines Reglers – der Roboter fährt ohne Anlauf und

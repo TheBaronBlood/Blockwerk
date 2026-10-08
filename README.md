@@ -230,8 +230,8 @@ dran ist, ist markiert, Ausgaben stehen im Terminal.
   Farbsensor sieht dort Grün und an der Ziellinie Rot. Die Bahn darf zwei bis acht Platten breit und zwei bis sechs hoch
   sein; es gibt Vorlagen, und sie lässt sich als Datei speichern und weitergeben. Sie bleibt
   gemerkt, samt Hindernissen und dem Platz des Roboters.
-- **Ein eigenes Bild** geht auch: »Bahn laden …« nimmt ein Foto oder eine Zeichnung von oben. Der
-  Regler »Roboter« stellt ein, wie groß der Roboter darauf ist.
+- **Ein eigenes Bild** geht auch: »Bild« nimmt ein Foto oder eine Zeichnung von oben. Der Regler
+  neben »Umbauen« stellt ein, wie groß der Roboter darauf ist.
 - **Roboter und Hindernisse** lassen sich ziehen, der Roboter am Punkt vor ihm drehen, ein
   Hindernis an seiner Ecke größer und kleiner ziehen; ein Doppelklick räumt es weg.
 - **Der Rand** um die Bahn hält den Roboter auf: Er fährt dagegen und steht an. Ein Klick auf den
