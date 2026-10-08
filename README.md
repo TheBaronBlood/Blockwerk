@@ -434,10 +434,18 @@ dabei bleiben; eine Gewähr gibt es nicht.
 
 Blockly: Apache-2.0. Pybricks (Firmware, mpy-cross, Protokoll), fflate, Capacitor und
 Electron: MIT. Die Schriften Atkinson Hyperlegible und JetBrains Mono: SIL Open Font
-License 1.1. Der Klang beim Zusammenstecken der Blöcke (`src/assets/snap.mp3`) stammt von
-[Pixabay](https://pixabay.com/service/license-summary/) und steht unter der dortigen
-Inhaltslizenz, nicht unter MIT: als Teil von Blockwerk frei benutzbar, aber nicht für sich
-allein weiterzuverkaufen.
+License 1.1.
+
+Die Klänge in `public/klang/` stehen nicht unter MIT:
+
+- `snap.wav`, `snap.mp3`, `wosh.wav` (Zusammenstecken, Löschen): von
+  [Pixabay](https://pixabay.com/service/license-summary/), unter der dortigen Inhaltslizenz –
+  als Teil von Blockwerk frei benutzbar, aber nicht für sich allein weiterzuverkaufen.
+- `bong.wav`, `conected.wav`, `disconected.wav` (Kategorien, Hub verbunden und getrennt): aus
+  [»Interface Sounds« von Kenney](https://kenney.nl/assets/interface-sounds), gemeinfrei (CC0).
+- `cursor.wav` (Knöpfe): »Cursor 1« aus dem
+  [»Ultimate UI SFX Pack« von JDSherbert](https://jdsherbert.itch.io/ultimate-ui-sfx-pack),
+  © 2023 JDSherbert, unter der Lizenz, die dem Paket beiliegt (Namensnennung nötig).
 
 Die vollständigen Lizenztexte stellt der Build aus den Paketen zusammen, die wirklich im
 fertigen Blockwerk stecken (`build/lizenzen.mjs`), und legt sie als `lizenzen.txt` neben die
