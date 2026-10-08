@@ -7,6 +7,7 @@ import '@fontsource/jetbrains-mono/600.css';
 import './style.css';
 import './blocks';
 import './category';
+import './copy';
 import { BLOCKLY_MEDIA, THEME_DARK, THEME_LIGHT } from './theme';
 import wasmUrl from '@pybricks/mpy-cross-v6/build/mpy-cross-v6.wasm?url';
 import { generate, type CodeLine, type GenerateResult, REMOTE_STATUS } from './generator';
