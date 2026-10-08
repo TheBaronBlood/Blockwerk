@@ -73,6 +73,22 @@ export function describeRobot(robot: SimRobot): string {
   return parts.join(' · ');
 }
 
+/** Ein Teil des Roboters für die Übersicht über der Bahn: ein kurzes Schildchen, ausführlich im Tooltip. */
+export interface RobotPart { kind: 'wheels' | 'none' | 'color' | 'ultra' | 'force' | 'motor' | 'note'; text: string; title: string }
+/** Was der Roboter laut Programm hat, Teil für Teil. */
+export function robotParts(robot: SimRobot): RobotPart[] {
+  const d = robot.drive, parts: RobotPart[] = [];
+  if (!d) parts.push({kind:'none', text:'keine Räder', title:'Das Programm benutzt weder Fahrblöcke noch zwei Motoren: Der Roboter bleibt stehen.'});
+  else parts.push({kind:'wheels', text:`Räder ${d.left}·${d.right}`,
+    title:d.direct ? `Räder an den Motoren ${d.left} (links, gespiegelt eingebaut) und ${d.right} (rechts)` : `Fahrbasis: Räder an ${d.left} und ${d.right}`});
+  if (robot.colors.length) parts.push({kind:'color', text:`Farbe ${robot.colors.join(', ')}`, title:`Farbsensor an ${robot.colors.join(', ')}`});
+  if (robot.ultra) parts.push({kind:'ultra', text:`Abstand ${robot.ultra}`, title:`Abstandssensor an ${robot.ultra}`});
+  if (robot.force.length) parts.push({kind:'force', text:`Kraft ${robot.force.join(', ')}`, title:`Kraftsensor an ${robot.force.join(', ')}`});
+  if (robot.motors.length) parts.push({kind:'motor', text:`Motor ${robot.motors.join(', ')}`, title:`Einzelner Motor an ${robot.motors.join(', ')}`});
+  for (const note of robot.notes) parts.push({kind:'note', text:'Hinweis', title:note});
+  return parts;
+}
+
 // Maße am Roboter in Millimetern: x nach vorn, y nach rechts, der Ursprung liegt mitten zwischen den Rädern
 /** Der Körper (der Hub mit dem Rahmen darum). */
 export const BODY = {back:-45, front:85, minWidth:60};

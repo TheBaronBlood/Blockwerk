@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------
 import type * as Blockly from 'blockly';
 import { ANGLE_STEP, ANGLE_STEP_COARSE, GRID_MM, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, type BuildOptions, type Mount, type SavedMounts } from './build';
-import { BODY, BUMPER, COLOR_SPOT, defaultMounts, describeRobot, robotFromWorkspace, ULTRA } from './robot';
+import { BODY, BUMPER, COLOR_SPOT, defaultMounts, robotFromWorkspace, robotParts, ULTRA, type RobotPart } from './robot';
 import { Runner } from './runner';
 import { FENCES, Simulation, type Fence } from './simulation';
 import { cellAt, mapSize, readTileMap, startPose, TEMPLATES, TILE_MM, type TileMap } from './tiles';
@@ -60,6 +60,17 @@ const FENCE_LOOK: Record<Fence, {color: string; name: string}> = {
   hidden:{color:'#FFD945', name:'Rand: kein Sensor'},
   off:{color:'rgba(255,255,255,.4)', name:'Kein Rand'}
 };
+/** Die Zeichen vor den Schildchen über der Bahn: Räder, Farbsensor, Abstandssensor, Kraftsensor, Motor, Hinweis. */
+const svg = (paths: string) => `<svg viewBox="0 0 24 24" class="ico" aria-hidden="true">${paths}</svg>`;
+const PART_ICONS: Record<RobotPart['kind'], string> = {
+  wheels:svg('<rect x="3" y="6" width="5" height="12" rx="2"/><rect x="16" y="6" width="5" height="12" rx="2"/><path d="M8 12h8"/>'),
+  none:svg('<circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/>'),
+  color:svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>'),
+  ultra:svg('<circle cx="5" cy="12" r="2"/><path d="M11 8a6 6 0 0 1 0 8M15 5a10 10 0 0 1 0 14"/>'),
+  force:svg('<path d="M12 3v8M8 8l4 4 4-4"/><rect x="5" y="16" width="14" height="5" rx="2"/>'),
+  motor:svg('<circle cx="12" cy="12" r="8"/><path d="M12 12l4-4"/>'),
+  note:svg('<path d="M12 4 2.500 20h19z"/><path d="M12 10v4M12 17v.5"/>')
+};
 /** Farben, die der Farbsensor beim Namen nennt – neben der Reflexion steht, wenn er eine davon sieht (ein grüner Punkt, die rote Ziellinie). */
 const SEEN: Record<string, string> = {GREEN:'Grün', RED:'Rot', BLUE:'Blau', YELLOW:'Gelb'};
 /** Geschütztes Leerzeichen: hält Zahl und Einheit in einer Zeile zusammen. */
@@ -91,6 +102,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const btnRun = el<HTMLButtonElement>('simRun'), info = el('simInfo'), values = el('simValues');
   const scaleInput = el<HTMLInputElement>('simScale'), fileInput = el<HTMLInputElement>('simFile');
   const gridInput = el<HTMLInputElement>('simGrid'), symmetryInput = el<HTMLInputElement>('simSymmetry');
+  /** Das Wort auf einem Knopf der Leiste – sein Zeichen davor bleibt stehen. */
+  const label = (button: HTMLElement, text: string) => { button.querySelector('span')!.textContent = text; };
   /** Mit dem Finger trifft man weniger genau: Die Anfasser sind dann großzügiger. */
   const reach = matchMedia('(pointer:coarse)').matches ? 1.7 : 1;
 
@@ -469,9 +482,23 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     forceShown = ports; forceBox.textContent = ''; sim.forceHeld.clear();
     for (const port of sim.robot.force){
       const button = document.createElement('button');
-      button.type = 'button'; button.className = 'btn'; button.textContent = 'Kraftsensor ' + port; button.title = 'Gedrückt halten: drückt den Kraftsensor';
+      button.type = 'button'; button.className = 'btn'; button.title = 'Kraftsensor drücken (halten)';
+      button.innerHTML = PART_ICONS.force; button.append(Object.assign(document.createElement('span'), {textContent:'Kraftsensor ' + port}));
       holdButton(button, (down) => { if (down) sim.forceHeld.add(port); else sim.forceHeld.delete(port); draw(); });
       forceBox.appendChild(button);
+    }
+  }
+  /** Über der Bahn: je Teil des Roboters ein Schildchen mit Zeichen (ausführlich im Tooltip). */
+  let shownParts = '';
+  function partChips(){
+    const parts = robotParts(sim.robot), key = JSON.stringify(parts);
+    if (key === shownParts) return;
+    shownParts = key; info.textContent = '';
+    for (const part of parts){
+      const chip = document.createElement('span');
+      chip.className = 'sim-chip ' + part.kind; chip.title = part.title;
+      chip.innerHTML = PART_ICONS[part.kind]; chip.append(part.text);
+      info.appendChild(chip);
     }
   }
   function readRobot(){
@@ -481,7 +508,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     sim.mounts = mountsFor(sim.robot, saved);
     if (selected && !sensorPorts().includes(selected)) selected = null;
     forceButtons();
-    info.textContent = 'Roboter laut Programm: ' + describeRobot(sim.robot) + (sim.robot.notes.length ? ' – ' + sim.robot.notes.join(' ') : '');
+    partChips();
     draw();
   }
 
@@ -492,7 +519,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     building = on; drag = null; selected = null;
     root.classList.toggle('building', on);
     btnBuild.setAttribute('aria-pressed', String(on));
-    btnBuild.textContent = on ? 'Fertig' : 'Umbauen';
+    label(btnBuild, on ? 'Fertig' : 'Umbauen');
     layout();
   }
   btnBuild.addEventListener('click', () => {
@@ -512,7 +539,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     editing = on; drag = null; hover = null;
     root.classList.toggle('tracking', on);
     btnTrack.setAttribute('aria-pressed', String(on));
-    btnTrack.textContent = on ? 'Fertig' : 'Bahn bauen';
+    label(btnTrack, on ? 'Fertig' : 'Bahn bauen');
     // diente gerade ein eigenes Bild als Bahn, kommt jetzt wieder die aus Platten
     if (on && usingImage) changeMap(tileMap, true); else layout();
   }
@@ -524,7 +551,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     runner = null;
     mine.stop();
     opts.ws.highlightBlock(null);
-    btnRun.textContent = '▶ Start'; btnRun.classList.add('primary');
+    label(btnRun, 'Start'); btnRun.classList.remove('running');
     if (mine.ignored.size) opts.print('→ Der Simulator hat Blöcke übersprungen, die er nicht nachbilden kann (Erweiterungen, Xbox-Controller, Fernbedienung).\n', 't-hint');
     if (message) opts.print(message + '\n', 't-info');
     readRobot();
@@ -546,7 +573,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
         opts.toast('Fehler im Programm – siehe Terminal.');
       }
     });
-    btnRun.textContent = '■ Stopp'; btnRun.classList.remove('primary');
+    label(btnRun, 'Stopp'); btnRun.classList.add('running');
     activeBlock = null;
     opts.print('— Simulation gestartet —\n', 't-info');
     opts.onStart();

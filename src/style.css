@@ -183,46 +183,64 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .code-zoom,aside.code.sim-on #btnCopy{display:none!important}
 .code-head .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .sim{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+/* Die Leiste: Knöpfe in Gruppen (laufen lassen · Tempo · Bahn · Roboter), jede Gruppe ein flaches Feld; die
+   Knöpfe darin ohne Rahmen, mit einem grauen Zeichen vor dem Wort. */
 .sim-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px 6px}
-.sim-bar .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
-.sim-bar .btn:hover{border-color:#fff}
-.sim-bar .btn.primary{background:#00B94D;border-color:#00B94D;color:#fff}
-.sim-scale{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#9AA6B5}
-.sim-scale input{width:110px;accent-color:var(--accent)}
-.sim-bar select.btn{padding:5px 8px;background:var(--code-bg)}
+.sim-group{display:flex;align-items:center;gap:2px;padding:3px;border-radius:11px;background:rgba(255,255,255,.06)}
+.sim-g-tempo{margin-left:auto;padding-left:9px;gap:6px;cursor:pointer}
+.sim-bar .ico{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:#A9B4C3}
+.sim-bar .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:8px;border-color:transparent;background:transparent;color:var(--code-ink);font-size:13.5px;line-height:1.2}
+.sim-bar .btn:hover{background:rgba(255,255,255,.11);border-color:transparent}
+.sim-bar .btn:hover .ico{color:#fff}
+.sim-bar .btn.primary{background:#00B94D;color:#fff;font-weight:700}
+.sim-bar .btn.primary:hover{background:#00CC56}
+.sim-bar .btn.primary .ico,.sim-bar .btn[aria-pressed="true"] .ico{color:#fff}
+/* Start und Stopp: derselbe Knopf, das Zeichen wechselt */
+#simRun .i-stop,#simRun.running .i-play{display:none}
+#simRun.running .i-stop{display:block}
+#simRun.running{background:rgba(218,48,65,.9)}
+#simRun.running:hover{background:#DA3041}
+.sim-scale{display:flex;align-items:center;gap:5px;padding:0 6px 0 4px}
+.sim-scale input{width:62px;accent-color:var(--accent)}
+.sim-bar select.btn{padding:5px 6px;background:transparent;border-color:rgba(255,255,255,.16)}
+.sim-bar select.btn option{background:var(--code-bg)}
 .sim.tracking .sim-stage canvas{cursor:pointer}
 .sim-bar .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .sim-force{display:contents}
-.sim-force .btn{border-color:#DA3041}
-.sim-force .btn:active{background:#DA3041}
+.sim-force .btn .ico{color:#FF8A95}
+.sim-force .btn.on,.sim-force .btn:active{background:#DA3041}
+.sim-force .btn.on .ico,.sim-force .btn:active .ico{color:#fff}
 .sim-info{margin:0;padding:2px 14px 6px;font-size:13px;line-height:1.4;color:#9AA6B5;min-height:1.4em}
+/* Was der Roboter laut Programm hat: je Teil ein Schildchen mit Zeichen */
+.sim-chips{display:flex;flex-wrap:wrap;gap:4px 12px;padding:2px 16px 7px;min-height:26px;font-size:13px;color:#9AA6B5}
+.sim-chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.sim-chip svg{width:15px;height:15px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sim-chip.none,.sim-chip.note{color:#FFB515}
 /* die Messwerte: Platz für zwei Zeilen, damit die Bahn nicht springt, wenn eine Angabe dazukommt */
 #simValues{min-height:calc(2.8em + 8px);font-variant-numeric:tabular-nums}
 /* Umbauen: eine zweite Leiste mit Raster und Symmetrie; was nur zur Bahn gehört, macht Platz */
 .sim-build-bar{display:none;padding-top:0}
 .sim.building .sim-build-bar{display:flex}
-.sim.building #simReset,.sim.building #simObstacle,.sim.building #simImage,.sim.building .sim-tempo,.sim.building .sim-force{display:none}
+.sim.building #simReset,.sim.building .sim-force,.sim.building .sim-g-tempo,.sim.building .sim-g-track{display:none}
 /* Bahn bauen: eine zweite Leiste mit den Platten; was nur zum Fahren und zum Roboter gehört, macht Platz */
 .sim-track-bar{display:none;padding-top:0}
 .sim.tracking .sim-track-bar{display:flex}
-.sim.tracking #simReset,.sim.tracking #simObstacle,.sim.tracking #simImage,.sim.tracking #simBuild,.sim.tracking .sim-scale,.sim.tracking .sim-force,
+.sim.tracking #simReset,.sim.tracking .sim-force,.sim.tracking #simObstacle,.sim.tracking #simImage,.sim.tracking .sim-g-robot,.sim.tracking .sim-g-tempo,
 .sim.tracking #simInfo,.sim.tracking #simValues,.sim.tracking .sim-hub{display:none}
-.sim.building #simTrack,.sim.hub-only #simTrack{display:none}
 .sim-tiles{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:4px}
 .sim-tiles button{flex:0 0 auto;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:8px;border:2px solid rgba(255,255,255,.18);background:transparent;cursor:pointer}
 .sim-tiles button:hover{border-color:rgba(255,255,255,.5)}
 .sim-tiles button[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 28%,transparent)}
 .sim-tiles canvas{display:block;border-radius:5px}
-.sim-step{display:flex;align-items:center;gap:6px;font-size:13.5px;color:#9AA6B5}
-.sim-step .btn{min-width:30px;min-height:30px;padding:3px 0;font-weight:700}
-.sim-track-bar select.btn{max-width:118px}
-.sim-track-bar .btn{padding-top:5px;padding-bottom:5px}
+.sim-step{display:flex;align-items:center;gap:3px;padding:0 4px;font-size:13.5px;color:#9AA6B5}
+.sim-step .btn{min-width:28px;min-height:28px;padding:3px 0;justify-content:center;font-weight:700}
+.sim-track-bar select.btn{max-width:112px}
 .sim-step .btn:disabled{opacity:.4;cursor:default}
 .sim-step output{min-width:1.2em;text-align:center;color:var(--code-ink);font-variant-numeric:tabular-nums}
 /* (der Hinweis zum gewählten Werkzeug gilt auch ohne Tastatur) */
 /* (die Zeile bleibt auch leer stehen – sonst spränge die Bahn unter dem Zeiger, sobald der Hinweis kommt oder geht) */
 .sim-keys.sim-track-hint{display:block;color:#FFB515;min-height:1.7em}
-.sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:32px;padding-right:6px}
+.sim-check{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--code-ink);cursor:pointer;min-height:30px;padding:0 9px}
 .sim-check input{width:18px;height:18px;accent-color:var(--accent)}
 /* die Zusatztasten beim Umbauen – ohne Tastatur (Finger) gibt es sie nicht */
 .sim-keys{flex:1 1 100%;margin:0;font-size:12.5px;line-height:1.7;color:#9AA6B5}
@@ -248,7 +266,7 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-zoom svg{width:16px;height:16px}
 .sim.building .sim-zoom,.sim.hub-only .sim-zoom{display:none}
 /* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
-.sim.hub-only .sim-stage canvas,.sim.hub-only #simObstacle,.sim.hub-only #simImage,.sim.hub-only .sim-scale,.sim.hub-only #simReset,.sim.hub-only #simBuild,.sim.hub-only .sim-tempo{display:none}
+.sim.hub-only .sim-stage canvas,.sim.hub-only #simReset,.sim.hub-only .sim-g-track,.sim.hub-only .sim-g-robot,.sim.hub-only .sim-g-tempo{display:none}
 .sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
 .sim.hub-only .sim-stage{container-type:size}
 .sim.hub-only .sim-matrix{gap:8px;padding:14px;border-radius:10px}
