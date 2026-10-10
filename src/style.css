@@ -628,6 +628,17 @@ details.run a{color:#7CC8FF}
 .mx-preset i{background:rgba(255,255,255,.22);border-radius:.5px}
 .mx-preset i.on{background:#fff}
 
+/* Bild der Fahrbasis auf dem Block und seine kleinen Editoren */
+.fd-text{font-family:var(--ui);font-weight:700}
+.fd-hit{cursor:pointer}
+.fd-hit:hover{filter:brightness(1.12)}
+.fd-ports{display:flex;gap:6px;padding:10px}
+.fd-port{width:38px;height:38px;border:0;border-radius:8px;background:rgba(0,0,0,.22);color:#fff;font:700 17px var(--ui);cursor:pointer}
+.fd-port:hover{background:rgba(0,0,0,.4)}
+.fd-port[aria-pressed="true"]{background:#fff;color:#1f2933}
+.fd-num{display:flex;align-items:center;gap:8px;padding:10px;color:#fff;font:700 14px var(--ui)}
+.fd-num input{width:84px;border:0;border-radius:7px;padding:6px 8px;font:700 16px var(--ui);text-align:right}
+
 /* Hilfe: Pfad, Listen, Kacheln, Hinweiskästen, Blättern */
 .help-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;margin:-4px 0 12px;font-size:13px;color:var(--muted)}
 .help-crumbs button{border:0;background:none;padding:2px 0;cursor:pointer;color:var(--accent);font-size:13px}

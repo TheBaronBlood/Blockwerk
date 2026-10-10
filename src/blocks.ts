@@ -6,6 +6,7 @@ import { loops } from 'blockly/blocks';
 import * as De from 'blockly/msg/de';
 import { ICON_PATTERNS } from './matrix';
 import './fieldMatrix';
+import './fieldDrive';
 
 Blockly.setLocale(De as unknown as {[key: string]: string});
 
@@ -51,7 +52,7 @@ Blockly.Extensions.registerMutator('pb_foldable', {
   loadExtraState(this: FoldBlock, state: {folded?: boolean}){ this.setFolded(!!state.folded); },
   setFolded(this: FoldBlock, folded: boolean){
     this.folded_ = folded;
-    this.inputList.forEach((input, i) => { if (i > 0) input.setVisible(!folded); });
+    this.inputList.forEach((input, i) => { if (i > 0) input.setVisible(!folded && input.name !== 'DATA'); });
     const toggle = this.getField('FOLD') as Blockly.FieldImage | null;
     toggle?.setValue(folded ? ARROW_CLOSED : ARROW_OPEN);
     toggle?.setTooltip(folded ? 'Einstellungen zeigen' : 'Einstellungen einklappen');
@@ -64,6 +65,11 @@ Blockly.Extensions.registerMutator('pb_foldable', {
   const toggle = new Blockly.FieldImage(ARROW_OPEN, 16, 16, 'ein- oder ausklappen', () => block.setFolded(!block.folded_));
   this.inputList[0].insertFieldAt(0, toggle, 'FOLD');
   this.inputList[0].appendField(new Blockly.FieldLabel(''), 'FOLD_INFO');
+  this.getInput('DATA')?.setVisible(false);
+  // das Bild folgt den Werten, auch bei »Rückgängig«
+  this.setOnChange((e) => {
+    if (e.type === Blockly.Events.BLOCK_CHANGE && (e as Blockly.Events.BlockChange).blockId === this.id) this.getField('VIEW')?.forceRerender();
+  });
 });
 
 // »abbrechen« und »weiter« gelten auch in »wiederhole fortlaufend«; ohne den Eintrag schaltet Blockly sie dort ab
@@ -81,14 +87,15 @@ Blockly.common.defineBlocksWithJsonArray([
 
   // Fahren
   stmt({type:'pb_drive_setup', style:'drive_blocks', inputsInline:false, mutator:'pb_foldable',
-   message0:'Fahrbasis einrichten %1 linker Motor %2 Drehrichtung %3 %4 rechter Motor %5 Drehrichtung %6 %7 Raddurchmesser %8 mm %9 Spurbreite %10 mm %11 Gyrosensor nutzen %12',
+   // Eingestellt wird im Bild (fieldDrive.ts); die Felder dahinter bleiben unsichtbar und halten die Werte.
+   message0:'Fahrbasis einrichten %1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11',
    args0:[{type:'input_end_row'},
-     {type:'field_dropdown',name:'LEFT_PORT',options:PORTS},{type:'field_dropdown',name:'LEFT_DIR',options:DIRS},{type:'input_end_row'},
-     {type:'field_dropdown',name:'RIGHT_PORT',options:PORTS},{type:'field_dropdown',name:'RIGHT_DIR',options:DIRS},{type:'input_end_row'},
-     {type:'field_number',name:'WHEEL',value:56,min:1},{type:'input_end_row'},
-     {type:'field_number',name:'AXLE',value:112,min:1},{type:'input_end_row'},
-     {type:'field_checkbox',name:'GYRO',checked:true}],
-   tooltip:'Beschreibt eure Fahrbasis. Gilt für das ganze Programm. Fährt der Roboter rückwärts oder dreht er sich im Kreis, die Drehrichtungen anpassen; die Spurbreite ist der Abstand zwischen den Radmitten.'}),
+     {type:'field_drive',name:'VIEW'},{type:'input_end_row'},
+     {type:'field_dropdown',name:'LEFT_PORT',options:PORTS},{type:'field_dropdown',name:'LEFT_DIR',options:DIRS},
+     {type:'field_dropdown',name:'RIGHT_PORT',options:PORTS},{type:'field_dropdown',name:'RIGHT_DIR',options:DIRS},
+     {type:'field_number',name:'WHEEL',value:56,min:1},{type:'field_number',name:'AXLE',value:112,min:1},
+     {type:'field_checkbox',name:'GYRO',checked:true},{type:'input_dummy',name:'DATA'}],
+   tooltip:'Beschreibt eure Fahrbasis von oben, vorn ist oben. Gilt für das ganze Programm. Anschluss, Rad oder Maß antippen, um es zu ändern. Fährt der Roboter rückwärts oder dreht er sich im Kreis, die Pfeile auf den Rädern umdrehen; die Spurbreite ist der Abstand zwischen den Radmitten.'}),
   stmt({type:'pb_drive_straight', style:'drive_blocks', message0:'fahre geradeaus %1 mm', args0:[NUM('DIST')],
    tooltip:'Fährt die angegebene Strecke. Negative Werte fahren rückwärts.'}),
   stmt({type:'pb_drive_turn', style:'drive_blocks', message0:'drehe auf der Stelle um %1 Grad', args0:[NUM('ANGLE')],
