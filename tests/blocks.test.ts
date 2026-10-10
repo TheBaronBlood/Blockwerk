@@ -62,7 +62,12 @@ describe('Fahrbasis einklappen', () => {
     Blockly.serialization.workspaces.load(setup(), ws);
     const block = ws.getBlocksByType('pb_drive_setup')[0] as Foldable;
     expect(Blockly.serialization.blocks.save(block)!.extraState).toBeUndefined();
-    expect(block.inputList.slice(1).every(i => i.isVisible())).toBe(true);
+    // das Bild hat keinen eigenen Wert im Projekt
+    expect(Object.keys(Blockly.serialization.blocks.save(block)!.fields!).sort()).toEqual(['AXLE', 'GYRO', 'LEFT_DIR', 'LEFT_PORT', 'RIGHT_DIR', 'RIGHT_PORT', 'WHEEL']);
+    // die Felder mit den Werten bleiben immer unsichtbar – eingestellt wird im Bild
+    const shown = () => block.inputList.filter(i => i.name !== 'DATA');
+    expect(shown().every(i => i.isVisible())).toBe(true);
+    expect(block.getInput('DATA')!.isVisible()).toBe(false);
 
     block.setFolded(true);
     expect(block.inputList.slice(1).some(i => i.isVisible())).toBe(false);
@@ -70,7 +75,8 @@ describe('Fahrbasis einklappen', () => {
     expect(Blockly.serialization.blocks.save(block)!.extraState).toEqual({folded:true});
 
     block.setFolded(false);
-    expect(block.inputList.every(i => i.isVisible())).toBe(true);
+    expect(shown().every(i => i.isVisible())).toBe(true);
+    expect(block.getInput('DATA')!.isVisible()).toBe(false);
     expect(block.getFieldValue('FOLD_INFO')).toBe('');
   });
 
