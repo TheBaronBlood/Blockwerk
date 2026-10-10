@@ -7,9 +7,9 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 
-const W = 246, H = 190;
+const W = 222, H = 190;
 const MID = 84;                               // Höhe der Radmitte
-const LEFT_X = 17, RIGHT_X = 147, CX = 82;    // Radmitten und Mitte des Roboters
+const LEFT_X = 17, RIGHT_X = 123, CX = 70;    // Radmitten und Mitte des Roboters
 const WHEEL_BLUE = '#2aa9d2', AXLE_ORANGE = '#c2410c', WHEEL_GREEN = '#15803d', INK = '#475569';
 const PORTS = ['A','B','C','D','E','F'];
 /** Drehrichtung, bei der das Rad bei üblichem Einbau vorwärts rollt – der linke Motor sitzt gespiegelt. */
@@ -55,7 +55,7 @@ export class FieldDrive extends Blockly.Field<string> {
 
     // Roboter von oben. Im Roboter steht nur, was zu ihm gehört – Anschlüsse
     // und Gyrosensor; die beiden Maße liegen wie in einer Zeichnung außen.
-    svg('rect', {x:22, y:40, width:120, height:148, rx:22, fill:'#fff'}, g);
+    svg('rect', {x:22, y:40, width:96, height:148, rx:22, fill:'#fff'}, g);
 
     // Spurbreite: über dem Roboter, von Radmitte zu Radmitte
     svg('path', {d:`M${LEFT_X} 36V50M${RIGHT_X} 36V50`, stroke:AXLE_ORANGE, 'stroke-width':1.5, 'stroke-dasharray':'3 3', fill:'none'}, g);
@@ -65,11 +65,11 @@ export class FieldDrive extends Blockly.Field<string> {
     this.axle = text(CX, 12, 14, AXLE_ORANGE, axleHit);
 
     // Raddurchmesser: rechts neben dem Rad
-    svg('path', {d:'M162 52H180M162 116H180', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
-    svg('path', {d:'M174 56V112M169.500 62L174 55L178.500 62M169.500 106L174 113L178.500 106', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
+    svg('path', {d:'M138 52H156M138 116H156', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
+    svg('path', {d:'M150 56V112M145.500 62L150 55L154.500 62M145.500 106L150 113L154.500 106', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
     const wheelHit = hit('WHEEL', 'Raddurchmesser ändern');
-    svg('rect', {x:184, y:MID - 11, width:60, height:22, rx:7, fill:'#fff', stroke:WHEEL_GREEN, 'stroke-width':1.5}, wheelHit);
-    this.wheel = text(214, MID, 14, WHEEL_GREEN, wheelHit);
+    svg('rect', {x:160, y:MID - 11, width:60, height:22, rx:7, fill:'#fff', stroke:WHEEL_GREEN, 'stroke-width':1.5}, wheelHit);
+    this.wheel = text(190, MID, 14, WHEEL_GREEN, wheelHit);
 
     // Räder mit Pfeil, innen daneben der Anschluss
     const side = (name: Side, cx: number, portX: number, label: string) => {
@@ -84,17 +84,17 @@ export class FieldDrive extends Blockly.Field<string> {
       this.ports[name] = text(portX, MID, 18, '#fff', port);
     };
     side('LEFT', LEFT_X, 49, 'links');
-    side('RIGHT', RIGHT_X, 115, 'rechts');
+    side('RIGHT', RIGHT_X, 91, 'rechts');
 
     // Gyrosensor sitzt im Hub: Kreisel und darunter das Häkchen
     const gyro = hit('GYRO', 'Gyrosensor ein- oder ausschalten');
-    svg('rect', {x:56, y:108, width:52, height:68, fill:'transparent'}, gyro);
+    svg('rect', {x:44, y:108, width:52, height:68, fill:'transparent'}, gyro);
     this.gyro = svg<SVGGElement>('g', {}, gyro);
-    svg('path', {d:'M82 111V145', stroke:INK, 'stroke-width':2.2, 'stroke-linecap':'round', fill:'none'}, this.gyro);
+    svg('path', {d:'M70 111V145', stroke:INK, 'stroke-width':2.2, 'stroke-linecap':'round', fill:'none'}, this.gyro);
     svg('ellipse', {cx:CX, cy:128, rx:15, ry:6.5, stroke:INK, 'stroke-width':2.2, fill:'none'}, this.gyro);
-    svg('path', {d:'M77 138L71 133.500L78 130.500', stroke:INK, 'stroke-width':2.2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, this.gyro);
-    svg('rect', {x:71, y:151, width:22, height:22, rx:6, fill:'#fff', stroke:INK, 'stroke-width':2}, gyro);
-    this.check = svg('path', {d:'M76 162.500L80.500 167L88 157.500', stroke:INK, 'stroke-width':3, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, gyro);
+    svg('path', {d:'M65 138L59 133.500L66 130.500', stroke:INK, 'stroke-width':2.2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, this.gyro);
+    svg('rect', {x:59, y:151, width:22, height:22, rx:6, fill:'#fff', stroke:INK, 'stroke-width':2}, gyro);
+    this.check = svg('path', {d:'M64 162.500L68.500 167L76 157.500', stroke:INK, 'stroke-width':3, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, gyro);
   }
 
   protected override render_(){
