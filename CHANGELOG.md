@@ -76,6 +76,11 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   etwa bei neuen Variablen) sitzt am oberen Rand statt in der Mitte und zeigt bei Zahlen die
   Zifferntastatur. Mittig lag es unter der Bildschirmtastatur; manche Browser am iPad schoben
   dann die Seite so weit hoch, dass das Eingabefeld oben herausrutschte.
+- Behoben: War der Python-Bereich im Querformat eingeklappt, lag nach dem Drehen ins Hochformat
+  der Python-Code über den Blöcken, obwohl der Reiter »Blöcke« gewählt war.
+- Behoben (Sicherheit): Ein Zeilenumbruch im Namen einer Nachricht oder in einem nicht übersetzten
+  SPIKE-Block – beides nur über eine präparierte Projektdatei möglich – ließ den Rest als eigene
+  Zeile Python im erzeugten Programm landen. Solche Texte stehen jetzt in einer Zeile.
 - Geändert: Das Beispiel mit dem Steuerfeld fährt ohne Gyrosensor – beim Lenken von Hand
   arbeitet seine Korrektur gegen den Joystick.
 - Neu: »Über Blockwerk« führt zu **Blockwerk auf GitHub** – zum Quelltext mit allen Versionen und

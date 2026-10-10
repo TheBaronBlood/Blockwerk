@@ -50,7 +50,7 @@ export function ask(opts: AskOptions): Promise<string | null> {
 
 /**
  * Fragt einen Text oder eine Zahl ab – ersetzt Blocklys eigenes Eingabefenster am Handy und Tablet.
- * Das Fenster sitzt am oberen Rand: Mittig verdeckt es die Bildschirmtastatur, und manche Browser
+ * Das Fenster sitzt im oberen Teil des Bildschirms: Mittig verdeckt es die Bildschirmtastatur, und manche Browser
  * am iPad schieben dann die ganze Seite so weit hoch, dass das Eingabefeld oben herausrutscht.
  * Liefert null, wenn abgebrochen wurde.
  */
@@ -69,7 +69,12 @@ export function askText(title: string, value: string): Promise<string | null> {
 
     // dem sichtbaren Ausschnitt folgen, falls der Browser die Seite unter der Tastatur verschiebt
     const view = window.visualViewport;
-    const follow = () => { dialog.style.top = `${(view?.offsetTop ?? 0) + 12}px`; };
+    // ein Fünftel unter dem oberen Rand des sichtbaren Ausschnitts – mit Tastatur ist der kleiner, das Fenster rückt mit hoch
+    const follow = () => {
+      const height = view?.height ?? window.innerHeight;
+      const down = Math.max(12, Math.min(height * 0.2, height - dialog.offsetHeight - 12));
+      dialog.style.top = `${(view?.offsetTop ?? 0) + down}px`;
+    };
     const done = (result: string | null) => {
       view?.removeEventListener('scroll', follow); view?.removeEventListener('resize', follow);
       dialog.close(); dialog.remove(); resolve(result);
@@ -80,8 +85,8 @@ export function askText(title: string, value: string): Promise<string | null> {
     form.addEventListener('submit', (e) => { e.preventDefault(); done(input.value); });   // Eingabetaste
     dialog.addEventListener('cancel', (e) => { e.preventDefault(); done(null); });        // Esc-Taste
     document.body.appendChild(dialog);
-    follow();
     dialog.showModal();
+    follow();
     input.focus(); input.select();
   });
 }

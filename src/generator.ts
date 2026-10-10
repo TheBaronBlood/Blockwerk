@@ -155,8 +155,10 @@ F['pb_timer_reset'] = () => { G.timer = true; return 'stoppuhr.reset()\n'; };
 F['pb_timer'] = () => { G.timer = true; return ['stoppuhr.time()', Order.FUNCTION_CALL]; };
 
 // Platzhalter aus dem SPIKE-Import
+/** Text für einen Python-Kommentar: Mit einem Zeilenumbruch darin würde der Rest zu eigenem Code – etwa aus einer fremden Projektdatei. */
+const oneLine = (text: unknown) => String(text ?? '').replace(/[\r\n]+/g, ' ');
 const untranslated = (b: Blockly.Block) => {
-  const what = b.getFieldValue('WHAT');
+  const what = oneLine(b.getFieldValue('WHAT'));
   warn(`Ein SPIKE-Block wurde nicht übersetzt: ${what}`);
   return what;
 };
@@ -300,7 +302,7 @@ export function generate(ws: Blockly.Workspace): GenerateResult {
       name = 'ereignis';
     } else if (b.type === 'pb_when_message'){
       const message = b.getFieldValue('NAME') as string;
-      if (!G.multi){ main += `${mark}# Die Nachricht ${py.quote_(message)} sendet kein anderer Programmteil.\n`; continue; }
+      if (!G.multi){ main += `${mark}# Die Nachricht ${py.quote_(oneLine(message))} sendet kein anderer Programmteil.\n`; continue; }
       code = 'while True:\n' + indent(`await warte_auf(${py.quote_(message)})\n${stack}`);
       name = 'nachricht_' + message;
     }
