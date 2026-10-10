@@ -72,6 +72,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   wächst es mit. Das Häkchen unter dem Kreisel im Roboter schaltet den Gyrosensor. Zum Ein- und
   Ausklappen genügt jetzt auch ein Tipp auf die Schrift »Fahrbasis einrichten«. Zeigen beide Pfeile nach vorn, fährt ein üblich gebauter Roboter vorwärts.
   Gespeicherte Projekte und der erzeugte Code bleiben gleich.
+- Geändert: Das Eingabefenster für Zahlen und Texte (am Handy und Tablet bei jedem Feld, sonst
+  etwa bei neuen Variablen) sitzt am oberen Rand statt in der Mitte und zeigt bei Zahlen die
+  Zifferntastatur. Mittig lag es unter der Bildschirmtastatur; manche Browser am iPad schoben
+  dann die Seite so weit hoch, dass das Eingabefeld oben herausrutschte.
 - Geändert: Das Beispiel mit dem Steuerfeld fährt ohne Gyrosensor – beim Lenken von Hand
   arbeitet seine Korrektur gegen den Joystick.
 - Neu: »Über Blockwerk« führt zu **Blockwerk auf GitHub** – zum Quelltext mit allen Versionen und

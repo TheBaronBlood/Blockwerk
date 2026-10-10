@@ -412,6 +412,11 @@ details.run a{color:#7CC8FF}
 .ask-list li.warn{border-color:#C2410C}
 .ask-list span{font-size:13px;color:var(--muted)}
 .ask .connect-actions{gap:8px;flex-wrap:wrap}
+/* Eingabefenster: oben am Rand, damit die Bildschirmtastatur es nicht verdeckt */
+.ask-text{width:min(360px,calc(100vw - 32px));margin:0 auto;top:12px;bottom:auto}
+.ask-text label{display:flex;flex-direction:column;gap:8px;padding:16px 20px 4px;font-weight:700;font-size:15px}
+.ask-text input{font:700 18px var(--ui);padding:9px 12px;border:1.5px solid var(--rule);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0}
+.ask-text input:focus{outline:2px solid var(--accent);outline-offset:1px}
 
 /* Hub-Ansicht (hub/monitorView.ts) */
 .hubv{width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;border:1px solid var(--rule);border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 16px 48px rgba(0,0,0,.4);overflow:hidden}

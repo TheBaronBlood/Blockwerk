@@ -18,7 +18,7 @@ import { Hub, HubConnectionError, sleep, type HubListener } from './hub/hub';
 import { SerialHub } from './hub/serial';
 import { TestHub } from './hub/testHub';
 import { initAboutDialog } from './about';
-import { ask } from './ask';
+import { ask, askText } from './ask';
 import { initSettingsDialog, isDark, loadSettings, onSettings, settings, updateSettings } from './settings';
 import { browserGamepads, watchGamepad } from './hub/gamepad';
 import { createPad } from './hub/pad';
@@ -71,6 +71,9 @@ const currentToolbox = () => withFoundPorts(toolboxWith(extensions().map(toolbox
 Blockly.Scrollbar.scrollbarThickness = 10;   // schmaler als Blocklys Standard
 // Ansicht nach dem Format des Fensters (viewMode.ts): Auf dem Handy hochkant liegt der Werkzeugkasten als Leiste unten
 const startMode = initViewMode();
+// Eingabefenster für Zahlen und Texte am Handy und Tablet: das eigene, das über der Tastatur bleibt
+Blockly.dialog.setPrompt((message, value, callback) => { void askText(message, value).then(callback); });
+
 const ws = Blockly.inject('blocklyDiv', {
   toolbox:currentToolbox(), theme: isDark() ? THEME_DARK : THEME_LIGHT, renderer:'zelos', media:BLOCKLY_MEDIA, sounds:false, trashcan:false, comments:false,
   horizontalLayout:startMode === 'phone-portrait', toolboxPosition:startMode === 'phone-portrait' ? 'end' : 'start',

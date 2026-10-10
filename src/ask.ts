@@ -47,3 +47,41 @@ export function ask(opts: AskOptions): Promise<string | null> {
     dialog.showModal();
   });
 }
+
+/**
+ * Fragt einen Text oder eine Zahl ab – ersetzt Blocklys eigenes Eingabefenster am Handy und Tablet.
+ * Das Fenster sitzt am oberen Rand: Mittig verdeckt es die Bildschirmtastatur, und manche Browser
+ * am iPad schieben dann die ganze Seite so weit hoch, dass das Eingabefeld oben herausrutscht.
+ * Liefert null, wenn abgebrochen wurde.
+ */
+export function askText(title: string, value: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const dialog = document.createElement('dialog'); dialog.className = 'connect ask ask-text';
+    const form = dialog.appendChild(document.createElement('form')); form.method = 'dialog';
+    const label = form.appendChild(document.createElement('label')); label.textContent = title;
+    const input = label.appendChild(document.createElement('input'));
+    input.type = 'text'; input.value = value; input.autocomplete = 'off'; input.enterKeyHint = 'done';
+    // Zahlen bekommen die Zifferntastatur
+    if (/^-?[\d.,]*$/.test(value)) input.inputMode = 'decimal';
+    const actions = form.appendChild(document.createElement('div')); actions.className = 'connect-actions';
+    const button = (text: string, cls: string) => { const b = actions.appendChild(document.createElement('button')); b.type = 'button'; b.className = cls; b.textContent = text; return b; };
+    const cancel = button('Abbrechen', 'btn'), ok = button('OK', 'btn primary');
+
+    // dem sichtbaren Ausschnitt folgen, falls der Browser die Seite unter der Tastatur verschiebt
+    const view = window.visualViewport;
+    const follow = () => { dialog.style.top = `${(view?.offsetTop ?? 0) + 12}px`; };
+    const done = (result: string | null) => {
+      view?.removeEventListener('scroll', follow); view?.removeEventListener('resize', follow);
+      dialog.close(); dialog.remove(); resolve(result);
+    };
+    view?.addEventListener('scroll', follow); view?.addEventListener('resize', follow);
+    cancel.addEventListener('click', () => done(null));
+    ok.addEventListener('click', () => done(input.value));
+    form.addEventListener('submit', (e) => { e.preventDefault(); done(input.value); });   // Eingabetaste
+    dialog.addEventListener('cancel', (e) => { e.preventDefault(); done(null); });        // Esc-Taste
+    document.body.appendChild(dialog);
+    follow();
+    dialog.showModal();
+    input.focus(); input.select();
+  });
+}
