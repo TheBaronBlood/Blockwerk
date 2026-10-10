@@ -7,10 +7,10 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 
-const W = 246, H = 204;
+const W = 246, H = 190;
 const MID = 84;                               // Höhe der Radmitte
 const LEFT_X = 17, RIGHT_X = 147, CX = 82;    // Radmitten und Mitte des Roboters
-const WHEEL_BLUE = '#2aa9d2', AXLE_ORANGE = '#c2410c', WHEEL_GREEN = '#15803d', GREY = '#aab1bd', INK = '#475569';
+const WHEEL_BLUE = '#2aa9d2', AXLE_ORANGE = '#c2410c', WHEEL_GREEN = '#15803d', INK = '#475569';
 const PORTS = ['A','B','C','D','E','F'];
 /** Drehrichtung, bei der das Rad bei üblichem Einbau vorwärts rollt – der linke Motor sitzt gespiegelt. */
 const FORWARD = {LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_DIR:'CLOCKWISE'} as const;
@@ -53,11 +53,9 @@ export class FieldDrive extends Blockly.Field<string> {
     const text = (x: number, y: number, size: number, fill: string, parent: Element) =>
       svg<SVGTextElement>('text', {x, y, 'text-anchor':'middle', 'dominant-baseline':'central', class:'fd-text', style:`fill:${fill};font-size:${size}px`}, parent);
 
-    // Roboter von oben mit Stützrad hinten. Im Roboter steht nur, was zu ihm gehört – Anschlüsse
+    // Roboter von oben. Im Roboter steht nur, was zu ihm gehört – Anschlüsse
     // und Gyrosensor; die beiden Maße liegen wie in einer Zeichnung außen.
-    svg('rect', {x:22, y:40, width:120, height:162, rx:22, fill:'#fff'}, g);
-    svg('rect', {x:58, y:183, width:48, height:8, rx:4, fill:GREY}, g);
-    svg('circle', {cx:CX, cy:187, r:8, fill:GREY, stroke:'#d5d9e0', 'stroke-width':1.5}, g);
+    svg('rect', {x:22, y:40, width:120, height:148, rx:22, fill:'#fff'}, g);
 
     // Spurbreite: über dem Roboter, von Radmitte zu Radmitte
     svg('path', {d:`M${LEFT_X} 36V50M${RIGHT_X} 36V50`, stroke:AXLE_ORANGE, 'stroke-width':1.5, 'stroke-dasharray':'3 3', fill:'none'}, g);
