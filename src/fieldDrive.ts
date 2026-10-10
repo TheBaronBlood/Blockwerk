@@ -6,11 +6,12 @@
 // Läuft ohne DOM, solange der Block nicht gezeichnet wird (Tests).
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
+import { COL } from './theme';
 
 const W = 222, H = 190;
 const MID = 84;                               // Höhe der Radmitte
 const LEFT_X = 17, RIGHT_X = 123, CX = 70;    // Radmitten und Mitte des Roboters
-const WHEEL_BLUE = '#2aa9d2', AXLE_ORANGE = '#c2410c', WHEEL_GREEN = '#15803d', INK = '#475569';
+const WHEEL_BLUE = '#2aa9d2', AXLE_YELLOW = COL.event[0], WHEEL_GREEN = COL.op[0], INK = '#475569';
 const PORTS = ['A','B','C','D','E','F'];
 /** Drehrichtung, bei der das Rad bei üblichem Einbau vorwärts rollt – der linke Motor sitzt gespiegelt. */
 const FORWARD = {LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_DIR:'CLOCKWISE'} as const;
@@ -58,18 +59,18 @@ export class FieldDrive extends Blockly.Field<string> {
     svg('rect', {x:22, y:40, width:96, height:148, rx:22, fill:'#fff'}, g);
 
     // Spurbreite: über dem Roboter, von Radmitte zu Radmitte
-    svg('path', {d:`M${LEFT_X} 36V50M${RIGHT_X} 36V50`, stroke:AXLE_ORANGE, 'stroke-width':1.5, 'stroke-dasharray':'3 3', fill:'none'}, g);
-    svg('path', {d:`M${LEFT_X} 30H${RIGHT_X}M${LEFT_X} 24V36M${RIGHT_X} 24V36`, stroke:AXLE_ORANGE, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
+    svg('path', {d:`M${LEFT_X} 36V50M${RIGHT_X} 36V50`, stroke:AXLE_YELLOW, 'stroke-width':1.5, 'stroke-dasharray':'3 3', fill:'none'}, g);
+    svg('path', {d:`M${LEFT_X} 30H${RIGHT_X}M${LEFT_X} 24V36M${RIGHT_X} 24V36`, stroke:AXLE_YELLOW, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
     const axleHit = hit('AXLE', 'Spurbreite ändern');
-    svg('rect', {x:CX - 34, y:1, width:68, height:22, rx:7, fill:'#fff', stroke:AXLE_ORANGE, 'stroke-width':1.5}, axleHit);
-    this.axle = text(CX, 12, 14, AXLE_ORANGE, axleHit);
+    svg('rect', {x:CX - 34, y:1, width:68, height:22, rx:7, fill:AXLE_YELLOW}, axleHit);
+    this.axle = text(CX, 12, 14, '#fff', axleHit);
 
     // Raddurchmesser: rechts neben dem Rad
     svg('path', {d:'M138 52H156M138 116H156', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
     svg('path', {d:'M150 56V112M145.500 62L150 55L154.500 62M145.500 106L150 113L154.500 106', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
     const wheelHit = hit('WHEEL', 'Raddurchmesser ändern');
-    svg('rect', {x:160, y:MID - 11, width:60, height:22, rx:7, fill:'#fff', stroke:WHEEL_GREEN, 'stroke-width':1.5}, wheelHit);
-    this.wheel = text(190, MID, 14, WHEEL_GREEN, wheelHit);
+    svg('rect', {x:160, y:MID - 11, width:60, height:22, rx:7, fill:WHEEL_GREEN}, wheelHit);
+    this.wheel = text(190, MID, 14, '#fff', wheelHit);
 
     // Räder mit Pfeil, innen daneben der Anschluss
     const side = (name: Side, cx: number, portX: number, label: string) => {

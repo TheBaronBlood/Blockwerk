@@ -96,7 +96,7 @@ export const BLOCK_DOCS: Record<string, BlockDoc> = {
       ['Buchstaben im Roboter', 'Anschlüsse des linken und des rechten Antriebsmotors, jeweils neben seinem Rad.'],
       ['Pfeile auf den Rädern', 'Drehrichtung. Ein Tipp auf das Rad dreht den Pfeil um. Zeigen beide nach vorn, fährt ein üblich gebauter Roboter vorwärts – der linke Motor sitzt dabei spiegelbildlich.'],
       ['grünes Maß neben dem Rad', 'Raddurchmesser in mm. Das kleine SPIKE-Rad hat 56 mm, das große 88 mm.'],
-      ['oranges Maß über dem Roboter', 'Spurbreite: Abstand zwischen den Mitten der beiden Räder in mm.'],
+      ['gelbes Maß über dem Roboter', 'Spurbreite: Abstand zwischen den Mitten der beiden Räder in mm.'],
       ['Kreisel mit Häkchen', 'Gyrosensor nutzen: Der Hub korrigiert mit seinem Drehsensor, damit der Roboter gerade fährt und genau dreht.']],
     python:'Aus diesem Block entstehen mehrere Zeilen im Kopf: je ein `Motor(Port.A, …)` für die beiden Motoren, dann `roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)`. `use_gyro(True)` schaltet die Korrektur mit dem Gyrosensor ein.',
     tips:['Fährt der Roboter rückwärts statt vorwärts: beide Pfeile umdrehen.',
