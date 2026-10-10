@@ -12,7 +12,7 @@ import * as Blockly from 'blockly';
 export const BLOCKLY_MEDIA = './blockly-media/';
 
 type Shades = readonly [string, string, string];
-const COL: Record<string, Shades> = {
+export const COL: Record<string, Shades> = {
   event:['#D4A300','#E3BD45','#A88100'], drive:['#E644B9','#EE7FD0','#B30081'],
   motor:['#0082DD','#4DA8E8','#006BB8'], sensor:['#2CADCD','#6CC7DE','#0090AD'],
   hub:['#8C5FDD','#AD8CE8','#5E1CD8'], remote:['#0EAA7E','#56C4A5','#0A805E'], list:['#BA59BA','#D084D0','#953995'], control:['#DB9C12','#E8B955','#AD7700'],
