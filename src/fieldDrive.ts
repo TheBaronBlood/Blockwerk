@@ -143,7 +143,16 @@ export class FieldDrive extends Blockly.Field<string> {
     if (name === 'GYRO') return this.set('GYRO', this.value('GYRO') === 'TRUE' ? 'FALSE' : 'TRUE');
     if (name === 'LEFT_DIR' || name === 'RIGHT_DIR') return this.set(name, this.value(name) === 'CLOCKWISE' ? 'COUNTERCLOCKWISE' : 'CLOCKWISE');
 
-    if (name === 'WHEEL' || name === 'AXLE') return this.editNumber(name, part);
+    if (name === 'WHEEL' || name === 'AXLE'){
+      // Am Handy und Tablet fragt Blockly Zahlen in einem Fenster ab – ein Eingabefeld auf dem Block
+      // verliert dort beim Antippen sofort wieder den Fokus. Hier genauso wie bei den übrigen Feldern.
+      const ua = Blockly.utils.userAgent;
+      if (!(ua.MOBILE || ua.ANDROID || ua.IPAD)) return this.editNumber(name, part);
+      return Blockly.dialog.prompt(name === 'WHEEL' ? 'Raddurchmesser in mm' : 'Spurbreite in mm', this.value(name), (text) => {
+        const n = Number((text ?? '').replace(',', '.'));
+        if (text !== null && text.trim() !== '' && Number.isFinite(n)) this.set(name, n);
+      });
+    }
 
     const block = this.getSourceBlock() as Blockly.BlockSvg;
     Blockly.DropDownDiv.clearContent();
