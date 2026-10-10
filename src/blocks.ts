@@ -44,7 +44,14 @@ const val = (o: Json, check: string) => Object.assign({output:check, inputsInlin
 const arrow = (path: string) => 'data:image/svg+xml,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="${path}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
 const ARROW_OPEN = arrow('M3.5 6l4.500 4.500L12.500 6'), ARROW_CLOSED = arrow('M6 3.500l4.500 4.500L6 12.500');
-type FoldBlock = Blockly.Block & {folded_: boolean; setFolded(folded: boolean): void};
+/** Beschriftung, die sich wie ein Knopf antippen lässt. */
+class FoldLabel extends Blockly.FieldLabel {
+  constructor(text: string, private readonly onClick: () => void){ super(text); }
+  override isClickable(){ return true; }
+  protected override showEditor_(){ this.onClick(); }
+  override initView(){ super.initView(); if (this.fieldGroup_) this.fieldGroup_.style.cursor = 'pointer'; }
+}
+type FoldBlock =Blockly.Block & {folded_: boolean; setFolded(folded: boolean): void};
 // als »Mutator« angemeldet, weil Blockly nur dort eigenen gespeicherten Zustand erlaubt
 Blockly.Extensions.registerMutator('pb_foldable', {
   folded_: false,
@@ -62,9 +69,12 @@ Blockly.Extensions.registerMutator('pb_foldable', {
   }
 }, function(this: Blockly.Block){
   const block = this as FoldBlock;
-  const toggle = new Blockly.FieldImage(ARROW_OPEN, 16, 16, 'ein- oder ausklappen', () => block.setFolded(!block.folded_));
+  const flip = () => block.setFolded(!block.folded_);
+  const toggle = new Blockly.FieldImage(ARROW_OPEN, 16, 16, 'ein- oder ausklappen', flip);
   this.inputList[0].insertFieldAt(0, toggle, 'FOLD');
-  this.inputList[0].appendField(new Blockly.FieldLabel(''), 'FOLD_INFO');
+  // der Pfeil allein ist für den Finger zu klein: auch die Schrift daneben klappt um
+  this.inputList[0].appendField(new FoldLabel('Fahrbasis einrichten', flip), 'FOLD_TITLE');
+  this.inputList[0].appendField(new FoldLabel('', flip), 'FOLD_INFO');
   this.getInput('DATA')?.setVisible(false);
   // das Bild folgt den Werten, auch bei »Rückgängig«
   this.setOnChange((e) => {
@@ -88,7 +98,7 @@ Blockly.common.defineBlocksWithJsonArray([
   // Fahren
   stmt({type:'pb_drive_setup', style:'drive_blocks', inputsInline:false, mutator:'pb_foldable',
    // Eingestellt wird im Bild (fieldDrive.ts); die Felder dahinter bleiben unsichtbar und halten die Werte.
-   message0:'Fahrbasis einrichten %1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11',
+   message0:'%1 %2 %3 %4 %5 %6 %7 %8 %9 %10 %11',
    args0:[{type:'input_end_row'},
      {type:'field_drive',name:'VIEW'},{type:'input_end_row'},
      {type:'field_dropdown',name:'LEFT_PORT',options:PORTS},{type:'field_dropdown',name:'LEFT_DIR',options:DIRS},

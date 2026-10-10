@@ -67,9 +67,10 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Neu: **»Fahrbasis einrichten« als Bild** – der Block zeigt den Roboter von oben, vorn ist oben.
   Eingestellt wird direkt im Bild: Ein Tipp auf den Buchstaben neben einem Rad wählt den
   Anschluss, ein Tipp auf das Rad dreht seinen Pfeil und damit die Drehrichtung um. Die Maße
-  liegen außen wie in einer Zeichnung – die Spurbreite über dem Roboter, der Raddurchmesser neben
-  dem Rad – und lassen sich antippen und ändern. Das Häkchen unter dem Kreisel im Roboter schaltet
-  den Gyrosensor. Zeigen beide Pfeile nach vorn, fährt ein üblich gebauter Roboter vorwärts.
+  liegen außen wie in einer Zeichnung – die Spurbreite gelb über dem Roboter, der Raddurchmesser
+  grün neben dem Rad. Ein Tipp macht das Schildchen selbst zum Eingabefeld; bei langen Zahlen
+  wächst es mit. Das Häkchen unter dem Kreisel im Roboter schaltet den Gyrosensor. Zum Ein- und
+  Ausklappen genügt jetzt auch ein Tipp auf die Schrift »Fahrbasis einrichten«. Zeigen beide Pfeile nach vorn, fährt ein üblich gebauter Roboter vorwärts.
   Gespeicherte Projekte und der erzeugte Code bleiben gleich.
 - Neu: »Über Blockwerk« führt zu **Blockwerk auf GitHub** – zum Quelltext mit allen Versionen und
   zum Autor. Die Verweise stehen unter dem Dank an Pybricks.
