@@ -12,6 +12,7 @@ const W = 222, H = 190;
 const MID = 84;                               // Höhe der Radmitte
 const LEFT_X = 17, RIGHT_X = 123, CX = 70;    // Radmitten und Mitte des Roboters
 const WHEEL_BLUE = '#2aa9d2', AXLE_YELLOW = '#F0B90F', WHEEL_GREEN = COL.op[0], INK = '#475569';
+const AXLE_MIN = 68, WHEEL_MIN = 60, WHEEL_BOX_X = 160;   // Grundbreite der Schildchen
 const PORTS = ['A','B','C','D','E','F'];
 /** Drehrichtung, bei der das Rad bei üblichem Einbau vorwärts rollt – der linke Motor sitzt gespiegelt. */
 const FORWARD = {LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_DIR:'CLOCKWISE'} as const;
@@ -28,6 +29,8 @@ export class FieldDrive extends Blockly.Field<string> {
   private arrows: Partial<Record<Side, SVGGElement>> = {};
   private axle: SVGTextElement | null = null;
   private wheel: SVGTextElement | null = null;
+  private axleBox: SVGElement | null = null;
+  private wheelBox: SVGElement | null = null;
   private gyro: SVGGElement | null = null;
   private check: SVGElement | null = null;
   /** Teil des Bilds, an dem sich der gerade geöffnete Editor ausrichtet. */
@@ -44,7 +47,8 @@ export class FieldDrive extends Blockly.Field<string> {
   private set(name: string, value: string | number){ this.getSourceBlock()?.setFieldValue(value, name); this.forceRerender(); }
 
   protected override initView(){
-    const g = this.fieldGroup_!;
+    // eigene Gruppe: Blockly umrandet beim Überfahren jedes Rechteck, das direkt im Feld liegt
+    const g = svg<SVGGElement>('g', {}, this.fieldGroup_!);
     /** Anklickbarer Teil des Bilds; `part` sagt showEditor_, was gemeint ist. */
     const hit = (part: string, title: string) => {
       const group = svg<SVGGElement>('g', {'data-part':part, class:'fd-hit'}, g);
@@ -62,14 +66,14 @@ export class FieldDrive extends Blockly.Field<string> {
     svg('path', {d:`M${LEFT_X} 36V50M${RIGHT_X} 36V50`, stroke:AXLE_YELLOW, 'stroke-width':1.5, 'stroke-dasharray':'3 3', fill:'none'}, g);
     svg('path', {d:`M${LEFT_X} 30H${RIGHT_X}M${LEFT_X} 24V36M${RIGHT_X} 24V36`, stroke:AXLE_YELLOW, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
     const axleHit = hit('AXLE', 'Spurbreite ändern');
-    svg('rect', {x:CX - 34, y:1, width:68, height:22, rx:7, fill:AXLE_YELLOW}, axleHit);
+    this.axleBox = svg('rect', {x:CX - AXLE_MIN / 2, y:1, width:AXLE_MIN, height:22, rx:7, fill:AXLE_YELLOW}, axleHit);
     this.axle = text(CX, 12, 14, '#fff', axleHit);
 
     // Raddurchmesser: rechts neben dem Rad
     svg('path', {d:'M138 52H156M138 116H156', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round'}, g);
     svg('path', {d:'M150 56V112M145.500 62L150 55L154.500 62M145.500 106L150 113L154.500 106', stroke:WHEEL_GREEN, 'stroke-width':2, fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
     const wheelHit = hit('WHEEL', 'Raddurchmesser ändern');
-    svg('rect', {x:160, y:MID - 11, width:60, height:22, rx:7, fill:WHEEL_GREEN}, wheelHit);
+    this.wheelBox = svg('rect', {x:WHEEL_BOX_X, y:MID - 11, width:WHEEL_MIN, height:22, rx:7, fill:WHEEL_GREEN}, wheelHit);
     this.wheel = text(190, MID, 14, '#fff', wheelHit);
 
     // Räder mit Pfeil, innen daneben der Anschluss
@@ -105,12 +109,22 @@ export class FieldDrive extends Blockly.Field<string> {
       const forward = this.value(`${name}_DIR`) === FORWARD[`${name}_DIR`];
       this.arrows[name]?.setAttribute('transform', forward ? '' : `rotate(180 ${cx} ${MID})`);
     }
-    if (this.axle) this.axle.textContent = `${this.value('AXLE')} mm`;
-    if (this.wheel) this.wheel.textContent = `${this.value('WHEEL')} mm`;
+    // Die Schildchen wachsen mit langen Zahlen, werden aber nie schmaler als ihr Grundmaß.
+    const fit = (label: SVGTextElement | null, box: SVGElement | null, value: string, min: number, left: (width: number) => number) => {
+      if (!label || !box) return 0;
+      label.textContent = `${value} mm`;
+      const width = Math.max(min, Math.ceil((label.getComputedTextLength?.() || label.textContent.length * 8.5) + 16));
+      const x = left(width);
+      box.setAttribute('x', String(x)); box.setAttribute('width', String(width));
+      label.setAttribute('x', String(x + width / 2));
+      return x + width;
+    };
+    const axleEnd = fit(this.axle, this.axleBox, this.value('AXLE'), AXLE_MIN, (w) => Math.max(0, CX - w / 2));
+    const wheelEnd = fit(this.wheel, this.wheelBox, this.value('WHEEL'), WHEEL_MIN, () => WHEEL_BOX_X);
     const gyro = this.value('GYRO') === 'TRUE';
     this.gyro?.setAttribute('opacity', gyro ? '1' : '0.4');
     this.check?.setAttribute('visibility', gyro ? 'visible' : 'hidden');
-    this.size_ = new Blockly.utils.Size(W, H);
+    this.size_ = new Blockly.utils.Size(Math.max(W, axleEnd, wheelEnd + 2), H);
   }
 
   /** Der Editor hängt am angetippten Teil, nicht am ganzen Bild. */
@@ -151,19 +165,23 @@ export class FieldDrive extends Blockly.Field<string> {
 
   /** Zahl direkt im Schildchen ändern: ein Eingabefeld liegt genau darüber, ohne eigenes Fenster. */
   private editNumber(name: 'WHEEL' | 'AXLE', part: Element){
-    const r = part.getBoundingClientRect();
-    const scale = r.height / 22;   // das Schildchen ist 22 Einheiten hoch
+    const scale = part.getBoundingClientRect().height / 22;   // das Schildchen ist 22 Einheiten hoch
     Blockly.WidgetDiv.show(this, false, () => {});
     const div = Blockly.WidgetDiv.getDiv()!;
     // Blocklys Ebene für Eingabefelder liegt in der Arbeitsfläche, nicht in der ganzen Seite
     const base = (div.offsetParent ?? document.body).getBoundingClientRect();
-    div.style.left = `${r.left - base.left}px`;
-    div.style.top = `${r.top - base.top}px`;
     const input = document.createElement('input');
     input.className = 'fd-edit'; input.inputMode = 'decimal'; input.value = this.value(name);
     input.setAttribute('aria-label', name === 'WHEEL' ? 'Raddurchmesser in mm' : 'Spurbreite in mm');
-    Object.assign(input.style, {width:`${r.width}px`, height:`${r.height}px`, fontSize:`${14 * scale}px`, borderRadius:`${7 * scale}px`,
+    Object.assign(input.style, {fontSize:`${14 * scale}px`, borderRadius:`${7 * scale}px`,
       background:name === 'WHEEL' ? WHEEL_GREEN : AXLE_YELLOW});
+    // das Eingabefeld deckt das Schildchen genau ab – auch wenn es beim Tippen wächst
+    const place = () => {
+      const r = part.getBoundingClientRect();
+      div.style.left = `${r.left - base.left}px`; div.style.top = `${r.top - base.top}px`;
+      input.style.width = `${r.width}px`; input.style.height = `${r.height}px`;
+    };
+    place();
     div.appendChild(input);
     input.focus(); input.select();
 
@@ -174,6 +192,7 @@ export class FieldDrive extends Blockly.Field<string> {
       if (input.value.trim() === '' || !Number.isFinite(n)) return;
       Blockly.Events.setGroup(group);
       this.set(name, n);
+      void Blockly.renderManagement.finishQueuedRenders().then(() => { if (input.isConnected) place(); });
       Blockly.Events.setGroup(false);
     });
     const close = () => Blockly.WidgetDiv.hideIfOwner(this);
