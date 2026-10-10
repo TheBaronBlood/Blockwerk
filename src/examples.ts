@@ -13,7 +13,7 @@ export const seq = (...list: BlockState[]) => { for (let i = 0; i < list.length 
 export const S = (...list: BlockState[]) => ({block: seq(...list)});
 export const at = (block: BlockState, x: number, y: number) => Object.assign(block, {x, y});
 export const NB = (n: number, block: BlockState) => ({shadow:{type:'math_number', fields:{NUM:n}}, block});
-export const setup = () => B('pb_drive_setup', {LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE', WHEEL:56, AXLE:112, GYRO:true});
+export const setup = (gyro = true) => B('pb_drive_setup', {LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE', WHEEL:56, AXLE:112, GYRO:gyro});
 export const refl = () => B('pb_reflection', {PORT:'C'});
 export const cmp = (op: string, a: BlockState, bn: number) => B('logic_compare', {OP:op}, {A:{block:a}, B:N(bn)});
 export const ws_ = (blocks: BlockState[], variables?: {name: string; id: string}[]): WorkspaceState => ({blocks:{languageVersion:0, blocks}, ...(variables ? {variables} : {})});
@@ -42,7 +42,8 @@ export const EXAMPLES: Record<string, () => WorkspaceState> = {
   funktion: () => ws_([
       at(B('procedures_defnoreturn', {NAME:'Ecke'}, {STACK:S(B('pb_drive_straight', null, {DIST:N(200)}), B('pb_drive_turn', null, {ANGLE:N(90)}))}), 40, 40),
       at(seq(B('pb_start'), setup(), B('controls_repeat_ext', null, {TIMES:N(4), DO:S(B('procedures_callnoreturn', null, null, {name:'Ecke'}))})), 40, 260)]),
-  steuerfeld: () => ws_([at(seq(B('pb_start'), setup(),
+  // ohne Gyrosensor: Beim Lenken von Hand arbeitet seine Korrektur gegen den Joystick
+  steuerfeld: () => ws_([at(seq(B('pb_start'), setup(false),
       B('pb_forever', null, {DO:S(
         B('pb_drive_drive', null, {
           SPEED:NB(0, B('math_arithmetic', {OP:'MULTIPLY'}, {A:{block:B('pb_pad_stick', {AXIS:'y'})}, B:N(3)})),

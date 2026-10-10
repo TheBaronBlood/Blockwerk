@@ -160,7 +160,6 @@ motor_B = Motor(Port.B)
 
 # Fahrbasis
 roboter = DriveBase(motor_A, motor_B, wheel_diameter=56, axle_track=112)
-roboter.use_gyro(True)
 
 # Steuerfeld von Blockwerk: Eingaben kommen als einzelne Bytes vom Browser
 steuerfeld = {'x': 0, 'y': 0, 'A': False, 'B': False, 'C': False, 'D': False}
