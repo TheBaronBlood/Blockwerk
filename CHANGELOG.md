@@ -15,6 +15,45 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## 0.30.0 – 12. Oktober 2026
+
+Ein Release mit fertigen Programmen. Seit dem vorigen (0.26.0) kamen dazu: der **Simulator** mit Bahnen
+zum Selberbauen, **mehrere Blöcke auf einmal** auswählen, eine **eigene Ansicht für das Handy**,
+Klänge, die neue Oberfläche und das Erkennen der Anschlüsse am Hub – im Einzelnen in den
+Abschnitten 0.26.1 bis 0.29.0. Neu seit 0.29.0:
+
+- Neu: **»Fahrbasis einrichten« als Bild** – der Block zeigt den Roboter von oben, vorn ist oben.
+  Eingestellt wird direkt im Bild: Ein Tipp auf den Buchstaben neben einem Rad wählt den
+  Anschluss, ein Tipp auf das Rad dreht seinen Pfeil und damit die Drehrichtung um. Die Maße
+  liegen außen wie in einer Zeichnung – die Spurbreite gelb über dem Roboter, der Raddurchmesser
+  grün neben dem Rad. Ein Tipp macht das Schildchen selbst zum Eingabefeld; bei langen Zahlen
+  wächst es mit. Das Häkchen unter dem Kreisel im Roboter schaltet den Gyrosensor. Zum Ein- und
+  Ausklappen genügt jetzt auch ein Tipp auf die Schrift »Fahrbasis einrichten«. Zeigen beide Pfeile nach vorn, fährt ein üblich gebauter Roboter vorwärts.
+  Gespeicherte Projekte und der erzeugte Code bleiben gleich.
+- Geändert: Das Eingabefenster für Zahlen und Texte (am Handy und Tablet bei jedem Feld, sonst
+  etwa bei neuen Variablen) sitzt am oberen Rand statt in der Mitte und zeigt bei Zahlen die
+  Zifferntastatur. Mittig lag es unter der Bildschirmtastatur; manche Browser am iPad schoben
+  dann die Seite so weit hoch, dass das Eingabefeld oben herausrutschte.
+- Geändert: Das Beispiel mit dem Steuerfeld fährt ohne Gyrosensor – beim Lenken von Hand
+  arbeitet seine Korrektur gegen den Joystick.
+- Behoben: Am Handy im Querformat lagen im Simulator Bahn, Messwerte und Terminal übereinander.
+  Die Leisten des Simulators bleiben dort jetzt einzeilig und rollen seitwärts; die Schildchen
+  zum Roboter und der Hinweis »So kommt das Programm auf den Hub« entfallen, solange der
+  Simulator offen ist. Auch am Computer schiebt sich die Bahn nicht mehr über das Steuerfeld,
+  wenn der Platz knapp wird – das Terminal gibt nach.
+- Behoben: War der Python-Bereich im Querformat eingeklappt, lag nach dem Drehen ins Hochformat
+  der Python-Code über den Blöcken, obwohl der Reiter »Blöcke« gewählt war.
+- Behoben: Beim Drehen des Tablets zoomt die Seite nicht mehr. Der Streifen mit dem Steuerfeld
+  lässt sich dort schließen, und der Knopf zum Auswählen mehrerer Blöcke liegt nicht mehr unter
+  dem Startknopf oder dem Controller-Knopf.
+- Behoben (Sicherheit): Ein Zeilenumbruch im Namen einer Nachricht oder in einem nicht übersetzten
+  SPIKE-Block – beides nur über eine präparierte Projektdatei möglich – ließ den Rest als eigene
+  Zeile Python im erzeugten Programm landen. Solche Texte stehen jetzt in einer Zeile.
+- Geprüft vor dem Release: alle Tests, der Selbsttest des Programms, dazu ein Rundgang durch die
+  gebaute Seite im Fenster – alle Beispiele im Simulator, alle 23 SPIKE-Projekte der AG, Hilfe,
+  Erweiterungen, Test-Hub – am Computer und in Handy- und Tablet-Größe, hoch und quer. An echten
+  Hubs, Tablets und Handys weiterhin nicht erprobt.
+
 ## 0.29.0 – 8. Oktober 2026
 
 - Neu: **Simulator** – Programme ohne Roboter ausprobieren. Der Knopf »Simulator« über dem
@@ -64,25 +103,6 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   Leiste bietet »Duplizieren« und »Löschen«. Was untereinander hing, hängt nach dem Einfügen
   wieder zusammen; getrennte Teile behalten ihren Abstand. Gemeinsam ziehen lassen sich mehrere
   gewählte Blöcke noch nicht.
-- Neu: **»Fahrbasis einrichten« als Bild** – der Block zeigt den Roboter von oben, vorn ist oben.
-  Eingestellt wird direkt im Bild: Ein Tipp auf den Buchstaben neben einem Rad wählt den
-  Anschluss, ein Tipp auf das Rad dreht seinen Pfeil und damit die Drehrichtung um. Die Maße
-  liegen außen wie in einer Zeichnung – die Spurbreite gelb über dem Roboter, der Raddurchmesser
-  grün neben dem Rad. Ein Tipp macht das Schildchen selbst zum Eingabefeld; bei langen Zahlen
-  wächst es mit. Das Häkchen unter dem Kreisel im Roboter schaltet den Gyrosensor. Zum Ein- und
-  Ausklappen genügt jetzt auch ein Tipp auf die Schrift »Fahrbasis einrichten«. Zeigen beide Pfeile nach vorn, fährt ein üblich gebauter Roboter vorwärts.
-  Gespeicherte Projekte und der erzeugte Code bleiben gleich.
-- Geändert: Das Eingabefenster für Zahlen und Texte (am Handy und Tablet bei jedem Feld, sonst
-  etwa bei neuen Variablen) sitzt am oberen Rand statt in der Mitte und zeigt bei Zahlen die
-  Zifferntastatur. Mittig lag es unter der Bildschirmtastatur; manche Browser am iPad schoben
-  dann die Seite so weit hoch, dass das Eingabefeld oben herausrutschte.
-- Behoben: War der Python-Bereich im Querformat eingeklappt, lag nach dem Drehen ins Hochformat
-  der Python-Code über den Blöcken, obwohl der Reiter »Blöcke« gewählt war.
-- Behoben (Sicherheit): Ein Zeilenumbruch im Namen einer Nachricht oder in einem nicht übersetzten
-  SPIKE-Block – beides nur über eine präparierte Projektdatei möglich – ließ den Rest als eigene
-  Zeile Python im erzeugten Programm landen. Solche Texte stehen jetzt in einer Zeile.
-- Geändert: Das Beispiel mit dem Steuerfeld fährt ohne Gyrosensor – beim Lenken von Hand
-  arbeitet seine Korrektur gegen den Joystick.
 - Neu: »Über Blockwerk« führt zu **Blockwerk auf GitHub** – zum Quelltext mit allen Versionen und
   zum Autor. Die Verweise stehen unter dem Dank an Pybricks.
 - Geändert: Nach dem Kopieren oder Ausschneiden eines Blocks erscheint kein Hinweis mehr über der
