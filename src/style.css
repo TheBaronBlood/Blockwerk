@@ -186,7 +186,8 @@ aside.code{color-scheme:dark;flex:0 0 var(--code-w,clamp(330px,38vw,600px));min-
 /* Simulator: steht im Codebereich an der Stelle des Codes */
 aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .code-zoom,aside.code.sim-on #btnCopy{display:none!important}
 .code-head .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-.sim{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+/* (nicht niedriger als Leisten und Bahn zusammen – sonst läge die Bahn über Steuerfeld und Terminal; das Terminal gibt nach) */
+.sim{flex:1 1 auto;display:flex;flex-direction:column}
 /* Die Leiste: Knöpfe in Gruppen (laufen lassen · Tempo · Bahn · Roboter), jede Gruppe ein flaches Feld; die
    Knöpfe darin ohne Rahmen, mit einem grauen Zeichen vor dem Wort. */
 .sim-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px 6px}
@@ -350,7 +351,7 @@ html.pad-turned .toast{top:50%!important;bottom:auto!important;left:auto;right:c
 .split-h::after{content:"";position:absolute;top:2px;left:50%;height:3px;width:36px;margin-left:-18px;border-radius:2px;background:#9AA6B5;opacity:.55}
 .split:hover,.split.drag,.split-h:hover,.split-h.drag{background:var(--accent)}
 .split:hover::after,.split.drag::after,.split-h:hover::after,.split-h.drag::after{background:#fff;opacity:1}
-.term{flex:0 0 var(--term-h,26%);min-height:70px;display:flex;flex-direction:column}
+.term{flex:0 1 var(--term-h,26%);min-height:70px;display:flex;flex-direction:column}
 .term.collapsed{flex:0 0 auto;min-height:0}
 .term.collapsed .term-out,.term.collapsed #btnTermClear{display:none}
 .split-h:has(+ .term.collapsed){display:none}
@@ -991,3 +992,13 @@ html[data-layout="phone-landscape"] .ws-wrap.has-pad .ws-run button.pick{bottom:
 html[data-layout="phone-landscape"] .blocklyToolbox{padding:6px 0!important}
 html[data-layout="phone-landscape"] .blocklyToolboxCategory{line-height:32px!important;margin-bottom:5px!important;padding:0 12px 0 9px!important;border-left-width:8px}
 html[data-layout="phone-landscape"] .blocklyToolboxCategoryLabel{font-size:15px!important}
+/* Simulator: Für umbrochene Leisten, Bahn und Terminal reicht die Höhe nicht – die Leisten bleiben einzeilig und
+   rollen seitwärts; solange der Simulator offen ist, entfallen die Schildchen zum Roboter und der Hinweis zum Hub,
+   Kopf und Terminal bleiben flach. */
+html[data-layout="phone-landscape"] .code-head{padding-top:6px;padding-bottom:5px}
+html[data-layout="phone-landscape"] .sim-chips{display:none}
+html[data-layout="phone-landscape"] .sim-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-top:6px;padding-bottom:4px}
+html[data-layout="phone-landscape"] .sim-bar > *{flex:0 0 auto}
+html[data-layout="phone-landscape"] .sim-tiles{flex-wrap:nowrap}
+html[data-layout="phone-landscape"] aside.code.sim-on details.run{display:none}
+html[data-layout="phone-landscape"] aside.code.sim-on .term:not(.collapsed){flex-basis:76px}
