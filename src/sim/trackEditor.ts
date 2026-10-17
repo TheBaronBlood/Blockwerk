@@ -14,8 +14,10 @@ const COLORS = {line:'#000000', green:'#1FA84A', red:'#D22B2B', tile:'#FFFFFF', 
 
 /** Zeichnet eine Platte an den Ursprung, in Millimetern. */
 function drawTile(g: CanvasRenderingContext2D, tile: Tile, lineWidth = LINE_MM){
-  const {lines, rects} = tileShapes(tile);
-  g.strokeStyle = COLORS.line; g.lineWidth = lineWidth; g.lineJoin = 'round'; g.lineCap = 'butt';
+  const {lines, rects, ground} = tileShapes(tile);
+  // ein anderer Untergrund (Nachtfahrt: schwarz – die Linie ist dann weiß; ganz grüne Platte)
+  if (ground){ g.fillStyle = ground === 'black' ? COLORS.line : COLORS.green; g.fillRect(0, 0, TILE_MM, TILE_MM); }
+  g.strokeStyle = ground === 'black' ? COLORS.tile : COLORS.line; g.lineWidth = lineWidth; g.lineJoin = 'round'; g.lineCap = 'butt';
   for (const line of lines){
     g.beginPath();
     line.forEach((p, i) => { if (i) g.lineTo(p.x, p.y); else g.moveTo(p.x, p.y); });
@@ -51,6 +53,7 @@ function icon(tool: Tool): HTMLCanvasElement {
   const g = canvas.getContext('2d')!;
   g.scale(size * dpr / TILE_MM, size * dpr / TILE_MM);
   g.fillStyle = COLORS.tile; g.beginPath(); g.roundRect(0, 0, TILE_MM, TILE_MM, 36); g.fill();
+  g.clip();   // (ein schwarzer oder grüner Untergrund bleibt in den runden Ecken)
   // (die Linie kräftiger als auf der Bahn – in dieser Größe wäre sie sonst ein Haar)
   if (tool === 'green') drawTile(g, {kind:'cross', turn:0}, 30);
   else if (tool !== 'erase') drawTile(g, {kind:tool, turn:0}, 34);

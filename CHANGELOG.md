@@ -44,6 +44,12 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
 - Geändert: Auf den Platten (30 × 30 cm) steht der Roboter immer in **echter Größe**; den Regler für seine Größe gibt es nur noch
   bei einem eigenen Bild als Bahn, dessen Maßstab Blockwerk nicht kennt. Die schwarze Linie auf den Platten ist
   1,5 cm breit statt 2 cm, wie auf den Platten der AG; die grünen Punkte sitzen weiter direkt an ihr.
+- Neu: **24 weitere Platten** für den Bahn-Editor nach dem Satz »RCJA Rescue Line Small Tiles V2« (rcja.app) –
+  gestrichelte Linie, Haken, Stufen- und schräge Ecke, Ecke mit Diagonale, Kreuzung mit Lücke, zwei Kurven, zwei
+  schräge Ecken, Dreiecks-, Trapez- und Rechteckwelle, S-Kurve, Halbkreis, Haarnadel, sanfte Welle, Kreisel mit zwei
+  Zufahrten und als Dreiviertelkreis, Sackgasse (mit grünen Punkten), Start, Nachtfahrt und Rechteckwelle weiß auf
+  schwarz, grüne Fläche und leere Platte; dazu die Vorlage »Rundkurs mit RCJA-Platten«. Die Kurve hat jetzt die Form
+  aus diesem Satz (125 mm Halbmesser mit geraden Enden). Die Formen sind nach den Maßen nachgezeichnet, nicht übernommen.
 - Behoben: Die Leiste des Simulators ordnet sich bei wenig Platz sauber an – erst fallen Wörter
   weg, dann bricht sie fest in zwei Reihen um; das Tempo steht immer rechts. Beim Bahnbauen stehen
   Größe, Vorlage und Datei neben Start und Fertig.

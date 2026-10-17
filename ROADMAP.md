@@ -398,9 +398,10 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
   sind zwei einzelne Motoren die Räder – der linke gespiegelt, wie üblich eingebaut. Weitere
   Motoren zeigen eine Scheibe mit Zeiger.
 - **Bahn aus Platten** (`tiles.ts`, `trackEditor.ts`): »Bahn bauen« legt die Bahn aus Platten von
-  30 cm zusammen, wie bei RoboCup Junior Rescue Line – Gerade, Kurve, Ecke, Abzweig, Kreuzung,
-  Lücke, Zickzack, Schlangenlinie, Kreisel, Linienende, rote Ziellinie. Ein Tipp legt eine Platte,
-  noch einer dreht sie; an Abzweig, Kreuzung und Kreisel kommen grüne Punkte neben die Linie. Zwei bis acht
+  30 cm zusammen, wie bei RoboCup Junior Rescue Line – 35 Platten, die meisten nach dem Satz »RCJA Rescue Line Small
+  Tiles V2« (rcja.app) nachgezeichnet: Geraden, Kurven, Ecken, Abzweig, Kreuzungen, Wellen, Haarnadel, Kreisel, Sackgasse,
+  Nachtfahrt (weiß auf schwarz), grüne Fläche, rote Ziellinie. Linie 15 mm, grüne Punkte 25 mm. Ein Tipp legt eine Platte,
+  noch einer dreht sie; an Abzweig, Kreuzung, Kreiseln und Sackgasse kommen grüne Punkte neben die Linie. Zwei bis acht
   Platten breit, zwei bis sechs hoch; Vorlagen, Speichern und Öffnen als Datei. Die Bahn bleibt
   gemerkt, samt Hindernissen und dem Platz des Roboters.
 - **Bahn und Hindernisse** (`world.ts`): Gerechnet wird auf einem Bild der Bahn von oben – dem der
