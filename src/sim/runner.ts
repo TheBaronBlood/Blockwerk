@@ -8,6 +8,7 @@
 // kann Minuten in Millisekunden durchspielen. (Ohne DOM.)
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
+import { padAxisName } from '../hub/padProtocol';
 import { toRows } from '../matrix';
 import { charPixels, DISPLAY_OFF, iconPixels, numberPixels, TEXT_OFF_MS, TEXT_ON_MS } from './hubDisplay';
 import { FORCE } from './robot';
@@ -391,7 +392,7 @@ export class Runner {
       case 'pb_distance': return sim.ultrasonic(port());
       case 'pb_heading': return Math.round(sim.heading());
       case 'pb_timer': return Math.round(sim.time - this.timerZero);
-      case 'pb_pad_stick': return Number(this.io.pad?.(b.getFieldValue('AXIS')) ?? 0);
+      case 'pb_pad_stick': return Number(this.io.pad?.(padAxisName(b.getFieldValue('STICK'), b.getFieldValue('AXIS'))) ?? 0);
       case 'pb_pad_button': return !!this.io.pad?.(b.getFieldValue('BUTTON'));
       case 'pb_button': return sim.buttons.has(b.getFieldValue('BUTTON'));
       case 'pb_force_pressed': return sim.forcePressed(port());

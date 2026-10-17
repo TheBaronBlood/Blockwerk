@@ -278,25 +278,42 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim.hub-only .sim-hub-buttons{margin-top:9%}
 .sim.hub-only .sim-hub-buttons button{width:24%;height:auto;aspect-ratio:22/14;border-radius:999px}
 .sim.hub-only .sim-hub-buttons button.center{width:24%;aspect-ratio:1;border-radius:50%;border-width:4px}
-.pad{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.08);outline-offset:-3px}
-.pad-stick{position:relative;width:92px;height:92px;flex:0 0 auto;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);touch-action:none;cursor:grab}
-.pad-knob{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#0FBD8C;pointer-events:none}
-.pad-buttons{display:grid;grid-template-columns:repeat(2,42px);gap:6px}
-.pad-buttons button{height:42px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:var(--code-ink);font-weight:700;font-size:15px;cursor:pointer;touch-action:none;user-select:none}
-.pad-buttons button.on{background:#0FBD8C;border-color:#0FBD8C;color:#06241B}
-.pad-note{flex:1 1 190px;margin:0;font-size:12.5px;line-height:1.4;color:#9AA6B5}
+/* Steuerfeld: Farben der Tasten und Joysticks – im Streifen und in der Controller-Ansicht dieselben */
+[data-pad="A"]{--c:#3DD68C}[data-pad="B"]{--c:#FF6B6B}[data-pad="C"]{--c:#5BA8FF}[data-pad="D"]{--c:#FFC53D}
+[data-pad="E"]{--c:#B58CFF}[data-pad="F"]{--c:#FF9F43}[data-pad="G"]{--c:#FF7AD9}[data-pad="H"]{--c:#3DD6E0}
+[data-pad="I"]{--c:#A9E34B}[data-pad="J"]{--c:#C9D1DC}
+[data-stick="1"]{--c:#0FBD8C}[data-stick="2"]{--c:#5BA8FF}[data-stick="3"]{--c:#FF9F43}
+/* Steuerfeld als Streifen unter dem Code */
+.pad{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);outline-offset:-3px}
+.pad-sticks,.pad-buttons{display:flex;align-items:center;gap:12px}
+.pad-stick{position:relative;width:92px;height:92px;flex:0 0 auto;border-radius:50%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.2);touch-action:none;cursor:grab}
+.pad-stick::before{content:"";position:absolute;inset:27%;border-radius:50%;border:1.5px dashed rgba(255,255,255,.12)}
+.pad-knob{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:var(--c);box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:none}
+.pad-group{display:grid;grid-template-columns:repeat(2,42px);gap:6px}
+.pad-group button{height:42px;padding:0;border-radius:50%;border:2px solid var(--c);background:rgba(255,255,255,.04);color:var(--c);font-weight:800;font-size:15px;cursor:pointer;touch-action:none;user-select:none;transition:transform .06s}
+.pad-group button:hover{background:rgba(255,255,255,.1)}
+.pad-group button.on{background:var(--c);color:#10131A;transform:scale(.93)}
+/* die Nummer am Joystick – erst, wenn es mehrere gibt */
+.pad-num,.padv-num{display:none;position:absolute;left:50%;top:5%;transform:translateX(-50%);font-size:11px;font-weight:800;line-height:1;color:var(--c);pointer-events:none}
+.pad.sticks .pad-num,.padv.sticks .padv-num{display:block}
+.pad-keys{flex:1 1 190px;margin:0;font-size:12.5px;line-height:1.8;color:#9AA6B5}
+.pad-keys span{white-space:nowrap}
+.pad-keys kbd{font:inherit;font-weight:700;color:var(--code-ink);padding:1px 5px;border:1px solid rgba(255,255,255,.22);border-radius:5px;white-space:nowrap}
 /* Anzeige: Ein Gamepad am Gerät ist erkannt und bedient das Steuerfeld */
 .connect-signal{margin-left:auto;flex:0 0 auto;color:#0EAA7E}
 .pad-gamepad,.padv-gamepad{margin:0;padding:4px 10px;border-radius:999px;border:1.5px solid #0FBD8C;color:#5CD6B4;font-size:13px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;max-width:260px}
-.pad .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
-.pad .btn:hover{border-color:#fff}
+/* die Knöpfe wie in der Leiste des Simulators: ohne Rahmen, mit grauem Zeichen vor dem Wort */
+.pad .btn,.padv-bar .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;border-color:transparent;background:rgba(255,255,255,.06);color:var(--code-ink);font-size:13.5px;line-height:1.2}
+.pad .btn:hover,.padv-bar .btn:hover:not(:disabled){background:rgba(255,255,255,.12);border-color:transparent}
+.pad .ico,.padv-bar .ico{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:#A9B4C3}
+.pad .btn:hover .ico,.padv-bar .btn:hover:not(:disabled) .ico{color:#fff}
 /* schließt den Streifen – am Tablet der einzige Weg, ihn wieder loszuwerden */
-.pad .pad-close{margin-left:auto;min-width:36px;padding-left:0;padding-right:0;font-weight:700}
+.pad .pad-close{margin-left:auto;padding:7px}
 /* die Tastatur-Hinweise braucht es ohne Tastatur nicht */
-@media (pointer:coarse){.pad-note{display:none}}
+@media (pointer:coarse){.pad-keys{display:none}}
 
-/* Steuerfeld als Controller: bildschirmfüllend, Joystick und Tasten in einem Raster */
+/* Steuerfeld als Controller: bildschirmfüllend, Joysticks und Tasten in einem Raster */
 .padv{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;background:var(--code-bg);color:var(--code-ink);outline:none;
   padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
@@ -306,28 +323,35 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
   padding:env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px) env(safe-area-inset-top,0px)}
 /* … und die Meldungen drehen sich mit: am rechten Rand, also oben in der gedrehten Ansicht */
 html.pad-turned .toast{top:50%!important;bottom:auto!important;left:auto;right:calc(env(safe-area-inset-right,0px) + 84px);margin:0;transform:translate(50%,-50%) rotate(90deg)}
-.padv-bar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.padv-bar .btn{background:transparent;border-color:rgba(255,255,255,.22);color:var(--code-ink)}
-.padv-bar .btn:hover{border-color:#fff}
-.padv-bar .btn.primary{background:#00B94D;border-color:#00B94D;color:#fff}
-.padv-bar .btn:disabled{opacity:.45;cursor:default;border-color:rgba(255,255,255,.22)}
-.padv-state{font-size:13px;color:#9AA6B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin:0 4px}
+.padv-bar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.padv-bar .btn.primary{background:#00B94D;color:#fff;font-weight:700}
+.padv-bar .btn.primary:hover:not(:disabled){background:#00CC56}
+.padv-bar .btn.primary .ico{color:#fff}
+.padv-bar .btn:disabled{opacity:.4;cursor:default}
+/* der Stand des Hubs als Schildchen mit Punkt: grau ohne, grün mit Hub */
+.padv-state{display:inline-flex;align-items:center;gap:7px;padding:0 8px;font-size:13px;color:#9AA6B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.padv-state::before{content:"";flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#566072}
 .padv-state.on{color:#6EE7A0}
+.padv-state.on::before{background:#2ECC71;box-shadow:0 0 0 3px rgba(46,204,113,.2)}
 .padv-space{flex:1 1 0}
+.padv-sep{width:1px;align-self:stretch;margin:4px 4px;background:rgba(255,255,255,.12)}
+/* was nur beim Anordnen gilt – und was dabei Platz macht */
+.padv:not(.editing) .padv-edit,.padv.editing .padv-live,.padv.editing .padv-gamepad{display:none}
+.padv-sizer{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:10px;background:rgba(255,255,255,.06)}
+.padv-bar .padv-sizer .btn{min-width:34px;justify-content:center;padding:4px 0;background:transparent;font-size:19px;font-weight:700}
+.padv-sel{min-width:80px;text-align:center;font-size:13.5px;font-weight:700;white-space:nowrap}
 .padv-hint{position:absolute;left:0;right:0;top:0;margin:0;padding:6px 16px;font-size:14px;line-height:1.4;color:#9AA6B5;text-align:center;pointer-events:none}
 .padv-grid{position:relative;flex:1 1 0;min-height:0;margin:10px;touch-action:none}
+.padv-grid.refused{animation:padv-no .28s}
 .padv-tile{position:absolute;z-index:1;display:grid;place-items:center;touch-action:none;transition:opacity .15s}
 /* läuft kein Programm, das zuhört, wirken die Teile blasser */
 .padv:not(.running):not(.editing) .padv-tile{opacity:.5}
 .padv-stick{position:relative;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.24);pointer-events:none}
 .padv-stick::before{content:"";position:absolute;inset:27%;border-radius:50%;border:1.5px dashed rgba(255,255,255,.14)}
-.padv-knob{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;border-radius:50%;background:#0FBD8C;box-shadow:0 3px 10px rgba(0,0,0,.45)}
-.padv-btn{--c:#0FBD8C;display:grid;place-items:center;border-radius:50%;border:3px solid var(--c);color:var(--c);background:rgba(255,255,255,.05);
+.padv-knob{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;border-radius:50%;background:var(--c);box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.padv-num{font-size:max(13px,.2em)}
+.padv-btn{display:grid;place-items:center;border-radius:50%;border:3px solid var(--c);color:var(--c);background:rgba(255,255,255,.05);
   font-weight:800;line-height:1;cursor:pointer;touch-action:none;transition:transform .06s}
-.padv-btn[data-pad="A"]{--c:#3DD68C}
-.padv-btn[data-pad="B"]{--c:#FF6B6B}
-.padv-btn[data-pad="C"]{--c:#5BA8FF}
-.padv-btn[data-pad="D"]{--c:#FFC53D}
 .padv-btn.on{background:var(--c);color:#10131A;transform:scale(.93)}
 /* Anordnen: Raster sichtbar, Teile mit Rahmen und den Knöpfen kleiner / größer */
 .padv.editing .padv-grid{border-radius:10px;outline:1px solid rgba(255,255,255,.1);
@@ -341,9 +365,9 @@ html.pad-turned .toast{top:50%!important;bottom:auto!important;left:auto;right:c
 .padv-ghost{position:absolute;border-radius:14px;background:rgba(15,189,140,.2);outline:2px solid #0FBD8C;outline-offset:-4px;pointer-events:none}
 .padv-ghost.bad{background:rgba(229,72,77,.2);outline-color:#E5484D}
 .padv.editing .padv-tile.selected{outline:2px solid #0FBD8C;background:rgba(15,189,140,.1)}
-.padv-bar .padv-size{min-width:44px;font-size:20px;font-weight:700;padding-top:4px;padding-bottom:4px}
-.padv-bar{flex-wrap:wrap}
-@media (prefers-reduced-motion: reduce){.padv-tile,.padv-btn{transition:none}.padv-tile.refused{animation:none}}
+/* wenig Platz (Handy): nur die Zeichen, das Wort steht im Hinweis beim Zeigen */
+@media (max-width:760px){.padv-bar .btn:not(.primary) > span{display:none}.padv-bar .btn{padding:8px}}
+@media (prefers-reduced-motion: reduce){.padv-tile,.padv-btn,.pad-group button{transition:none}.padv-tile.refused,.padv-grid.refused{animation:none}}
 /* Trennleisten */
 .split{flex:0 0 6px;cursor:col-resize;background:var(--code-bg);touch-action:none;position:relative;z-index:6}
 .split::after{content:"";position:absolute;left:2px;top:22%;width:2px;height:36px;margin-top:-18px;border-radius:2px;background:#9AA6B5;opacity:.45}
@@ -818,11 +842,11 @@ details.run a{color:#7CC8FF}
   /* Steuerfeld: Joystick und Tasten für Daumen */
   .pad-stick{width:132px;height:132px}
   .pad-knob{width:48px;height:48px;margin:-24px 0 0 -24px}
-  .pad-buttons{grid-template-columns:repeat(2,58px);gap:10px}
-  .pad-buttons button{height:58px;font-size:18px}
+  .pad-group{grid-template-columns:repeat(2,58px);gap:10px}
+  .pad-group button{height:58px;font-size:18px}
   .padv-bar{padding:12px 14px}
   .padv-bar .btn{min-height:44px}
-  .padv-bar .padv-size{min-width:52px}
+  .padv-bar .padv-sizer .btn{min-width:48px;min-height:40px}
   /* Kategorien im Werkzeugkasten: höhere Zeilen, damit der Finger sie trifft */
   .blocklyToolboxCategory{line-height:40px!important}
   /* Auswahllisten: eigene Form, damit sie auf jedem Gerät so hoch sind wie die Knöpfe daneben */

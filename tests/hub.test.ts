@@ -11,7 +11,9 @@ import {
   uploadProgram, versionAtLeast, writeStdin, writeUserProgramMeta, writeUserRam
 } from '../src/hub/protocol';
 import { TracebackParser, type HubError } from '../src/hub/traceback';
-import { encodeAxis, encodeButton, PAD_HEARTBEAT, PAD_HELPER, quantize } from '../src/hub/padProtocol';
+import {
+  decodeByte, encodeAxis, encodeButton, PAD_BUTTONS, PAD_HEARTBEAT, PAD_HELPER, PAD_STICKS, padHelper, padSize, quantize, stickAxes
+} from '../src/hub/padProtocol';
 
 // Python 3 muss es sein: Auf manchen Rechnern ist »python« noch Python 2 und kennt kein async
 const python = ['python3', 'python', 'py'].find(cmd => spawnSync(cmd, ['-c', 'import sys; sys.exit(sys.version_info[0] != 3)']).status === 0);
@@ -116,6 +118,64 @@ describe('Steuerfeld', () => {
     expect(encodeAxis('y', 0)).toBe(190);
     expect(encodeButton('A', true)).toBe(65);
     expect(encodeButton('D', false)).toBe(100);
+    expect(encodeButton('J', true)).toBe(74);
+    expect(encodeButton('J', false)).toBe(106);
+  });
+
+  it('weitere Joysticks und Tasten belegen eigene Bereiche – ohne Steuerzeichen und ohne Überschneidung', () => {
+    const used = new Map<number, string>();
+    const claim = (byte: number, what: string) => {
+      expect(byte, what).toBeGreaterThanOrEqual(32);   // Strg+C (3) bräche auf dem Hub das Programm ab
+      expect(byte, what).toBeLessThan(PAD_HEARTBEAT);
+      expect(used.get(byte), `${what} trifft ${used.get(byte)}`).toBeUndefined();
+      used.set(byte, what);
+    };
+    for (let s = 1; s <= PAD_STICKS; s++) for (const a of stickAxes(s)) for (let v = -100; v <= 100; v += 10) claim(encodeAxis(a, v), `${a} ${v}`);
+    for (const b of PAD_BUTTONS) for (const down of [true, false]) claim(encodeButton(b, down), `${b} ${down}`);
+    // und der Browser liest jedes Byte so, wie der Hub es tut
+    for (const [byte, what] of used){
+      const [name, value] = what.split(' ');
+      expect(decodeByte(byte)).toEqual({name, value:value === 'true' ? true : value === 'false' ? false : Number(value)});
+    }
+    expect(decodeByte(PAD_HEARTBEAT)).toBeNull();
+    expect(decodeByte(75)).toBeNull();   // eine Taste K gibt es nicht
+  });
+
+  it('das Gegenstück auf dem Hub kennt nur, was das Programm braucht', () => {
+    expect(padHelper()).toEqual(PAD_HELPER);
+    expect(PAD_HELPER.join('\n')).not.toMatch(/x2|'E'/);
+    expect(padSize(['x', 'A'])).toEqual([1, 4]);
+    expect(padSize(['y3', 'F'])).toEqual([3, 6]);
+    const big = padHelper(3, 10).join('\n');
+    expect(big).toMatch(/'x3': 0, 'y3': 0, 'A': False/);
+    expect(big).toMatch(/'J': False\}/);
+    expect(big).toMatch(/steuerfeld\.update\(x=0, y=0, x2=0, y2=0, x3=0, y3=0, A=False/);
+  });
+
+  it.skipIf(!python)('das Python-Gegenstück versteht auch Joystick 2 und 3 und die Tasten bis J', () => {
+    const input = [encodeAxis('x2', 40), encodeAxis('y3', -100), encodeAxis('x', 20), encodeButton('J', true), encodeButton('E', true), encodeButton('E', false)];
+    const script = [
+      `eingabe = ${JSON.stringify(input)}`,
+      'zeit = 0',
+      'class StopWatch:',
+      '    def reset(self):',
+      '        global zeit',
+      '        zeit = 0',
+      '    def time(self):',
+      '        return zeit',
+      'def read_input_byte():',
+      '    return eingabe.pop(0) if eingabe else None',
+      ...padHelper(3, 10),
+      "assert steuerung('x2') == 40 and steuerung('y2') == 0, steuerfeld",
+      "assert steuerung('y3') == -100 and steuerung('x') == 20, steuerfeld",
+      "assert steuerung('J') is True and steuerung('E') is False, steuerfeld",
+      'zeit = 1001',
+      "assert steuerung('x2') == 0 and steuerung('y3') == 0 and steuerung('J') is False, steuerfeld",
+      "print('ok')"
+    ].join('\n');
+    const r = spawnSync(python!, ['-c', script], {encoding:'utf8'});
+    expect(r.stderr).toBe('');
+    expect(r.stdout.trim()).toBe('ok');
   });
 
   it.skipIf(!python)('das Python-Gegenstück versteht genau diese Bytes', () => {
