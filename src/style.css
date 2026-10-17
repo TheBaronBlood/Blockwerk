@@ -211,6 +211,19 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-bar select.btn option{background:var(--code-bg)}
 .sim.tracking .sim-stage canvas{cursor:pointer}
 .sim-bar .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* Leiste des Simulators bei wenig Platz: view.ts prüft, ob sie in eine Zeile passt, und geht sonst eine Stufe
+   weiter (data-fit). 1: Die Nebenknöpfe zeigen nur ihr Zeichen; 2: auch »Bahn bauen« (nicht »Fertig«) und die Kraftsensoren;
+   3: die Leiste bricht fest um – oben Start und Tempo, unten Bahn und Roboter (beim Bahn bauen: oben Start und
+   Fertig, unten Größe und Datei der Bahn) – statt dass
+   einzelne Gruppen irgendwohin rutschen. Das Wort bleibt unsichtbar für Vorlesen da; der Hinweis beim Zeigen
+   nennt den Knopf. */
+.sim:is([data-fit="1"],[data-fit="2"],[data-fit="3"]) :is(#simReset,#simImage,#simObstacle,#simBuild,#simTrackSave,#simTrackOpen) > span,
+.sim:is([data-fit="2"],[data-fit="3"]):not(.tracking) #simTrack > span,.sim:is([data-fit="2"],[data-fit="3"]) .sim-force .btn > span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.sim[data-fit="3"]:not(.tracking) .sim-bar:first-child .sim-g-tempo{order:1}
+.sim[data-fit="3"] .sim-bar:first-child::after{content:"";order:2;flex-basis:100%}
+.sim[data-fit="3"]:not(.tracking) .sim-bar:first-child :is(.sim-g-track,.sim-g-robot){order:3}
+/* beim Bahn bauen: oben Start und Fertig, darunter Größe und Datei der Bahn */
+.sim[data-fit="3"].tracking .sim-bar:first-child :is(.sim-g-tracksize,.sim-g-trackfile){order:3;margin-left:0}
 .sim-force{display:contents}
 .sim-force .btn .ico{color:#FF8A95}
 .sim-force .btn.on,.sim-force .btn:active{background:#DA3041}
@@ -230,6 +243,9 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 /* Bahn bauen: eine zweite Leiste mit den Platten; was nur zum Fahren und zum Roboter gehört, macht Platz */
 .sim-track-bar{display:none;padding-top:0}
 .sim.tracking .sim-track-bar{display:flex}
+/* Größe, Vorlagen und Datei der Bahn stehen in der ersten Leiste, rechts neben Start und Fertig */
+.sim:not(.tracking) :is(.sim-g-tracksize,.sim-g-trackfile){display:none}
+.sim-g-tracksize{margin-left:auto}
 .sim.tracking #simReset,.sim.tracking .sim-force,.sim.tracking #simObstacle,.sim.tracking #simImage,.sim.tracking .sim-g-robot,.sim.tracking .sim-g-tempo,
 .sim.tracking #simInfo,.sim.tracking #simValues,.sim.tracking .sim-hub{display:none}
 .sim-tiles{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:4px}
@@ -239,7 +255,7 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-tiles canvas{display:block;border-radius:5px}
 .sim-step{display:flex;align-items:center;gap:3px;padding:0 4px;font-size:13.5px;color:#9AA6B5}
 .sim-step .btn{min-width:28px;min-height:28px;padding:3px 0;justify-content:center;font-weight:700}
-.sim-track-bar select.btn{max-width:112px}
+.sim-g-trackfile select.btn{max-width:112px}
 .sim-step .btn:disabled{opacity:.4;cursor:default}
 .sim-step output{min-width:1.2em;text-align:center;color:var(--code-ink);font-variant-numeric:tabular-nums}
 /* (der Hinweis zum gewählten Werkzeug gilt auch ohne Tastatur) */

@@ -804,6 +804,24 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     remember(); draw();
   });
 
+  // ---- die Leiste: so viele Wörter, wie in eine Zeile passen ----
+  // Stufe 0: jeder Knopf mit Wort · 1: die Nebenknöpfe nur mit Zeichen · 2: nur noch »Start« mit Wort ·
+  // 3: dazu fest in zwei Reihen (style.css, data-fit). Gemessen statt an festen Breiten: Schriften rechnen
+  // je Browser etwas anders, und Knöpfe für Kraftsensoren machen die Leiste breiter.
+  const bar = root.querySelector<HTMLElement>('.sim-bar')!;
+  function oneRow(){
+    const items = [...bar.children].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect());
+    return items.every(r => r.top < items[0].bottom);
+  }
+  function fitBar(){
+    if (!shown) return;
+    for (let fit = 0; fit <= 3; fit++){ root.dataset.fit = String(fit); if (fit === 3 || oneRow()) break; }
+  }
+  // (beobachtet wird der Simulator, nicht die Leiste: Deren Höhe ändert sich mit der Stufe)
+  new ResizeObserver(fitBar).observe(root);
+  new MutationObserver(fitBar).observe(root, {attributeFilter:['class']});   // Umbauen, Bahn bauen, nur der Hub
+  new MutationObserver(fitBar).observe(forceBox, {childList:true});
+
   new ResizeObserver(layout).observe(stage);
   readRobot();
   return {
