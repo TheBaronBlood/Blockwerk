@@ -125,8 +125,11 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
   const hint = el('p', 'padv-hint');
   const grid = el('div', 'padv-grid');
   const ghost = el('div', 'padv-ghost hidden');
+  // die Linien des Rasters beim Anordnen: jede ein eigenes Element. (Ein wiederholtes Hintergrundbild
+  // verschluckt bei krummen Feldgrößen einzelne Linien, weil der Browser jede Kachel auf Pixel rundet.)
+  const lines = el('div', 'padv-lines');
   // der Hinweis liegt über dem Raster, statt ihm Höhe wegzunehmen
-  grid.append(hint, ghost);
+  grid.append(lines, hint, ghost);
   root.append(bar, grid);
   document.body.append(root);
 
@@ -167,8 +170,12 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
   /** Setzt alle Teile an ihren Platz. Die runde Fläche ist so groß, wie das Feld es in beiden Richtungen zulässt. */
   function render(){
     const c = cell(), g = GRIDS[orientation];
-    grid.style.setProperty('--cell-w', 100 / g.cols + '%');
-    grid.style.setProperty('--cell-h', 100 / g.rows + '%');
+    if (lines.dataset.grid !== `${g.cols}x${g.rows}`){
+      lines.dataset.grid = `${g.cols}x${g.rows}`;
+      lines.replaceChildren(
+        ...Array.from({length:g.cols - 1}, (_, i) => Object.assign(el('i', 'v'), {style:`left:${(i + 1) / g.cols * 100}%`})),
+        ...Array.from({length:g.rows - 1}, (_, i) => Object.assign(el('i', 'h'), {style:`top:${(i + 1) / g.rows * 100}%`})));
+    }
     const shown = new Set(tiles().map(t => t.id));
     // die Nummer am Joystick braucht es erst, wenn es mehrere gibt
     root.classList.toggle('sticks', tiles().filter(t => isStick(t.id)).length > 1);
@@ -189,7 +196,7 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
     btnPlus.setAttribute('aria-label', name + ' größer'); btnPlus.title = name + ' größer';
     const base = BASE_IDS.includes(selected), needed = last.needs.includes(selected);
     btnRemove.disabled = base || needed;
-    btnRemove.title = base ? `${name} gehört fest zum Steuerfeld` : needed ? `Das Programm fragt ${name} ab` : `${name} entfernen`;
+    btnRemove.title = base ? `${name} gehört fest zum Steuerfeld` : needed ? `Das Programm fragt ${name} ab` : `${name} entfernen (Entf)`;
     const nextButton = nextPart(layouts, 'button'), nextStick = nextPart(layouts, 'stick');
     btnAddButton.disabled = !nextButton; btnAddButton.title = nextButton ? `Taste ${nextButton} hinzufügen` : 'Mehr Tasten gibt es nicht';
     btnAddStick.disabled = !nextStick; btnAddStick.title = nextStick ? `${partName(nextStick)} hinzufügen` : 'Mehr Joysticks gibt es nicht';
@@ -313,7 +320,14 @@ export function initPadView(pad: Pad, actions: PadViewActions): PadView {
   const leave = () => { if (history.state?.blockwerkPad) history.back(); else hide(); };
   window.addEventListener('popstate', () => hide());
   btnClose.addEventListener('click', leave);
-  root.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ e.stopPropagation(); if (editing) setEditing(false); else leave(); } });
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape'){ e.stopPropagation(); if (editing) setEditing(false); else leave(); }
+    // beim Anordnen: Entf (oder die Rücktaste) nimmt das gewählte Teil weg – wie der Knopf »Entfernen«
+    else if (editing && (e.key === 'Delete' || e.key === 'Backspace')){
+      e.preventDefault(); e.stopPropagation();
+      if (btnRemove.disabled) refuse(parts[selected].tile); else btnRemove.click();
+    }
+  });
   // langes Drücken soll auf dem Tablet kein Menü öffnen
   root.addEventListener('contextmenu', (e) => e.preventDefault());
 

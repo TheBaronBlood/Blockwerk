@@ -354,9 +354,13 @@ html.pad-turned .toast{top:50%!important;bottom:auto!important;left:auto;right:c
   font-weight:800;line-height:1;cursor:pointer;touch-action:none;transition:transform .06s}
 .padv-btn.on{background:var(--c);color:#10131A;transform:scale(.93)}
 /* Anordnen: Raster sichtbar, Teile mit Rahmen und den Knöpfen kleiner / größer */
-.padv.editing .padv-grid{border-radius:10px;outline:1px solid rgba(255,255,255,.1);
-  background-image:linear-gradient(to right,rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.08) 1px,transparent 1px);
-  background-size:var(--cell-w) var(--cell-h)}
+.padv.editing .padv-grid{border-radius:10px;outline:1px solid rgba(255,255,255,.1)}
+/* die Linien des Rasters, jede an ihrem Platz (padView.ts); nur beim Anordnen */
+.padv-lines{position:absolute;inset:0;pointer-events:none;display:none}
+.padv.editing .padv-lines{display:block}
+.padv-lines i{position:absolute;background:rgba(255,255,255,.09)}
+.padv-lines i.v{top:0;bottom:0;width:1px;margin-left:-.5px}
+.padv-lines i.h{left:0;right:0;height:1px;margin-top:-.5px}
 .padv.editing .padv-tile{cursor:grab;border-radius:14px;background:rgba(255,255,255,.05);outline:2px dashed rgba(255,255,255,.34);outline-offset:-4px}
 .padv.editing .padv-btn{cursor:grab}
 .padv-tile.dragging{z-index:3;cursor:grabbing;opacity:.85;transition:none}
