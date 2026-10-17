@@ -41,6 +41,8 @@ Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem v
   ein); die Motoren schaffen höchstens 156 bzw. 138 Umdrehungen in der Minute. Die niedrige Wand
   bemerken nur Sensoren unten, die hohe beide Ebenen. Der Taster drückt erst bei Berührung, und
   der Roboter stößt mit seinem Umriss an statt mit einem Kreis.
+- Geändert: Auf den Platten (30 × 30 cm) steht der Roboter immer in **echter Größe**; den Regler für seine Größe gibt es nur noch
+  bei einem eigenen Bild als Bahn, dessen Maßstab Blockwerk nicht kennt.
 - Behoben: Die Leiste des Simulators ordnet sich bei wenig Platz sauber an – erst fallen Wörter
   weg, dann bricht sie fest in zwei Reihen um; das Tempo steht immer rechts. Beim Bahnbauen stehen
   Größe, Vorlage und Datei neben Start und Fertig.
