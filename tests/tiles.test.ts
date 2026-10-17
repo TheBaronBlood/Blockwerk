@@ -29,7 +29,29 @@ describe('Platten', () => {
     // mehr als eine ganze Drehung zählt wie der Rest
     expect(tileExits(tile('curve', 5))).toBe('SW');
   });
-  it('jede Platte bleibt auf ihrem Feld', () => {
+  it('die Platten aus dem RCJA-Satz kommen an den richtigen Seiten an', () => {
+    const exits: Record<string, string> = {
+      dashed:'EW', gentle:'EW', diagonal:'NESW', squarecorner:'SW', hexcorner:'NW', hook:'ES', gapcross:'NESW', doublecurve:'NESW',
+      doublechamfer:'NESW', trianglebig:'EW', trianglesmall:'EW', sbend:'EW', semicircle:'EW', hairpin:'EW', hexwave:'EW', squarewave:'EW',
+      round2:'NE', roundpart:'NE', deadend:'EW', start:'W', night:'EW', inverted:'EW', filler:'', blank:''};
+    for (const [kind, sides] of Object.entries(exits)) expect(tileExits(tile(kind as never)), kind).toBe(sides);
+  });
+  it('Nachtfahrt und die grüne Fläche haben ihren eigenen Untergrund', () => {
+    expect(tileShapes(tile('night')).ground).toBe('black');
+    expect(tileShapes(tile('inverted')).ground).toBe('black');
+    expect(tileShapes(tile('filler')).ground).toBe('green');
+    expect(tileShapes(tile('straight')).ground).toBeUndefined();
+  });
+  it('grüne Punkte: am Kreisel mit zwei Zufahrten links und rechts jeder Zufahrt, an der Sackgasse an beiden Einfahrten', () => {
+    // alle vier gesetzt: je zwei an der oberen und an der rechten Zufahrt, kurz vor dem Kreis (er beginnt bei 64 mm)
+    const round = tileShapes(tile('round2', 0, 15)).rects;
+    expect(round).toHaveLength(4);
+    for (const r of round.slice(0, 2)) expect(r.y + r.h).toBeLessThanOrEqual(64);
+    for (const r of round.slice(2)) expect(r.x).toBeGreaterThanOrEqual(236);
+    const dead = tileShapes(tile('deadend', 0, 1 | 2)).rects;
+    expect(dead.map(r => r.x + r.w / 2)).toEqual([31, 269]);
+    expect(dead.every(r => r.y + r.h <= 150 - 7.5)).toBe(true);   // über der Linie
+  });  it('jede Platte bleibt auf ihrem Feld', () => {
     for (const kind of TILE_KINDS) for (const turn of [0, 1, 2, 3]){
       const {lines, rects} = tileShapes(tile(kind, turn, 15));
       for (const p of lines.flat()){ expect(p.x, kind).toBeGreaterThanOrEqual(0); expect(p.x, kind).toBeLessThanOrEqual(300); expect(p.y, kind).toBeGreaterThanOrEqual(0); expect(p.y, kind).toBeLessThanOrEqual(300); }
