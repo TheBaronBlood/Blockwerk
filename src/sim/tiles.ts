@@ -7,7 +7,7 @@
 import type { Point, Pose } from './world';
 
 /** Kantenlänge einer Platte, Breite der Linie und Kantenlänge eines grünen Punkts, in Millimetern. */
-export const TILE_MM = 300, LINE_MM = 20, GREEN_MM = 25;
+export const TILE_MM = 300, LINE_MM = 15, GREEN_MM = 25;
 /** So klein und so groß darf eine Bahn sein (in Platten). */
 export const MAP_LIMITS = {minCols:2, maxCols:8, minRows:2, maxRows:6};
 

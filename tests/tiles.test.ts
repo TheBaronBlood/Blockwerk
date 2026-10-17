@@ -48,16 +48,16 @@ describe('Platten', () => {
 
 describe('grüne Punkte', () => {
   it('liegen in den Ecken der Kreuzung, direkt an beiden Linien', () => {
-    // oben links: die Linie ist 20 mm breit, der Punkt 25 mm – er reicht von 115 bis 140
-    expect(tileShapes(tile('cross', 0, 1)).rects).toEqual([{x:115, y:115, w:25, h:25, color:'green'}]);
-    expect(tileShapes(tile('cross', 0, 2)).rects[0]).toMatchObject({x:160, y:115});
-    expect(tileShapes(tile('cross', 0, 4)).rects[0]).toMatchObject({x:160, y:160});
-    expect(tileShapes(tile('cross', 0, 8)).rects[0]).toMatchObject({x:115, y:160});
+    // oben links: die Linie ist 15 mm breit, der Punkt 25 mm – er reicht von 117,5 bis 142,5
+    expect(tileShapes(tile('cross', 0, 1)).rects).toEqual([{x:117.5, y:117.5, w:25, h:25, color:'green'}]);
+    expect(tileShapes(tile('cross', 0, 2)).rects[0]).toMatchObject({x:157.5, y:117.5});
+    expect(tileShapes(tile('cross', 0, 4)).rects[0]).toMatchObject({x:157.5, y:157.5});
+    expect(tileShapes(tile('cross', 0, 8)).rects[0]).toMatchObject({x:117.5, y:157.5});
     expect(tileShapes(tile('cross', 0, 15)).rects).toHaveLength(4);
   });
   it('drehen sich mit der Platte', () => {
     // oben links gesetzt, einmal gedreht: oben rechts
-    expect(tileShapes(tile('tee', 1, 1)).rects[0]).toMatchObject({x:160, y:115});
+    expect(tileShapes(tile('tee', 1, 1)).rects[0]).toMatchObject({x:157.5, y:117.5});
   });
   it('ein Tipp in die Ecke setzt den Punkt dort, ein zweiter nimmt ihn weg', () => {
     let map = tapTile(empty(), 'cross', at(1, 0));
@@ -73,15 +73,15 @@ describe('grüne Punkte', () => {
     let map = tapTile(empty(), 'tee', at(0, 0));
     map = turnTile(map, 0, 0);
     map = tapTile(map, 'green', at(0, 0, -40, 40));   // unten links, wie man es sieht
-    expect(tileShapes(tileAt(map, 0, 0)!).rects[0]).toMatchObject({x:115, y:160});
+    expect(tileShapes(tileAt(map, 0, 0)!).rects[0]).toMatchObject({x:117.5, y:157.5});
   });
   it('am Kreisel: je Einfahrt zwei, links und rechts der Linie, knapp vor dem Kreis', () => {
-    // obere Einfahrt, links der Linie: neben der Linie (115 bis 140) und über dem Kreis
-    expect(tileShapes(tile('circle', 0, 1)).rects).toEqual([{x:115, y:39.5, w:25, h:25, color:'green'}]);
-    expect(tileShapes(tile('circle', 0, 2)).rects[0]).toMatchObject({x:160, y:39.5});
+    // obere Einfahrt, links der Linie: neben der Linie (117,5 bis 142,5) und über dem Kreis
+    expect(tileShapes(tile('circle', 0, 1)).rects).toEqual([{x:117.5, y:39.5, w:25, h:25, color:'green'}]);
+    expect(tileShapes(tile('circle', 0, 2)).rects[0]).toMatchObject({x:157.5, y:39.5});
     // die rechte Einfahrt: dieselben beiden Stellen, eine Vierteldrehung weiter
-    expect(tileShapes(tile('circle', 0, 4)).rects[0]).toMatchObject({x:235.5, y:115});
-    expect(tileShapes(tile('circle', 0, 8)).rects[0]).toMatchObject({x:235.5, y:160});
+    expect(tileShapes(tile('circle', 0, 4)).rects[0]).toMatchObject({x:235.5, y:117.5});
+    expect(tileShapes(tile('circle', 0, 8)).rects[0]).toMatchObject({x:235.5, y:157.5});
     expect(tileShapes(tile('circle', 0, 255)).rects).toHaveLength(8);
     // kein Punkt liegt auf einer Linie: weder auf der Einfahrt noch auf dem Kreis (Radius 75, Linie 20 breit)
     for (const r of tileShapes(tile('circle', 0, 255)).rects){
@@ -95,7 +95,7 @@ describe('grüne Punkte', () => {
     map = tapTile(map, 'green', at(1, 0, 25, -95));    // oben, rechts der Einfahrt
     expect(tileAt(map, 1, 0)).toEqual({kind:'circle', turn:0, green:2});
     map = tapTile(map, 'green', at(1, 0, -95, 20));    // links, unterhalb der Einfahrt: von der Mitte aus gesehen rechts der Linie
-    expect(tileShapes(tileAt(map, 1, 0)!).rects.map(r => [r.x, r.y])).toEqual([[160, 39.5], [39.5, 160]]);
+    expect(tileShapes(tileAt(map, 1, 0)!).rects.map(r => [r.x, r.y])).toEqual([[157.5, 39.5], [39.5, 157.5]]);
     map = tapTile(map, 'green', at(1, 0, 25, -95));
     expect(tileShapes(tileAt(map, 1, 0)!).rects).toHaveLength(1);
     expect(readTileMap({cols:2, rows:2, tiles:[{kind:'circle', turn:0, green:511}, null, null, null]})?.tiles[0]).toEqual({kind:'circle', turn:0, green:255});
@@ -172,9 +172,9 @@ describe('Vorlagen und Dateien', () => {
   it('die Abkürzung: grüne Punkte an beiden Abzweigen', () => {
     const map = TEMPLATES.find(t => t.id === 'abkuerzung')!.make();
     // oben: für den, der von rechts kommt, links ab – der Punkt liegt vor dem Abzweig auf der linken Seite: unten rechts
-    expect(tileShapes(tileAt(map, 1, 0)!).rects[0]).toMatchObject({x:160, y:160, color:'green'});
+    expect(tileShapes(tileAt(map, 1, 0)!).rects[0]).toMatchObject({x:157.5, y:157.5, color:'green'});
     // unten: von oben kommend wieder links – oben rechts
-    expect(tileShapes(tileAt(map, 1, 2)!).rects[0]).toMatchObject({x:160, y:115, color:'green'});
+    expect(tileShapes(tileAt(map, 1, 2)!).rects[0]).toMatchObject({x:157.5, y:117.5, color:'green'});
   });
   it('was keine Bahn ist, wird abgelehnt', () => {
     for (const bad of [null, 'bahn', {}, {cols:4, rows:3, tiles:[]}, {cols:1, rows:3, tiles:[null, null, null]}, {cols:2, rows:2, tiles:[{kind:'loop', turn:0}, null, null, null]},
