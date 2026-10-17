@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------
 import type * as Blockly from 'blockly';
 import { PORT_BLOCKS, type PortKind } from '../ports';
-import { motorForWheel, type MotorMount } from './parts';
+import { motorUnderHub, type MotorMount } from './parts';
 import type { Point } from './world';
 
 export interface SimDrive {
@@ -122,14 +122,15 @@ const MOTOR_BACK = -112, MOTOR_SPACING = 30;
 /**
  * Wo jedes Teil sitzt, solange es niemand versetzt hat: Farbsensoren nebeneinander vorn, der
  * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Die Motoren der Fahrbasis liegen
- * unter dem Hub, so dass ihre Räder genau im Abstand der Spurbreite aus dem Programm laufen – der linke
- * gespiegelt, die Abtriebe außen (kleine Motoren, wie in der Fahrbasis eines SPIKE-Roboters üblich).
+ * unter dem Hub, der linke gespiegelt, die Abtriebe außen, die Räder direkt daran (kleine Motoren, wie in
+ * der Fahrbasis eines SPIKE-Roboters üblich). Wie weit die Räder dann auseinander laufen, ist die echte
+ * Spurbreite – steht im Programm eine andere, dreht der Roboter ohne Kreisel falsch, wie in echt.
  * Anschluss → Platz am Roboter.
  */
 export function defaultMounts(robot: SimRobot): Record<string, Point & Partial<MotorMount>> {
   const mounts: Record<string, Point & Partial<MotorMount>> = {};
   const d = robot.drive;
-  if (d){ mounts[d.left] = motorForWheel(-d.axle / 2, 'small'); mounts[d.right] = motorForWheel(d.axle / 2, 'small'); }
+  if (d){ mounts[d.left] = motorUnderHub(-1, 'small'); mounts[d.right] = motorUnderHub(1, 'small'); }
   robot.motors.forEach((port, i) => { mounts[port] = {x:MOTOR_BACK, y:(i - (robot.motors.length - 1) / 2) * MOTOR_SPACING}; });
   // mit Abstandssensor rücken die Kraftsensoren neben ihn (er sitzt vorn in der Mitte) – sonst lägen sie übereinander
   const aside = robot.ultra ? FORCE.besideUltra : 0;

@@ -130,9 +130,10 @@ export type SavedMounts = Record<string, Record<string, Mount>>;
 /**
  * Bauweise der Motoren, mit der gemerkte Plätze gespeichert werden. Ändert sich, wo Motor und Rad zueinander sitzen
  * (parts.ts), passen ältere Plätze nicht mehr – jeder Browser und jedes Gerät hätte sonst seinen eigenen, veralteten
- * Roboter. 2: Motoren unter dem Hub, Rad am Abtrieb (Oktober 2026).
+ * Roboter. 2: Motoren unter dem Hub, Rad auf einer Achse im Abstand der Spurbreite; 3: Rad direkt am Abtrieb
+ * (beides Oktober 2026).
  */
-export const PARTS_VERSION = 2;
+export const PARTS_VERSION = 3;
 /** Gemerkte Plätze aus dem Speicher: Motoren aus einer anderen Bauweise gelten nicht mehr, Sensoren bleiben. */
 export function currentMounts(saved: SavedMounts, version: unknown): SavedMounts {
   if (version === PARTS_VERSION) return saved;
@@ -149,8 +150,7 @@ export function currentMounts(saved: SavedMounts, version: unknown): SavedMounts
 function partGroups(robot: SimRobot): [string, string[]][] {
   const d = robot.drive;
   const groups: [string, string[]][] = [['color', robot.colors], ['ultra', robot.ultra ? [robot.ultra] : []], ['force', robot.force],
-    // (die Spurbreite gehört dazu: Sie legt fest, wo die Räder üblicherweise laufen)
-    [d ? `drive${d.axle}` : 'drive', d ? [d.left, d.right] : []], ['motor', robot.motors]];
+    ['drive', d ? [d.left, d.right] : []], ['motor', robot.motors]];
   return groups.filter(([, ports]) => ports.length).map(([kind, ports]) => [`${kind}:${ports.join()}`, ports]);
 }
 const isMount = (v: unknown): v is Mount => typeof (v as Mount | null)?.x === 'number' && typeof (v as Mount).y === 'number';

@@ -4,7 +4,7 @@ import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
 import { changePart, currentMounts, mirrorPartner, PARTS_VERSION, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
-import { wheelCenter } from '../src/sim/parts';
+import { wheelCenter, wheelTrack } from '../src/sim/parts';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
 import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, swapPorts, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
@@ -230,9 +230,10 @@ describe('Fahren', () => {
     // 360 Grad/s am 56-mm-Rad sind eine Radumdrehung je Sekunde: 176 mm
     const ahead = (await simulate(run(-360, 360), 1000)).sim;
     expect(ahead.pose.x).toBeCloseTo(Math.PI * 56, 0); expect(ahead.pose.heading).toBeCloseTo(0, 3);
-    // beide »vorwärts«: Der Roboter dreht sich auf der Stelle nach links
+    // beide »vorwärts«: Der Roboter dreht sich auf der Stelle nach links – die Räder laufen 77 mm auseinander (Motoren unter
+    // dem Hub), jedes legt 176 mm zurück: 2 · 176 / 77 im Bogenmaß, gut 260 Grad
     const spin = (await simulate(run(360, 360), 1000)).sim;
-    expect(spin.pose.x).toBeCloseTo(0, 3); expect(spin.pose.heading).toBeCloseTo(-180, 0);
+    expect(spin.pose.x).toBeCloseTo(0, 3); expect(spin.pose.heading).toBeCloseTo(-2 * 56 * 180 / 77, 3);
     // nach dem Programm steht er
     const after = (await simulate(run(-360, 360), 3000)).sim;
     expect(after.pose.x).toBeLessThan(180);
@@ -471,10 +472,11 @@ describe('Einbau der Motoren', () => {
   const drive = (fields: Record<string, unknown> = {}, ...blocks: ReturnType<typeof B>[]) =>
     program(B('pb_drive_setup', {LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE', WHEEL:56, AXLE:112, GYRO:false, ...fields}), ...blocks);
   const straight = (mm = 100) => B('pb_drive_straight', null, {DIST:N(mm)});
-  it('üblich: die Räder laufen im Abstand der Spurbreite, der linke Motor gespiegelt, der Abtrieb außen', () => {
+  it('üblich: Motoren unter dem Hub, der linke gespiegelt, die Räder direkt am Abtrieb – 77 mm auseinander', () => {
     const m = defaultMounts(robotOf(drive()));
-    expect(wheelCenter(m.A)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(-56, 6)});
-    expect(wheelCenter(m.B)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(56, 6)});
+    expect(wheelCenter(m.A)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(-38.5, 6)});
+    expect(wheelCenter(m.B)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(38.5, 6)});
+    expect(wheelTrack(m.A, m.B)).toBeCloseTo(77, 6);
     expect(m.A.flip).toBe(true); expect(m.B.flip).toBeUndefined();
   });
   it('passt »normal/umgekehrt« nicht zum Einbau, dreht er sich auf der Stelle – und glaubt, gefahren zu sein', async () => {
@@ -490,18 +492,20 @@ describe('Einbau der Motoren', () => {
     });
     expect(sim.pose.x).toBeCloseTo(-100, 3); expect(sim.pose.heading).toBeCloseTo(0, 3);
   });
-  it('Räder weiter auseinander: ohne Kreisel dreht er zu wenig, mit Kreisel genau', async () => {
+  it('Spurbreite im Programm anders als am Roboter: ohne Kreisel dreht er falsch, mit Kreisel genau', async () => {
     const turn = B('pb_drive_turn', null, {ANGLE:N(90)});
-    // statt 112 mm laufen die Räder 168 mm auseinander: Dieselbe Drehung der Räder dreht den Roboter nur um 2/3
-    const wider = (s: Simulation) => { const m = defaultMounts(s.robot); s.mounts = {A:{...m.A, y:m.A.y - 28}, B:{...m.B, y:m.B.y + 28}}; };
-    const plain = (await simulate(drive({}, turn), 2000, wider)).sim;
-    expect(plain.pose.heading).toBeCloseTo(60, 3);
+    // im Programm 112 mm, am Roboter laufen die Räder 77 mm auseinander: Dieselbe Drehung der Räder dreht ihn um 112/77 mehr
+    const plain = (await simulate(drive({}, turn), 2000)).sim;
+    expect(plain.pose.heading).toBeCloseTo(90 * 112 / 77, 3);
     expect(plain.angle).toBeCloseTo(90, 3);   // die Fahrbasis zählt aus den Motoren
-    const gyro = (await simulate(drive({GYRO:true}, turn), 2000, wider)).sim;
+    expect((await simulate(drive({AXLE:77}, turn), 2000)).sim.pose.heading).toBeCloseTo(90, 3);
+    const gyro = (await simulate(drive({GYRO:true}, turn), 2000)).sim;
     expect(gyro.pose.heading).toBeCloseTo(90, 3);
     expect(gyro.angle).toBeCloseTo(90, 3);
-  });
-  it('schneller, als die Motoren können: Er fährt langsamer, aber so weit, wie er soll', async () => {
+    // Räder weiter auseinander gerückt (je 28 mm): Jetzt dreht er zu wenig
+    const wider = (s: Simulation) => { const m = defaultMounts(s.robot); s.mounts = {A:{...m.A, y:m.A.y - 28}, B:{...m.B, y:m.B.y + 28}}; };
+    expect((await simulate(drive({AXLE:77}, turn), 2000, wider)).sim.pose.heading).toBeCloseTo(90 * 77 / 133, 3);
+  });  it('schneller, als die Motoren können: Er fährt langsamer, aber so weit, wie er soll', async () => {
     // kleine Motoren: 138 U/min = 828 Grad/s – am 56-mm-Rad gut 405 mm/s statt 1000
     const prog = drive({}, B('pb_drive_settings', null, {SPEED:N(1000), RATE:N(150)}), straight(500));
     expect((await simulate(prog, 1150)).running).toBe(true);

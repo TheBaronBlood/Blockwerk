@@ -13,7 +13,7 @@ import {
   type BuildOptions, type Level, type Mount, type SavedMounts
 } from './build';
 import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame, partSize } from './drawParts';
-import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, SHAFT, wheelCenter } from './parts';
+import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, SHAFT, wheelCenter, wheelTrack } from './parts';
 import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, robotFromWorkspace, robotMotors, robotParts, robotPorts, swapPorts, ULTRA, type RobotPart } from './robot';
 import { Runner } from './runner';
 import { FENCES, Simulation, type Fence } from './simulation';
@@ -520,6 +520,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
           + (at.face ? ', schaut nach vorn' : ''));
       }
       else if (!levelPorts().length) parts.push(level === 'lower' ? 'Das Programm benutzt keinen Motor' : 'Das Programm benutzt noch keinen Sensor');
+      // die echte Spurbreite – und was im Programm steht, wenn es davon abweicht
+      const track = axleTrack(), d = robot.drive;
+      if (track !== null && d) parts.push(`Spurbreite ${track} mm` + (!d.direct && track !== d.axle ? ` (im Programm ${d.axle} mm)` : ''));
+      axleGroup.classList.toggle('hidden', track === null || !d || d.direct || !!d.implicit || track === d.axle);
     } else if (!editing){
       // Anfasser zum Drehen
       const t = turnHandle();
@@ -627,6 +631,20 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   btnFlip.addEventListener('click', (e) => change('flip', e));
   btnKind.addEventListener('click', (e) => change('kind', e));
   btnFace.addEventListener('click', (e) => change('face', e));
+
+  // die Spurbreite, wie die Räder am Roboter laufen: auf ganze Millimeter, in »Fahrbasis einrichten« übernehmen
+  const axleGroup = el('simAxleGroup');
+  function axleTrack(): number | null {
+    const d = sim.robot.drive;
+    return d ? Math.round(wheelTrack(sim.mount(d.left)!, sim.mount(d.right)!)) : null;
+  }
+  el('simAxle').addEventListener('click', () => {
+    const track = axleTrack();
+    if (track === null) return;
+    Blockly.Events.setGroup(true);
+    try { for (const b of opts.ws.getAllBlocks(false)) if (b.type === 'pb_drive_setup') b.setFieldValue(track, 'AXLE'); }
+    finally { Blockly.Events.setGroup(false); }
+  });
 
   // ---- Umstecken: ein Tipp auf das Schild eines Teils ----
   const portMenu = el('simPorts');

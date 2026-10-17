@@ -227,6 +227,12 @@
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 13 9.5 5 9.5-5z" fill="currentColor" fill-opacity=".35"/></svg>
             <span>Unten</span></button>
         </div>
+        <!-- nur, wenn die Räder am Roboter anders auseinander laufen, als »Fahrbasis einrichten« sagt (view.ts) -->
+        <div class="sim-group hidden" id="simAxleGroup">
+          <button class="btn" id="simAxle" type="button" title="Die Spurbreite, wie die Räder am Roboter laufen, in »Fahrbasis einrichten« eintragen">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="4" height="12" rx="2"/><rect x="18" y="6" width="4" height="12" rx="2"/><path d="M7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3"/></svg>
+            <span>Spurbreite übernehmen</span></button>
+        </div>
         <!-- nur, wenn ein Teil gewählt ist, das sich so einstellen lässt (view.ts) -->
         <div class="sim-group sim-part-tools hidden" id="simPartTools">
           <button class="btn hidden" id="simFlip" type="button" title="Spiegeln: Abtrieb und Rad auf die andere Seite – der Motor dreht sein Rad dann andersherum (F)">

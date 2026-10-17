@@ -77,19 +77,14 @@ export function wheelRoll(m: MotorMount): Point {
   return {x:sign * Math.cos(a), y:sign * Math.sin(a)};
 }
 /**
- * Wie man eine Fahrbasis üblicherweise baut: Die Motoren liegen unter dem Hub, nebeneinander, vorn bündig mit ihm; der
- * linke gespiegelt, die Abtriebe außen. Das Rad steckt so weit außen auf der Achse, dass es bei `wheelY` (seitlich) auf
- * der Achse x = 0 läuft. Liegen die Räder enger, als die Motoren nebeneinander breit sind, rücken die Motoren zusammen.
+ * Wie man eine Fahrbasis üblicherweise baut: Die Motoren liegen nebeneinander unter dem Hub, vorn bündig mit ihm; der
+ * linke gespiegelt, die Abtriebe außen, die Räder direkt daran. `side`: −1 links, 1 rechts.
  */
-export function motorForWheel(wheelY: number, kind: MotorKind): MotorMount {
-  const flip = wheelY < 0, side = flip ? -1 : 1;
-  // unter dem Hub: 1,5 mm Rand zu seiner Kante
-  const under = HUB.width / 2 - MOTOR.width / 2 - 1.5, reach = MOTOR.width / 2 + MOTOR.output.width + WHEEL.width / 2;
-  const shaft = Math.max(SHAFT.min, Math.abs(wheelY) - under - reach);
-  const y = wheelY - side * (reach + shaft), len = MOTOR.length[kind];
-  const m: MotorMount = {x:-(len / 2 - MOTOR.output.length / 2), y:Math.round(y * 10) / 10 + 0};
-  if (flip) m.flip = true;
+export function motorUnderHub(side: -1 | 1, kind: MotorKind): MotorMount {
+  const m: MotorMount = {x:-(MOTOR.length[kind] / 2 - MOTOR.output.length / 2), y:side * (HUB.width / 2 - MOTOR.width / 2 - 1.5)};
+  if (side < 0) m.flip = true;
   if (kind !== 'large') m.kind = kind;
-  m.shaft = Math.round(shaft * 10) / 10 + 0;
   return m;
 }
+/** Wie weit die Räder zweier Motoren am Roboter auseinander laufen (mm, quer zur Fahrtrichtung) – die echte Spurbreite. */
+export const wheelTrack = (left: MotorMount, right: MotorMount) => Math.abs(wheelCenter(right).y - wheelCenter(left).y);
