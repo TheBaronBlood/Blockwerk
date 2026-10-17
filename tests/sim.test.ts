@@ -3,9 +3,10 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
-import { mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts } from '../src/sim/build';
+import { changePart, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
+import { wheelCenter } from '../src/sim/parts';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
-import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, type SimRobot } from '../src/sim/robot';
+import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, swapPorts, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
 import { Simulation } from '../src/sim/simulation';
 import { colorAt, coneDistance, reflectionAt, type Obstacle, type Track } from '../src/sim/world';
@@ -64,7 +65,7 @@ describe('Roboter aus dem Programm', () => {
     expect(describeRobot(robot)).toBe('keine Räder · Motor an C');
   });
   it('Fahrblöcke ohne »Fahrbasis einrichten« nehmen die Vorgabe', () => {
-    expect(robotOf(program(B('pb_drive_straight', null, {DIST:N(100)}))).drive).toEqual({left:'A', right:'B', wheel:56, axle:112, direct:false});
+    expect(robotOf(program(B('pb_drive_straight', null, {DIST:N(100)}))).drive).toEqual({left:'A', right:'B', wheel:56, axle:112, leftDir:-1, rightDir:1, gyro:true, direct:false, implicit:true});
   });
   it('ohne Fahrbasis sind zwei einzelne Motoren die Räder', () => {
     const robot = robotOf(program(B('pb_motor_run', {PORT:'B'}, {SPEED:N(500)}), B('pb_motor_run', {PORT:'A'}, {SPEED:N(500)}), B('pb_motor_run', {PORT:'C'}, {SPEED:N(500)})));
@@ -461,5 +462,105 @@ describe('Programm', () => {
       const {errors, ignored} = await simulate(make(), 3000);
       expect(errors, name).toEqual([]); expect(ignored, name).toEqual([]);
     }
+  });
+});
+
+describe('Einbau der Motoren', () => {
+  const drive = (fields: Record<string, unknown> = {}, ...blocks: ReturnType<typeof B>[]) =>
+    program(B('pb_drive_setup', {LEFT_PORT:'A', LEFT_DIR:'COUNTERCLOCKWISE', RIGHT_PORT:'B', RIGHT_DIR:'CLOCKWISE', WHEEL:56, AXLE:112, GYRO:false, ...fields}), ...blocks);
+  const straight = (mm = 100) => B('pb_drive_straight', null, {DIST:N(mm)});
+  it('üblich: die Räder laufen im Abstand der Spurbreite, der linke Motor gespiegelt, der Abtrieb außen', () => {
+    const m = defaultMounts(robotOf(drive()));
+    expect(wheelCenter(m.A)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(-56, 6)});
+    expect(wheelCenter(m.B)).toEqual({x:expect.closeTo(0, 6), y:expect.closeTo(56, 6)});
+    expect(m.A.flip).toBe(true); expect(m.B.flip).toBeUndefined();
+  });
+  it('passt »normal/umgekehrt« nicht zum Einbau, dreht er sich auf der Stelle – und glaubt, gefahren zu sein', async () => {
+    const {sim} = await simulate(drive({LEFT_DIR:'CLOCKWISE'}, straight()), 2000);
+    expect(Math.hypot(sim.pose.x, sim.pose.y)).toBeLessThan(1);
+    expect(Math.abs(sim.pose.heading)).toBeGreaterThan(30);
+    expect(sim.distance).toBeCloseTo(100, 3);
+  });
+  it('beide Motoren andersherum eingebaut: Er fährt rückwärts', async () => {
+    const {sim} = await simulate(drive({}, straight()), 2000, s => {
+      const m = defaultMounts(s.robot);
+      s.mounts = {A:{...m.A, flip:false}, B:{...m.B, flip:true}};
+    });
+    expect(sim.pose.x).toBeCloseTo(-100, 3); expect(sim.pose.heading).toBeCloseTo(0, 3);
+  });
+  it('Räder weiter auseinander: ohne Kreisel dreht er zu wenig, mit Kreisel genau', async () => {
+    const turn = B('pb_drive_turn', null, {ANGLE:N(90)});
+    // statt 112 mm laufen die Räder 168 mm auseinander: Dieselbe Drehung der Räder dreht den Roboter nur um 2/3
+    const wider = (s: Simulation) => { const m = defaultMounts(s.robot); s.mounts = {A:{...m.A, y:m.A.y - 28}, B:{...m.B, y:m.B.y + 28}}; };
+    const plain = (await simulate(drive({}, turn), 2000, wider)).sim;
+    expect(plain.pose.heading).toBeCloseTo(60, 3);
+    expect(plain.angle).toBeCloseTo(90, 3);   // die Fahrbasis zählt aus den Motoren
+    const gyro = (await simulate(drive({GYRO:true}, turn), 2000, wider)).sim;
+    expect(gyro.pose.heading).toBeCloseTo(90, 3);
+    expect(gyro.angle).toBeCloseTo(90, 3);
+  });
+  it('schneller, als die Motoren können: Er fährt langsamer, aber so weit, wie er soll', async () => {
+    // kleine Motoren: 138 U/min = 828 Grad/s – am 56-mm-Rad gut 405 mm/s statt 1000
+    const prog = drive({}, B('pb_drive_settings', null, {SPEED:N(1000), RATE:N(150)}), straight(500));
+    expect((await simulate(prog, 1150)).running).toBe(true);
+    const end = await simulate(prog, 1400);
+    expect(end.running).toBe(false);
+    expect(end.sim.pose.x).toBeCloseTo(500, 0);
+  });
+  it('ein einzelner Motor dreht nie schneller, als er kann', async () => {
+    const {sim} = await simulate(program(B('pb_motor_run', {PORT:'C'}, {SPEED:N(5000)}), B('pb_wait', null, {MS:N(1000)})), 1000);
+    expect(sim.motor('C').angle).toBeCloseTo(936, 0);   // großer Motor: 156 U/min
+  });
+});
+
+describe('Umstecken', () => {
+  it('tauscht die Anschlüsse im Programm – mit dem, was dort schon steckt', () => {
+    const ws = new Blockly.Workspace();
+    try {
+      Blockly.serialization.workspaces.load(EXAMPLES.linie(), ws);
+      expect(robotFromWorkspace(ws)).toMatchObject({drive:{left:'A', right:'B'}, colors:['C']});
+      expect(swapPorts(ws, 'C', 'E')).toBe(true);
+      expect(robotFromWorkspace(ws).colors).toEqual(['E']);
+      // an A steckt der linke Motor: Die beiden tauschen
+      swapPorts(ws, 'E', 'A');
+      expect(robotFromWorkspace(ws)).toMatchObject({drive:{left:'E', right:'B'}, colors:['A']});
+      expect(swapPorts(ws, 'B', 'B')).toBe(false);
+    } finally { ws.dispose(); }
+  });
+  it('die Teile bleiben dabei, wo sie waren', () => {
+    expect(swapMounts({C:{x:96, y:0}}, 'C', 'E')).toEqual({E:{x:96, y:0}});
+    expect(swapMounts({C:{x:96, y:0}, E:{x:-40, y:8}}, 'C', 'E')).toEqual({E:{x:96, y:0}, C:{x:-40, y:8}});
+  });
+});
+
+describe('Teile einstellen', () => {
+  const robot: SimRobot = {drive:{left:'A', right:'B', wheel:56, axle:112, leftDir:-1, rightDir:1, gyro:true, direct:false}, colors:['C', 'D'], ultra:null, force:[], motors:[], notes:[]};
+  const usual = defaultMounts(robot);
+  it('Motor spiegeln: mit Symmetrie der gegenüber auch – beide bleiben spiegelbildlich', () => {
+    const one = changePart(robot, {}, 'A', 'flip', usual, false);
+    expect(one.A.flip).toBeUndefined(); expect(one.B).toBeUndefined();
+    const both = changePart(robot, {}, 'A', 'flip', usual, true);
+    expect(both.A.flip).toBeUndefined(); expect(both.B.flip).toBe(true);
+    expect(mirrorPartner(robot, 'A')).toBe('B');
+  });
+  it('groß oder klein, nach unten oder nach vorn – nur, wo es das gibt', () => {
+    expect(usual.A.kind).toBe('small');
+    expect(changePart(robot, {}, 'A', 'kind', usual, false).A.kind).toBeUndefined();   // groß
+    expect(changePart(robot, {}, 'C', 'face', usual, false).C.face).toBe('front');
+    expect(changePart(robot, {}, 'A', 'face', usual, false)).toEqual({});
+    expect(changePart(robot, {}, 'C', 'flip', usual, false)).toEqual({});
+  });
+  it('gemerkt wird, wie Motoren und Sensoren eingebaut sind', () => {
+    const mounts = changePart(robot, changePart(robot, {}, 'A', 'flip', usual, true), 'C', 'face', usual, false);
+    expect(mountsFor(robot, saveMounts(robot, {}, mounts))).toEqual(mounts);
+  });
+  it('ein nach vorn gekippter Farbsensor sieht keine Linie, sondern wie nah ein Hindernis steht', () => {
+    const sim = new Simulation({...robot, colors:['C']});
+    sim.mounts = {C:{x:100, y:0, face:'front'}};
+    expect(sim.reflection('C')).toBe(0); expect(sim.color('C')).toBe('NONE');
+    // die Vorderkante des Sensors liegt bei 111,5 mm; das Hindernis beginnt 20 mm davor
+    sim.obstacles = [box(181.5, 0)];
+    expect(sim.reflection('C')).toBe(35);
+    expect(sim.colorPoints()).toHaveLength(1);
   });
 });

@@ -7,9 +7,14 @@
 // versetzen (build.ts). »Bahn bauen« legt die Bahn aus Platten zusammen (tiles.ts, trackEditor.ts).
 // Gerechnet wird in simulation.ts und runner.ts; hier wird nur gezeichnet und bedient.
 // ---------------------------------------------------------------
-import type * as Blockly from 'blockly';
-import { ANGLE_STEP, ANGLE_STEP_COARSE, GRID_MM, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, type BuildOptions, type Mount, type SavedMounts } from './build';
-import { BODY, BUMPER, COLOR_SPOT, defaultMounts, robotFromWorkspace, robotParts, ULTRA, type RobotPart } from './robot';
+import * as Blockly from 'blockly';
+import {
+  ANGLE_STEP, ANGLE_STEP_COARSE, changePart, GRID_MM, levelOf, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts,
+  type BuildOptions, type Level, type Mount, type SavedMounts
+} from './build';
+import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame, partSize } from './drawParts';
+import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, wheelCenter } from './parts';
+import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, robotFromWorkspace, robotMotors, robotParts, robotPorts, swapPorts, ULTRA, type RobotPart } from './robot';
 import { Runner } from './runner';
 import { FENCES, Simulation, type Fence } from './simulation';
 import { cellAt, mapSize, readTileMap, startPose, TEMPLATES, TILE_MM, type TileMap } from './tiles';
@@ -45,7 +50,7 @@ const MIN_OBSTACLE = 20;
 /** So weit lässt sich die Bahn heranholen, und so viel der Fläche füllt sie, wenn sie ganz zu sehen ist. */
 const MAX_ZOOM = 8, FIT = 0.94;
 /** Beim Umbauen füllt der Roboter die Ansicht: so viele Millimeter sind zu sehen, um diesen Punkt am Roboter. */
-const BUILD_SPAN_MM = 340, BUILD_CENTER: Point = {x:32, y:0};
+const BUILD_SPAN_MM = 270, BUILD_CENTER: Point = {x:26, y:0};
 /** So weit vor dem gewählten Sensor sitzt der Knopf, an dem man ihn dreht (Bildschirmpunkte). */
 const KNOB_PX = 46;
 /**
@@ -94,7 +99,7 @@ function onDoubleTap(target: HTMLElement, handler: (e: PointerEvent) => void){
 }
 
 /** `pan`: an freier Stelle angefasst – Ziehen verschiebt die herangeholte Bahn; beim Bauen der Bahn ist es ohne Ziehen ein Tipp auf ein Feld (`tap`). */
-type Drag = {kind: 'pan'; from: Point; cam: Point; moved: boolean; tap: Point | null} | {kind: 'sensor'; port: string; from: Mount} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
+type Drag = {kind: 'pan'; from: Point; cam: Point; moved: boolean; tap: Point | null} | {kind: 'sensor'; port: string; from: Mount; start: Point; moved: boolean; label: boolean} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
 
 export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const el = <T extends HTMLElement>(id: string) => root.querySelector<T>('#' + id)!;
@@ -126,8 +131,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   /** Zwei Finger auf der Bahn: wie weit sie am Anfang auseinander waren, der Zoom dabei und die Stelle der Bahn zwischen ihnen. */
   let pinch: {apart: number; zoom: number; under: Point} | null = null;
   let drag: Drag | null = null;
-  /** Der Sensor, der beim Umbauen zuletzt angefasst wurde: Er zeigt seinen Drehknopf und hört auf die Tasten. */
+  /** Das Teil, das beim Umbauen zuletzt angefasst wurde: Es zeigt seinen Drehknopf und hört auf die Tasten. */
   let selected: string | null = null;
+  /** Beim Umbauen: die Ebene, an der gebaut wird – oben Hub und Sensoren, unten die Motoren. */
+  let level: Level = 'upper';
+  /** Gerade umgesteckt: Die Teile behalten ihre Plätze, sobald das Programm neu gelesen ist. */
+  let swapped: {from: string; to: string; mounts: Record<string, Mount>} | null = null;
   const build: BuildOptions = {grid:true, symmetry:true};
   /** Versetzte Sensoren, wie sie gemerkt sind – auch die für Sensoren, die das Programm gerade nicht benutzt. */
   let saved: SavedMounts = {};
@@ -158,8 +167,6 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     const store = {layouts:saved, scale:sim.scale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch { /* gilt dann bis zum Neuladen */ }
   };
-  /** Alle Sensoren, die der Roboter laut Programm hat (Anschlüsse). */
-  const sensorPorts = () => [...sim.robot.colors, ...(sim.robot.ultra ? [sim.robot.ultra] : []), ...sim.robot.force];
 
   // ---- Ton ----
   let audio: AudioContext | null = null;
@@ -311,6 +318,97 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const sizeHandle = (o: Obstacle): Point => ({x:o.x + o.w / 2, y:o.y + o.h / 2});
   const circle = (x: number, y: number, r: number) => { g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); };
 
+  // ---- die Teile des Roboters ----
+  /** Teile mit Anschluss, die beim Umbauen auf der gewählten Ebene liegen. */
+  const levelPorts = () => robotPorts(sim.robot).filter(port => levelOf(sim.robot, port) === level);
+  const isMotorPort = (port: string) => robotMotors(sim.robot).includes(port);
+  /** Wie das Teil an einem Anschluss heißt: »Farbsensor C«, »Motor A (Rad links)«. */
+  function partName(port: string): string {
+    const r = sim.robot, d = r.drive;
+    if (d && port === d.left) return `Motor ${port} (Rad links)`;
+    if (d && port === d.right) return `Motor ${port} (Rad rechts)`;
+    return `${r.motors.includes(port) ? 'Motor' : r.colors.includes(port) ? 'Farbsensor' : port === r.ultra ? 'Abstandssensor' : 'Kraftsensor'} ${port}`;
+  }
+  const partKind = (port: string) => isMotorPort(port) ? 'motor' as const : sim.robot.colors.includes(port) ? 'color' as const : port === sim.robot.ultra ? 'ultra' as const : 'force' as const;
+  /** Der Kraftsensor sitzt mit der Spitze seines Tasters am Platz (dort tastet er): Sein Gehäuse liegt dahinter. */
+  const FORCE_BODY_BACK = FORCE_SENSOR.length / 2 + FORCE_SENSOR.plunger - FORCE.tip;
+  /** Die Mitte eines Teils am Roboter (Millimeter, gedreht wie das Teil) – dort sitzt beim Umbauen sein Schild. */
+  function partCenter(port: string): Mount {
+    const at = sim.mount(port)!;
+    return sim.robot.force.includes(port) ? {...at, ...onPart(at, {x:-FORCE_BODY_BACK, y:0})} : at;
+  }
+  const labelPoint = (port: string) => toWorld(sim.pose, sim.scale, partCenter(port));
+  /** Ein Punkt der Bahn in Millimetern am Roboter: x nach vorn, y nach rechts. */
+  function toRobot(p: Point): Point {
+    const f = forward(sim.pose.heading), dx = (p.x - sim.pose.x) / sim.scale, dy = (p.y - sim.pose.y) / sim.scale;
+    return {x:dx * f.x + dy * f.y, y:dy * f.x - dx * f.y};
+  }
+  /** Der Umriss eines Teils, wie in der Vorlage (X quer, Y nach hinten), um seine Mitte: Mitte und halbe Maße. */
+  function outlineOf(port: string){
+    const at = sim.mount(port)!, size = partSize(partKind(port), at.kind ?? 'large');
+    const cx = isMotorPort(port) ? (at.flip ? -1 : 1) * MOTOR.output.width / 2 : 0;
+    return {cx, cy:-size.ahead, hw:size.w / 2, hl:size.l / 2};
+  }
+  /** Ob ein Punkt der Bahn auf dem Teil liegt – mit etwas Rand für Finger. */
+  function onPartAt(port: string, p: Point): boolean {
+    const c = partCenter(port), local = toRobot(p), a = -(c.angle ?? 0) * Math.PI / 180, o = outlineOf(port);
+    const dx = local.x - c.x, dy = local.y - c.y;
+    // in die Lage der Vorlage: X = seitlich, Y = nach hinten
+    const fx = dx * Math.cos(a) - dy * Math.sin(a), fy = dx * Math.sin(a) + dy * Math.cos(a), X = fy, Y = -fx;
+    const pad = 3 + 6 * reach / (k * sim.scale);
+    return Math.abs(X - o.cx) <= o.hw + pad && Math.abs(Y - o.cy) <= o.hl + pad;
+  }
+
+  /** Wie stark das Teil der anderen Ebene beim Umbauen noch zu sehen ist. */
+  const OTHER_LEVEL = 0.26;
+  /** Halbmesser des Schilds mit dem Anschluss (Bildschirmpunkte). */
+  const LABEL_PX = 11;
+  /**
+   * Zeichnet den Roboter, in Millimetern am Roboter (x nach vorn): unten die Räder und die Motoren, die meist unter
+   * dem Hub liegen; darüber der Hub und die Sensoren. Beim Umbauen tritt die Ebene zurück, an der gerade niemand baut.
+   */
+  function drawRobot(){
+    const robot = sim.robot, d = robot.drive, base = g.globalAlpha, mm = 1 / (k * sim.scale);
+    const placed = (at: Point & {angle?: number}, shape: () => void) => {
+      g.save(); g.translate(at.x, at.y); g.rotate((at.angle ?? 0) * Math.PI / 180); inPartFrame(g); shape(); g.restore();
+    };
+    const alphaFor = (lvl: Level) => base * (building && level !== lvl ? OTHER_LEVEL : 1);
+
+    g.globalAlpha = alphaFor('lower');
+    for (const port of robotMotors(robot)){
+      const m = sim.mount(port)!, kind = m.kind ?? 'large', wheel = !!d && (port === d.left || port === d.right);
+      if (wheel){
+        // das Rad dreht sich so, wie der Motor wirklich läuft – »umgekehrt« zählend andersherum, gespiegelt eingebaut rückwärts
+        const dir = d!.direct ? 1 : port === d!.left ? d!.leftDir : d!.rightDir;
+        placed({...wheelCenter(m), angle:m.angle}, () => drawWheel(g, d!.wheel, sim.motor(port).angle * dir * (m.flip ? -1 : 1)));
+      }
+      placed(m, () => {
+        drawMotor(g, kind, !!m.flip);
+        if (wheel) return;
+        // ein einzelner Motor (ein Greifarm etwa): eine Scheibe mit Zeiger, die sich mitdreht
+        const y = MOTOR.length[kind] / 2 - 9, a = sim.motor(port).angle * Math.PI / 180;
+        circle(0, y, 6); g.fillStyle = '#2EAFCF'; g.fill();
+        g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(0, y); g.lineTo(5 * Math.sin(a), y - 5 * Math.cos(a)); g.stroke(); g.lineCap = 'butt';
+      });
+    }
+
+    g.globalAlpha = alphaFor('upper');
+    placed(HUB_AT, () => drawHubPart(g, sim.display, runner && sim.light ? LIGHTS[sim.light] ?? '#FFFFFF' : null));
+    if (robot.ultra) placed(sim.mount(robot.ultra)!, () => drawUltraSensor(g));
+    for (const port of robot.force) placed(partCenter(port), () => drawForceSensor(g, sim.forcePressed(port)));
+    for (const port of robot.colors) placed(sim.mount(port)!, () => drawColorSensor(g, sim.facesFront(port)));
+
+    // beim Umbauen: das gewählte Teil (und mit Symmetrie das gegenüber) mit Rahmen
+    g.globalAlpha = base;
+    const mirrored = selected && build.symmetry ? mirrorPartner(robot, selected) : null;
+    if (building) for (const port of [selected, mirrored]) if (port && robotPorts(robot).includes(port)) placed(partCenter(port), () => {
+      const o = outlineOf(port);
+      g.setLineDash([4 * mm, 3 * mm]); g.strokeStyle = '#E644B9'; g.lineWidth = 2 * mm;
+      g.beginPath(); g.roundRect(o.cx - o.hw - 2.5, o.cy - o.hl - 2.5, 2 * o.hw + 5, 2 * o.hl + 5, 4); g.stroke(); g.setLineDash([]);
+    });
+  }
+
   let shownValues = '';
   function draw(){
     if (!shown) return;
@@ -379,78 +477,47 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
 
     g.save();
     g.translate(sim.pose.x, sim.pose.y); g.rotate(sim.pose.heading * Math.PI / 180); g.scale(sim.scale, sim.scale);
-    const axle = robot.drive?.axle ?? 112, wheel = robot.drive?.wheel ?? 56, half = Math.max(BODY.minWidth, axle - 30) / 2;
-    if (robot.drive){
-      g.fillStyle = '#22252B';
-      for (const side of [-1, 1]){ g.beginPath(); g.roundRect(-wheel / 2, side * axle / 2 - 9, wheel, 18, 5); g.fill(); }
-    }
-    g.fillStyle = sim.blocked ? '#FFB515' : '#FFD945'; g.strokeStyle = '#5E4B00'; g.lineWidth = 2;
-    g.beginPath(); g.roundRect(BODY.back, -half, BODY.front - BODY.back, 2 * half, 10); g.fill(); g.stroke();
-    // Pfeil: Hier ist vorn
-    g.fillStyle = '#5E4B00'; g.beginPath(); g.moveTo(BODY.front - 12, 0); g.lineTo(BODY.front - 34, -14); g.lineTo(BODY.front - 34, 14); g.closePath(); g.fill();
-    // einzelne Motoren (ein Greifarm etwa): eine Scheibe mit Zeiger, die sich mitdreht
-    robot.motors.forEach((port, i) => {
-      const y = (i - (robot.motors.length - 1) / 2) * 34, a = sim.motor(port).angle * Math.PI / 180;
-      g.fillStyle = '#0082DD'; circle(BODY.back + 24, y, 14); g.fill();
-      g.strokeStyle = '#fff'; g.lineWidth = 4; g.lineCap = 'round';
-      g.beginPath(); g.moveTo(BODY.back + 24, y); g.lineTo(BODY.back + 24 + 11 * Math.cos(a), y + 11 * Math.sin(a)); g.stroke(); g.lineCap = 'butt';
-    });
-    /** Zeichnet ein Bauteil an seinem Platz, gedreht wie eingestellt: `shape` zeichnet es um den Ursprung, x nach vorn. */
-    const part = (port: string, shape: () => void) => {
-      const at = sim.mount(port)!;
-      g.save(); g.translate(at.x, at.y); g.rotate((at.angle ?? 0) * Math.PI / 180); shape(); g.restore();
-    };
-    if (robot.ultra) part(robot.ultra, () => { g.fillStyle = '#2CADCD'; g.beginPath(); g.roundRect(-8, -22, 12, 44, 4); g.fill(); });
-    for (const port of robot.force) part(port, () => {
-      const pressed = sim.forcePressed(port);
-      // der Taster vorn: gedrückt sitzt er tiefer im Sensor
-      g.fillStyle = '#8A1420'; g.beginPath(); g.roundRect(4, -5, pressed ? 4 : 8, 10, 2); g.fill();
-      g.fillStyle = pressed ? '#FF8A95' : '#DA3041'; g.beginPath(); g.roundRect(-6, -12, 12, 24, 4); g.fill();
-    });
-    // Beim Umbauen zeigt ein Gehäuse, wie die Farbsensoren gedreht sind. (Gemessen wird trotzdem genau unter ihnen.)
-    if (building) for (const port of robot.colors) part(port, () => {
-      g.fillStyle = 'rgba(255,255,255,.92)'; g.strokeStyle = '#19D1E5'; g.lineWidth = 1.5;
-      g.beginPath(); g.roundRect(-12, -12, 24, 24, 5); g.fill(); g.stroke();
-      g.fillStyle = '#19D1E5'; g.beginPath(); g.roundRect(8, -6, 4, 12, 2); g.fill();   // die Vorderkante
-    });
+    drawRobot();
     g.restore();
 
-    // Farbsensoren: gefüllt mit dem, was sie gerade sehen
+    // Farbsensoren, die auf den Boden schauen: in der Mitte der Fleck, den sie messen – gefüllt mit dem, was sie sehen
+    const alpha = g.globalAlpha;
+    if (building && level !== 'upper') g.globalAlpha = OTHER_LEVEL;
     sim.colorPoints().forEach((p, i) => {
-      const light = Math.round(sim.reflection(robot.colors[i]) * 2.55);
-      circle(p.x, p.y, Math.max(COLOR_SPOT * sim.scale, 4 * px));
+      const port = robot.colors[i];
+      if (sim.facesFront(port)) return;
+      const light = Math.round(sim.reflection(port) * 2.55);
+      circle(p.x, p.y, Math.max(COLOR_SPOT * sim.scale, 3 * px));
       g.fillStyle = `rgb(${light},${light},${light})`; g.fill();
-      g.strokeStyle = '#19D1E5'; g.lineWidth = 2 * px; g.stroke();
+      g.strokeStyle = '#19D1E5'; g.lineWidth = 1.5 * px; g.stroke();
     });
+    g.globalAlpha = alpha;
 
     const parts: string[] = [];
     if (building){
-      // Beim Umbauen hat jeder Sensor einen Ring zum Anfassen und ein Schild mit seinem Anschluss. Gezeichnet
-      // wird das in Bildschirmpunkten – die Schrift soll gerade stehen, auch wenn die Bahn gedreht ist.
+      // Beim Umbauen trägt jedes Teil der gewählten Ebene seinen Anschluss als Schild, in großen Buchstaben; ein Tipp
+      // darauf steckt es um. Gezeichnet in Bildschirmpunkten – die Schrift soll gerade stehen, auch wenn die Bahn gedreht ist.
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       const mirrored = selected && build.symmetry ? mirrorPartner(robot, selected) : null;
-      g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      for (const port of sensorPorts()){
-        const s = toScreen.transformPoint(sim.sensorPoint(port)!), active = port === selected || port === mirrored;
-        circle(s.x, s.y, 13); g.strokeStyle = active ? '#E644B9' : 'rgba(22,23,29,.5)'; g.lineWidth = active ? 3 : 1.5; g.stroke();
-        // Farbsensoren tragen das Schild vor sich, der Abstandssensor links, Kraftsensoren rechts – so überdecken sie
-        // sich nicht. Beim gewählten Sensor sitzt vorn der Drehknopf: Sein Schild rückt nach hinten.
-        // (Auf dem Bildschirm zeigt »geradeaus« nach oben – eine Drehung des Sensors zählt von dort.)
-        const back = forward((sim.mount(port)!.angle ?? 0) + 90);
-        const [dx, dy] = port === selected ? [back.x * 27, back.y * 27] : robot.colors.includes(port) ? [0, -27] : port === robot.ultra ? [-29, 0] : [29, 0];
-        circle(s.x + dx, s.y + dy, 10); g.fillStyle = active ? '#E644B9' : '#16171D'; g.fill();
-        g.fillStyle = '#fff'; g.fillText(port, s.x + dx, s.y + dy + 0.5);
+      g.font = '800 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const port of levelPorts()){
+        const s = toScreen.transformPoint(labelPoint(port)), active = port === selected || port === mirrored;
+        circle(s.x, s.y, LABEL_PX); g.fillStyle = active ? '#E644B9' : 'rgba(22,23,29,.86)'; g.fill();
+        g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,.9)'; g.stroke();
+        g.fillStyle = '#fff'; g.fillText(port.toUpperCase(), s.x, s.y + 0.5);
       }
       const at = selected && sim.mount(selected);
       if (selected && at){
-        // der Drehknopf: eine Linie vom Sensor in seine Blickrichtung, am Ende der Knopf
+        // der Drehknopf: eine Linie vom Teil in seine Blickrichtung, am Ende der Knopf
         const s = toScreen.transformPoint(sim.sensorPoint(selected)!), t = toScreen.transformPoint(sensorKnob(selected));
         g.strokeStyle = '#E644B9'; g.lineWidth = 2; g.beginPath(); g.moveTo(s.x, s.y); g.lineTo(t.x, t.y); g.stroke();
         circle(t.x, t.y, 7); g.fillStyle = '#E644B9'; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
-        parts.push(`Sensor ${selected}: ${Math.abs(at.x)} mm ${at.x < 0 ? 'hinter' : 'vor'} der Achse, ${at.y ? `${Math.abs(at.y)} mm ${at.y < 0 ? 'links' : 'rechts'}` : 'mittig'}`
-          + (at.angle ? `, ${Math.abs(at.angle)}° nach ${at.angle < 0 ? 'links' : 'rechts'} gedreht` : ''));
+        parts.push(`${partName(selected)}: ${Math.abs(at.x)} mm ${at.x < 0 ? 'hinter' : 'vor'} der Achse, ${at.y ? `${Math.abs(at.y)} mm ${at.y < 0 ? 'links' : 'rechts'}` : 'mittig'}`
+          + (at.angle ? `, ${Math.abs(at.angle)}° nach ${at.angle < 0 ? 'links' : 'rechts'} gedreht` : '')
+          + (isMotorPort(selected) ? `, ${MOTOR.name[at.kind ?? 'large']}${at.flip ? ', gespiegelt' : ''}` : '')
+          + (at.face ? ', schaut nach vorn' : ''));
       }
-      else if (!sensorPorts().length) parts.push('Das Programm benutzt noch keinen Sensor');
+      else if (!levelPorts().length) parts.push(level === 'lower' ? 'Das Programm benutzt keinen Motor' : 'Das Programm benutzt noch keinen Sensor');
     } else if (!editing){
       // Anfasser zum Drehen
       const t = turnHandle();
@@ -506,7 +573,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     // Plätze gelten nur für die Sensoren, für die sie eingestellt wurden: Hat das Programm jetzt andere
     // (einen Farbsensor statt zwei), sitzen sie am üblichen Platz – der einzelne in der Mitte
     sim.mounts = mountsFor(sim.robot, saved);
-    if (selected && !sensorPorts().includes(selected)) selected = null;
+    // gerade umgesteckt: Die Teile bleiben, wo sie waren – sie heißen nur anders
+    if (swapped){ sim.mounts = swapMounts(swapped.mounts, swapped.from, swapped.to); swapped = null; remember(); }
+    if (selected && !robotPorts(sim.robot).includes(selected)) selected = null;
+    partTools();
     forceButtons();
     partChips();
     draw();
@@ -516,8 +586,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const btnBuild = el('simBuild');
   function setBuilding(on: boolean){
     if (on && editing) setEditing(false);
-    building = on; drag = null; selected = null;
+    building = on; drag = null; selected = null; level = 'upper'; closePorts();
+    for (const [name, b] of Object.entries(levelButtons)) b.setAttribute('aria-checked', String(name === level));
     root.classList.toggle('building', on);
+    partTools();
     btnBuild.setAttribute('aria-pressed', String(on));
     label(btnBuild, on ? 'Fertig' : 'Umbauen');
     layout();
@@ -526,6 +598,77 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (!building && runner) finish(runner, '— Simulation angehalten —');
     setBuilding(!building);
   });
+  // die Ebene: oben Hub und Sensoren, unten die Motoren (sie liegen meist unter dem Hub)
+  const levelButtons: Record<Level, HTMLElement> = {upper:el('simLevelUpper'), lower:el('simLevelLower')};
+  function setLevel(next: Level){
+    level = next; selected = null; closePorts();
+    for (const [name, b] of Object.entries(levelButtons)) b.setAttribute('aria-checked', String(name === next));
+    partTools(); draw();
+  }
+  levelButtons.upper.addEventListener('click', () => setLevel('upper'));
+  levelButtons.lower.addEventListener('click', () => setLevel('lower'));
+  // was sich am gewählten Teil einstellen lässt: Motor spiegeln, groß oder klein; Farbsensor nach unten oder vorn
+  const tools = el('simPartTools'), btnFlip = el('simFlip'), btnKind = el('simKind'), btnFace = el('simFace');
+  function partTools(){
+    const motor = building && !!selected && isMotorPort(selected), color = building && !!selected && sim.robot.colors.includes(selected);
+    const at = selected ? sim.mount(selected) : null;
+    btnFlip.classList.toggle('hidden', !motor); btnKind.classList.toggle('hidden', !motor); btnFace.classList.toggle('hidden', !color);
+    tools.classList.toggle('hidden', !motor && !color);
+    if (motor) label(btnKind, (at?.kind ?? 'large') === 'large' ? 'Großer Motor' : 'Kleiner Motor');
+    if (color) label(btnFace, at?.face ? 'Schaut nach vorn' : 'Schaut nach unten');
+  }
+  function change(what: 'flip' | 'kind' | 'face', e?: {ctrlKey: boolean; metaKey: boolean}){
+    if (!selected) return;
+    sim.mounts = changePart(sim.robot, sim.mounts, selected, what, defaultMounts(sim.robot), e ? mirroring(e) : build.symmetry);
+    remember(); partTools(); draw();
+  }
+  btnFlip.addEventListener('click', (e) => change('flip', e));
+  btnKind.addEventListener('click', (e) => change('kind', e));
+  btnFace.addEventListener('click', (e) => change('face', e));
+
+  // ---- Umstecken: ein Tipp auf das Schild eines Teils ----
+  const portMenu = el('simPorts');
+  /** Was gerade an jedem Anschluss steckt (laut Programm). */
+  function occupants(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const port of robotPorts(sim.robot)) out[port] = partName(port).replace(/ \(.*\)$/, '').replace(/ [A-F]$/, '');
+    return out;
+  }
+  function openPorts(port: string){
+    const d = sim.robot.drive, fixed = d?.implicit ? [d.left, d.right] : [], used = occupants();
+    portMenu.textContent = '';
+    const head = document.createElement('p');
+    head.textContent = fixed.includes(port) ? 'Fahrbasis ohne »Fahrbasis einrichten«: steckt fest an A und B' : `${partName(port)} umstecken`;
+    portMenu.append(head);
+    const row = document.createElement('div');
+    for (const p of ['A', 'B', 'C', 'D', 'E', 'F']){
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = p; b.setAttribute('role', 'menuitem');
+      b.classList.toggle('current', p === port);
+      b.disabled = p === port || fixed.includes(port) || fixed.includes(p);
+      b.title = p === port ? 'steckt hier' : fixed.includes(p) ? 'Fahrbasis (fest)' : used[p] ? `tauscht mit ${used[p]} ${p}` : 'frei';
+      if (used[p] && p !== port) b.classList.add('taken');
+      b.addEventListener('click', () => { closePorts(); repatch(port, p); });
+      row.append(b);
+    }
+    portMenu.append(row);
+    portMenu.classList.remove('hidden');
+    // neben das Schild, aber ganz in der Ansicht
+    const s = toScreen.transformPoint(labelPoint(port)), w = portMenu.offsetWidth, h = portMenu.offsetHeight;
+    portMenu.style.left = Math.max(6, Math.min(stage.clientWidth - w - 6, s.x - w / 2)) + 'px';
+    portMenu.style.top = (s.y + LABEL_PX + 8 + h < stage.clientHeight ? s.y + LABEL_PX + 8 : Math.max(6, s.y - LABEL_PX - 8 - h)) + 'px';
+    portMenu.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});
+  }
+  function closePorts(){ portMenu.classList.add('hidden'); }
+  /** Steckt das Teil im Programm um (alle Blöcke); steckt dort schon etwas, tauschen die beiden. */
+  function repatch(from: string, to: string){
+    swapped = {from, to, mounts:{...sim.mounts}};
+    selected = to;
+    if (!swapPorts(opts.ws, from, to, Blockly.Events)) swapped = null;
+  }
+  portMenu.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ e.stopPropagation(); closePorts(); canvas.focus({preventScroll:true}); } });
+  document.addEventListener('pointerdown', (e) => { if (!portMenu.classList.contains('hidden') && !portMenu.contains(e.target as Node)) closePorts(); }, true);
+
   gridInput.addEventListener('change', () => { build.grid = gridInput.checked; remember(); draw(); });
   symmetryInput.addEventListener('change', () => { build.symmetry = symmetryInput.checked; remember(); draw(); });
   el('simMountsReset').addEventListener('click', () => { sim.mounts = {}; remember(); draw(); });
@@ -641,7 +784,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const near = (a: Point, b: Point, px: number) => Math.hypot(a.x - b.x, a.y - b.y) <= px * reach / k;
   const inside = (o: Obstacle, p: Point) => Math.abs(p.x - o.x) <= o.w / 2 && Math.abs(p.y - o.y) <= o.h / 2;
   /** Der Sensor unter dem Zeiger (beim Umbauen). */
-  const sensorAt = (p: Point) => sensorPorts().reverse().find(port => near(p, sim.sensorPoint(port)!, 15)) ?? null;
+  /** Das Teil der gewählten Ebene unter dem Zeiger (beim Umbauen) – das zuletzt gezeichnete zuerst. */
+  const sensorAt = (p: Point) => levelPorts().reverse().find(port => onPartAt(port, p)) ?? null;
+  /** Ob der Zeiger auf dem Schild mit dem Anschluss liegt. */
+  const onLabel = (port: string, p: Point) => near(p, labelPoint(port), LABEL_PX + 2);
   /**
    * Zusatztasten beim Umbauen, wie in Zeichenprogrammen üblich: Alt schaltet das Einrasten ab, Strg (auf dem Mac
    * die Befehlstaste) bewegt nur diesen einen Sensor, ohne den gegenüber zu spiegeln.
@@ -652,8 +798,9 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   function grab(p: Point): Drag | null {
     if (building){
       if (selected && near(p, sensorKnob(selected), 13)) return {kind:'spin', port:selected};
-      const port = sensorAt(p);
-      return port ? {kind:'sensor', port, from:{...sim.mount(port)!}} : null;
+      // das Schild mit dem Anschluss zuerst: Ein Tipp darauf (ohne Ziehen) steckt das Teil um
+      const labelled = levelPorts().reverse().find(port => onLabel(port, p)), port = labelled ?? sensorAt(p);
+      return port ? {kind:'sensor', port, from:{...sim.mount(port)!}, start:(({x, y}) => ({x, y}))(toScreen.transformPoint(p)), moved:false, label:!!labelled} : null;
     }
     if (near(p, turnHandle(), HANDLE_PX * 1.6)) return {kind:'turn'};
     const body = toWorld(sim.pose, sim.scale, BUMPER.at);
@@ -688,6 +835,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (building){
       // angefasst ist gewählt; daneben getippt wählt ab. Die Leinwand bekommt die Tasten (Pfeile, R).
       selected = drag?.kind === 'sensor' || drag?.kind === 'spin' ? drag.port : null;
+      partTools();
       canvas.focus({preventScroll:true});
     }
     else drag ??= pan(null);
@@ -719,9 +867,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (editing){ hover = p; canvas.style.cursor = cellAt(tileMap, p) ? 'pointer' : ''; draw(); return; }
     if (!drag){ const over = grab(p); canvas.style.cursor = !over ? '' : over.kind === 'size' ? 'nwse-resize' : over.kind === 'turn' || over.kind === 'spin' ? 'crosshair' : 'grab'; return; }
     if (drag.kind === 'sensor'){
+      // erst ab ein paar Bildschirmpunkten ist es Ziehen – sonst ein Tipp (auf das Schild: umstecken)
+      const screen = local(e);
+      if (!drag.moved && Math.hypot(screen.x - drag.start.x, screen.y - drag.start.y) < 6) return;
+      drag.moved = true;
       // zurück in Millimeter am Roboter: x nach vorn, y nach rechts
-      const f = forward(sim.pose.heading), dx = (p.x - sim.pose.x) / sim.scale, dy = (p.y - sim.pose.y) / sim.scale;
-      const at = {x:dx * f.x + dy * f.y, y:dy * f.x - dx * f.y}, from = drag.from;
+      const at = toRobot(p), from = drag.from;
       // Umschalt: nur vor und zurück oder nur seitlich – je nachdem, wohin es weiter geht
       const fixed = !e.shiftKey ? undefined : Math.abs(at.x - from.x) >= Math.abs(at.y - from.y) ? {y:from.y} : {x:from.x};
       sim.mounts = placeSensor(sim.robot, sim.mounts, drag.port, at, defaultMounts(sim.robot), {grid:snapping(e), symmetry:mirroring(e), fixed});
@@ -754,6 +905,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (tap) editor.tap(tap); else draw();
       return;
     }
+    // ein Tipp auf das Schild eines Teils: Anschluss wählen
+    if (drag.kind === 'sensor' && drag.label && !drag.moved && e.type === 'pointerup'){ const port = drag.port; drag = null; draw(); openPorts(port); return; }
     // wo der Roboter von Hand hingestellt wird, beginnt er – auch nach dem Neuladen
     if ((drag.kind === 'robot' || drag.kind === 'turn') && !runner) home = {...sim.pose};
     remember();
@@ -798,7 +951,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (move) sim.mounts = placeSensor(sim.robot, sim.mounts, selected, {x:at.x + move[0], y:at.y + move[1]}, usual,
       {grid:snapping(e), symmetry:build.symmetry, fixed:move[0] ? {y:at.y} : {x:at.x}});
     else if (e.key.toLowerCase() === 'r') sim.mounts = rotateSensor(sim.robot, sim.mounts, selected, (at.angle ?? 0) + (e.shiftKey ? -1 : 1) * (snapping(e) ? ANGLE_STEP : 1), usual, {step:0, symmetry:build.symmetry});
-    else if (e.key === 'Escape') selected = null;
+    else if (e.key.toLowerCase() === 'f'){ change(isMotorPort(selected) ? 'flip' : 'face', e); return e.preventDefault(); }
+    else if (e.key === 'Escape'){ selected = null; partTools(); }
     else return;
     e.preventDefault();
     remember(); draw();

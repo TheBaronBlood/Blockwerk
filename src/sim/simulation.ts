@@ -5,7 +5,8 @@
 // ---------------------------------------------------------------
 import type { Mount } from './build';
 import { DISPLAY_OFF, type Pixels } from './hubDisplay';
-import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimRobot } from './robot';
+import { MOTOR, wheelCenter, wheelRoll } from './parts';
+import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimDrive, type SimRobot } from './robot';
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
 
 export interface SimMotor { angle: number; speed: number }
@@ -19,6 +20,8 @@ export type Fence = 'high' | 'low' | 'hidden' | 'off';
 export const FENCES: Fence[] = ['hidden', 'low', 'high', 'off'];
 /** So dick ist die Wand hinter dem Rand – nur damit Sensoren etwas zum Treffen haben. */
 const WALL = 60;
+/** Ein nach vorn gekippter Farbsensor: Vorderkante vor seiner Mitte, Blickwinkel, Reichweite (mm) und die Reflexion direkt vor einem Hindernis. */
+const COLOR_FRONT = {edge:11.5, halfAngle:12, range:40, bright:70};
 
 export class Simulation {
   /** Simulierte Zeit in Millisekunden. */
@@ -28,10 +31,10 @@ export class Simulation {
   scale = 1;
   track: Track | null = null;
   obstacles: Obstacle[] = [];
-  /** Fahrt der Fahrbasis: mm/s nach vorn und Grad/s nach rechts. */
+  /** Was das Programm der Fahrbasis aufträgt: mm/s nach vorn und Grad/s nach rechts. (Wie der Roboter dann wirklich fährt, hängt am Einbau der Motoren.) */
   speed = 0;
   rate = 0;
-  /** Was die Fahrbasis gezählt hat (»gefahrene Strecke«, »gedrehter Winkel«). */
+  /** Was die Fahrbasis gezählt hat (»gefahrene Strecke«, »gedrehter Winkel«) – aus den Motoren, wie Pybricks; mit Kreisel der Winkel vom Hub. */
   distance = 0;
   angle = 0;
   /** Der Roboter steht an einem Hindernis oder am Rand der Bahn an: Die Räder drehen durch. */
@@ -46,7 +49,7 @@ export class Simulation {
   readonly forceHeld = new Set<string>();
   /** Sensoren, die jemand versetzt oder gedreht hat: Anschluss → Platz am Roboter (Millimeter, x nach vorn, y nach rechts) und Drehung. */
   mounts: Record<string, Mount> = {};
-  private defaults: {robot: SimRobot; mounts: Record<string, Point>} | null = null;
+  private defaults: {robot: SimRobot; mounts: Record<string, Mount>} | null = null;
   private headingZero = 0;
   private readonly motors: Record<string, SimMotor> = {};
 
@@ -65,23 +68,65 @@ export class Simulation {
   /** Hält alles an, was sich dreht (Ende des Programms). */
   halt(){ this.speed = this.rate = 0; for (const m of Object.values(this.motors)) m.speed = 0; }
 
+  /** So schnell kann der Motor an diesem Anschluss höchstens drehen (Grad/s) – groß oder klein, wie er eingebaut ist. */
+  maxSpeed(port: string): number { return MOTOR.maxSpeed[this.mount(port)?.kind ?? 'large']; }
+  /** Ein Tempo für den Motor an diesem Anschluss, gekappt auf das, was er schafft. */
+  limit(port: string, speed: number): number { const max = this.maxSpeed(port); return Math.max(-max, Math.min(max, speed)); }
+  /**
+   * Was die Fahrbasis jedem Motor aufträgt (Grad/s, so wie der Motor laut Programm zählt), damit der Roboter
+   * mit `speed` (mm/s) fährt und sich mit `rate` (Grad/s) dreht – gerechnet mit Rad und Spurbreite aus dem
+   * Programm, wie Pybricks es tut.
+   */
+  private wheelTargets(d: SimDrive, speed: number, rate: number): [number, number] {
+    const perMm = 360 / (Math.PI * d.wheel), spin = rate * Math.PI / 180 * d.axle / 2;
+    return [(speed + spin) * perMm, (speed - spin) * perMm];
+  }
+  /**
+   * Um wie viel ein Auftrag an die Fahrbasis langsamer ausfällt, weil ein Motor das Tempo nicht schafft:
+   * 1 – es geht so schnell; 0,5 – nur halb so schnell (dann dauert die Fahrt doppelt so lange).
+   */
+  driveLimit(speed: number, rate: number): number {
+    const d = this.robot.drive;
+    if (!d || d.direct) return 1;
+    const [l, r] = this.wheelTargets(d, speed, rate);
+    return Math.min(1, this.maxSpeed(d.left) / Math.abs(l || 1e-9), this.maxSpeed(d.right) / Math.abs(r || 1e-9));
+  }
+
   /** Lässt `ms` Millisekunden vergehen. */
   step(ms: number){
     const dt = ms / 1000;
     this.time += ms;
-    for (const m of Object.values(this.motors)) m.angle += m.speed * dt;
     const d = this.robot.drive;
-    if (d?.direct){
-      // einzelne Motoren als Räder: aus den beiden Drehzahlen wird Fahrt und Drehung
-      const mm = Math.PI * d.wheel / 360, left = -this.motor(d.left).speed * mm, right = this.motor(d.right).speed * mm;
-      this.speed = (left + right) / 2; this.rate = (left - right) / d.axle * 180 / Math.PI;
+    // die Fahrbasis stellt ihre beiden Motoren ein – nie schneller, als sie können (beide im selben Verhältnis langsamer)
+    if (d && !d.direct){
+      const [l, r] = this.wheelTargets(d, this.speed, this.rate), f = this.driveLimit(this.speed, this.rate);
+      this.motor(d.left).speed = l * f; this.motor(d.right).speed = r * f;
     }
-    if (!d || (!this.speed && !this.rate)){ this.blocked = false; return; }
-    const ds = this.speed * dt, turn = this.rate * dt;
-    this.distance += ds; this.angle += turn;
-    // auf einem Kreisbogen: geradeaus in der mittleren Richtung dieses Schritts
-    const dir = forward(this.pose.heading + turn / 2);
-    const next: Pose = {x:this.pose.x + this.scale * ds * dir.x, y:this.pose.y + this.scale * ds * dir.y, heading:this.pose.heading + turn};
+    for (const [port, m] of Object.entries(this.motors)){ m.speed = this.limit(port, m.speed); m.angle += m.speed * dt; }
+    if (!d){ this.blocked = false; return; }
+    const left = this.motor(d.left).speed, right = this.motor(d.right).speed, perDeg = Math.PI * d.wheel / 360;
+    // was die Fahrbasis zählt: aus den Motoren, so wie sie laut Programm zählen
+    if (!d.direct) this.distance += (left + right) / 2 * perDeg * dt;
+    // Wie der Roboter wirklich fährt: Jeder Motor dreht sich so, wie er zählt (»umgekehrt« dreht andersherum), und
+    // sein Rad rollt dorthin, wohin sein Einbau es schiebt (gespiegelt rückwärts). Die Räder laufen, wo die Motoren sitzen.
+    const lm = this.mount(d.left)!, rm = this.mount(d.right)!;
+    const lw = wheelCenter(lm), rw = wheelCenter(rm), lu = wheelRoll(lm), ru = wheelRoll(rm);
+    const sl = left * (d.direct ? 1 : d.leftDir) * perDeg * lu.x, sr = right * (d.direct ? 1 : d.rightDir) * perDeg * ru.x;
+    const apart = rw.y - lw.y;
+    // ω: positiv nach rechts (Grad/s am Bildschirm im Uhrzeigersinn); stehen die Räder hintereinander, dreht sich nichts
+    let omega = Math.abs(apart) < 1 ? 0 : (sl - sr) / apart;
+    // Mit Kreisel hält die Fahrbasis die Drehung, die das Programm will – solange beide Räder überhaupt vorwärts schieben.
+    if (d.gyro && !d.direct && d.leftDir * lu.x > 0.5 && d.rightDir * ru.x > 0.5) omega = this.rate * Math.PI / 180 * this.driveLimit(this.speed, this.rate);
+    const turn = omega * 180 / Math.PI * dt;
+    if (!d.direct) this.angle += d.gyro ? turn : (left - right) * perDeg / d.axle * 180 / Math.PI * dt;
+    // Tempo am Ursprung (mitten zwischen den üblichen Rädern): vor und zurück aus beiden Rädern, seitlich nur, wenn
+    // die Räder nicht auf seiner Höhe laufen (dann schwenkt der Ursprung beim Drehen aus)
+    const vx = (sl + sr) / 2 + omega * (lw.y + rw.y) / 2, vy = -omega * (lw.x + rw.x) / 2;
+    if (!vx && !vy && !turn){ this.blocked = false; return; }
+    // auf einem Kreisbogen: in der mittleren Richtung dieses Schritts
+    const f = forward(this.pose.heading + turn / 2);
+    const dx = (vx * f.x - vy * f.y) * dt, dy = (vx * f.y + vy * f.x) * dt;
+    const next: Pose = {x:this.pose.x + this.scale * dx, y:this.pose.y + this.scale * dy, heading:this.pose.heading + turn};
     // An ein Hindernis fährt der Roboter heran, hinein nicht. (Steht er schon darin – es wurde auf ihn
     // geschoben –, darf er wieder herausfahren.)
     // Am Rand der Bahn ist Schluss: Weiter hinaus geht es nicht, zurück immer.
@@ -114,14 +159,28 @@ export class Simulation {
   sensorPoint(port: string): Point | null { const at = this.mount(port); return at && toWorld(this.pose, this.scale, at); }
   /** Wo die Farbsensoren gerade über der Bahn stehen, in der Reihenfolge von `robot.colors`. */
   colorPoints(): Point[] { return this.robot.colors.map(port => this.sensorPoint(port)!); }
-  private colorPoint(port: string): Point | null { return this.robot.colors.includes(port) ? this.sensorPoint(port) : null; }
+  /** Wo ein Farbsensor auf die Bahn schaut – null, wenn er keiner ist oder nach vorn schaut. */
+  private colorPoint(port: string): Point | null { return this.robot.colors.includes(port) && !this.facesFront(port) ? this.sensorPoint(port) : null; }
+  /** Der Farbsensor ist nach vorn gekippt eingebaut: Er sieht nicht den Boden, sondern was vor ihm steht. */
+  facesFront(port: string): boolean { return this.robot.colors.includes(port) && this.mount(port)?.face === 'front'; }
+  /** Nach vorn gekippt: wie weit das nächste Hindernis vor dem Sensor steht (mm) – null, wenn in Reichweite nichts ist. */
+  private frontDistance(port: string): number | null {
+    const at = this.mount(port)!, out = forward(at.angle ?? 0);
+    const from = toWorld(this.pose, this.scale, {x:at.x + out.x * COLOR_FRONT.edge, y:at.y + out.y * COLOR_FRONT.edge});
+    const hit = coneDistance(from, this.sensorHeading(port), COLOR_FRONT.halfAngle, COLOR_FRONT.range * this.scale, [...this.obstacles, ...this.walls(true)]);
+    return hit === null ? null : hit / this.scale;
+  }
 
   /** Reflexion am Farbsensor in Prozent. Ein Sensor, den der Simulator nicht kennt, sieht Weiß. */
   reflection(port: string): number {
+    // nach vorn gekippt: je näher ein Hindernis, desto heller (das Licht des Sensors kommt zurück); sonst dunkel
+    if (this.facesFront(port)){ const d = this.frontDistance(port); return d === null ? 0 : Math.round(COLOR_FRONT.bright * (1 - d / COLOR_FRONT.range)); }
     const at = this.colorPoint(port);
     return at ? reflectionAt(this.track, at, COLOR_SPOT * this.scale) : 100;
   }
   color(port: string): SimColor {
+    // (Hindernisse haben im Simulator noch keine Farbe)
+    if (this.facesFront(port)) return 'NONE';
     const at = this.colorPoint(port);
     return at ? colorAt(this.track, at, COLOR_SPOT * this.scale) : 'WHITE';
   }

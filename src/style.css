@@ -286,6 +286,20 @@ aside.code.sim-on .code-scroll,aside.code.sim-on .warnings,aside.code.sim-on .co
 .sim-zoom button:hover{border-color:#fff}
 .sim-zoom svg{width:16px;height:16px}
 .sim.building .sim-zoom,.sim.hub-only .sim-zoom{display:none}
+/* Umbauen: Ebene oben/unten (wie ein Umschalter) und das Menü zum Umstecken an einem Teil */
+.sim-levels .btn[aria-checked="true"]{background:var(--accent);color:#fff}
+.sim-levels .btn[aria-checked="true"] .ico{color:#fff}
+.sim-ports{position:absolute;z-index:4;padding:8px;border-radius:12px;background:rgba(22,23,29,.96);box-shadow:0 6px 20px rgba(0,0,0,.45);color:var(--code-ink)}
+.sim-ports p{margin:0 2px 7px;font-size:12.5px;color:#9AA6B5;white-space:nowrap}
+.sim-ports div{display:flex;gap:4px}
+.sim-ports button{width:34px;height:34px;padding:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:var(--code-ink);font-weight:800;font-size:14px;cursor:pointer}
+.sim-ports button:hover:not(:disabled){border-color:#fff;background:rgba(255,255,255,.1)}
+/* belegt: Ein Tipp tauscht mit dem Teil dort (Punkt oben rechts) */
+.sim-ports button.taken{position:relative}
+.sim-ports button.taken::after{content:"";position:absolute;right:2px;top:2px;width:7px;height:7px;border-radius:50%;background:#FFB515}
+.sim-ports button.current{background:#E644B9;border-color:#E644B9;color:#fff;opacity:1}
+.sim-ports button:disabled:not(.current){opacity:.35;cursor:default}
+@media (pointer:coarse){.sim-ports button{width:42px;height:42px}}
 /* nur der Hub: groß in der Mitte, die Bahn ist ausgeblendet (Doppelklick auf den Hub) */
 .sim.hub-only .sim-stage canvas,.sim.hub-only #simReset,.sim.hub-only .sim-g-track,.sim.hub-only .sim-g-robot,.sim.hub-only .sim-g-tempo{display:none}
 .sim.hub-only .sim-hub{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(70%,300px,calc((100cqh - 20px) * .72));padding:18px;border-radius:26px}
