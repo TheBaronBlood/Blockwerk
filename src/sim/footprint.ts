@@ -39,7 +39,7 @@ export function outlineOf(robot: SimRobot, port: string, at: Mount){
 }
 
 /** Ein gedrehtes Rechteck am Roboter: seine vier Ecken (mm, x nach vorn, y nach rechts). */
-type Quad = Point[];
+export type Quad = Point[];
 /** Rechteck um `center` (gedreht wie es), in der Lage der Vorlage: `cx` quer, `cy` nach hinten versetzt, halbe Maße. */
 function quad(center: Mount, cx: number, cy: number, hw: number, hl: number): Quad {
   // Vorlage → Roboter: X quer ist y, Y nach hinten ist −x
@@ -56,7 +56,7 @@ export function footprint(robot: SimRobot, port: string, at: Mount): Quad[] {
 const HUB_QUAD = quad({...HUB_AT}, 0, 0, HUB.width / 2, HUB.length / 2);
 
 /** Ob sich zwei gedrehte Rechtecke überdecken (mit `margin` mm Spiel: aneinander stoßen darf man). */
-function overlap(a: Quad, b: Quad, margin = 0.6): boolean {
+export function overlap(a: Quad, b: Quad, margin = 0.6): boolean {
   for (const poly of [a, b]) for (let i = 0; i < 4; i++){
     const p = poly[i], q = poly[(i + 1) % 4], axis = {x:q.y - p.y, y:p.x - q.x};
     const len = Math.hypot(axis.x, axis.y) || 1, project = (v: Point) => (v.x * axis.x + v.y * axis.y) / len;
@@ -87,4 +87,22 @@ export function collides(robot: SimRobot, mounts: Record<string, Mount>, usual: 
     }
   }
   return false;
+}
+
+/**
+ * Womit der Roboter beim Fahren an Hindernisse und den Rand stößt: der Hub und jedes Teil mit seinem Umriss (Motoren
+ * samt Rad). Beim Kraftsensor zählt nur das Gehäuse und der eingedrückte Taster – der Taster selbst federt ein, erst
+ * dahinter steht der Roboter an. In Millimetern am Roboter; `at` liefert den Platz jedes Teils.
+ */
+export function bodyQuads(robot: SimRobot, at: (port: string) => Mount | null): Quad[] {
+  const out = [HUB_QUAD];
+  for (const port of robotPorts(robot)){
+    const m = at(port);
+    if (!m) continue;
+    if (robot.force.includes(port)){
+      const nub = FORCE_SENSOR.pressed;
+      out.push(quad(partCenter(robot, port, m), 0, -nub / 2, FORCE_SENSOR.width / 2, FORCE_SENSOR.length / 2 + nub / 2));
+    } else out.push(...footprint(robot, port, m));
+  }
+  return out;
 }

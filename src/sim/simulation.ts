@@ -6,7 +6,8 @@
 import { levelOf, type Mount } from './build';
 import { DISPLAY_OFF, type Pixels } from './hubDisplay';
 import { MOTOR, wheelCenter, wheelRoll } from './parts';
-import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimDrive, type SimRobot } from './robot';
+import { bodyQuads, overlap } from './footprint';
+import { COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimDrive, type SimRobot } from './robot';
 import { colorAt, coneDistance, forward, reflectionAt, toWorld, touches, type Obstacle, type Point, type Pose, type SimColor, type Track } from './world';
 
 export interface SimMotor { angle: number; speed: number }
@@ -133,13 +134,22 @@ export class Simulation {
     this.blocked = (this.bumps(next) && !this.bumps(this.pose)) || this.beyond(next) > this.beyond(this.pose) + 1e-9;
     if (!this.blocked) this.pose = next;
   }
+  /** Der Umriss des Roboters auf der Bahn, so wie er bei `pose` stünde. */
+  private outline(pose: Pose): Point[][] {
+    return bodyQuads(this.robot, port => this.mount(port)).map(q => q.map(p => toWorld(pose, this.scale, p)));
+  }
   /** Wie weit der Roboter über den Rand der Bahn hinausragt (0: gar nicht – oder es gibt keinen Rand). */
   private beyond(pose: Pose): number {
     if (this.fence === 'off' || !this.track) return 0;
-    const at = toWorld(pose, this.scale, BUMPER.at), r = BUMPER.radius * this.scale;
-    return Math.max(0, r - at.x, r - at.y, at.x + r - this.track.width, at.y + r - this.track.height);
+    const {width, height} = this.track;
+    return Math.max(0, ...this.outline(pose).flat().map(p => Math.max(-p.x, -p.y, p.x - width, p.y - height)));
   }
-  private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
+  /** Ob der Roboter bei `pose` in einem Hindernis stünde. */
+  private bumps(pose: Pose){
+    if (!this.obstacles.length) return false;
+    const shape = this.outline(pose), box = (o: Obstacle) => [{x:o.x - o.w / 2, y:o.y - o.h / 2}, {x:o.x + o.w / 2, y:o.y - o.h / 2}, {x:o.x + o.w / 2, y:o.y + o.h / 2}, {x:o.x - o.w / 2, y:o.y + o.h / 2}];
+    return this.obstacles.some(o => { const b = box(o); return shape.some(q => overlap(q, b, 0)); });
+  }
 
   /** Ob der Sensor an diesem Anschluss unten sitzt – auf der Höhe der niedrigen Wand. */
   private low(port: string): boolean { return levelOf(this.robot, port, this.mount(port)) === 'lower'; }

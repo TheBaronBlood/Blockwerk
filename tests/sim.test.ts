@@ -264,10 +264,10 @@ describe('Fahren', () => {
     const state = program(setup(), B('pb_drive_straight', null, {DIST:N(2000)}),
       B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
     const place = (fence: Simulation['fence']) => (s: Simulation) => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; };
-    // der Stoßkreis (70 mm, 18 mm hinter der Achse) bleibt auf der Bahn: Die Achse kommt bis 948
+    // vorn stößt das Gehäuse des Kraftsensors an (mit eingedrücktem Taster 71 mm vor der Achse): Die Achse kommt bis 929
     const held = await simulate(state, 4000, place('hidden'));
     expect(held.sim.blocked).toBe(true);
-    expect(held.sim.pose.x).toBeLessThanOrEqual(948); expect(held.sim.pose.x).toBeGreaterThan(946);
+    expect(held.sim.pose.x).toBeLessThanOrEqual(929); expect(held.sim.pose.x).toBeGreaterThan(927);
     // … und weder Abstands- noch Kraftsensor merken etwas davon
     const after = await simulate(state, 12000, place('hidden'));
     expect(after.out).toBe('2000\nFalse\n');
@@ -282,8 +282,8 @@ describe('Fahren', () => {
     const run = async (fence: Simulation['fence']) => (await simulate(state, 12000, s => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; }));
     // vom Start aus: Der Abstandssensor sitzt 24 mm vor der Achse, die Wand steht bei 1000
     const high = await run('high');
-    expect(high.out).toBe('676\n28\nTrue\n');
-    expect(high.sim.pose.x).toBeLessThanOrEqual(948); expect(high.sim.pose.x).toBeGreaterThan(946);
+    expect(high.out).toBe('676\n47\nTrue\n');   // am Ende: 1000 − 929 − 24
+    expect(high.sim.pose.x).toBeLessThanOrEqual(929); expect(high.sim.pose.x).toBeGreaterThan(927);
     // über die niedrige Wand schaut der Abstandssensor hinweg – der Taster stößt trotzdem an
     expect((await run('low')).out).toBe('2000\n2000\nTrue\n');
     expect((await run('hidden')).out).toBe('2000\n2000\nFalse\n');
@@ -312,8 +312,8 @@ describe('Fahren', () => {
   it('fährt nicht in ein Hindernis hinein', async () => {
     const {sim} = await simulate(program(setup(), B('pb_drive_straight', null, {DIST:N(1000)})), 3000, s => { s.obstacles = [box(400, 0)]; });
     expect(sim.blocked).toBe(true);
-    // das Hindernis beginnt bei 350, der Stoßkreis reicht 52 mm vor die Achse
-    expect(sim.pose.x).toBeLessThanOrEqual(298); expect(sim.pose.x).toBeGreaterThan(290);
+    // das Hindernis beginnt bei 350; ohne Sensoren stoßen vorn die Räder an (28 mm vor der Achse)
+    expect(sim.pose.x).toBeLessThanOrEqual(322); expect(sim.pose.x).toBeGreaterThan(318);
   });
 });
 
@@ -574,6 +574,18 @@ describe('Teile einstellen', () => {
     sim.obstacles = [box(181.5, 0)];
     expect(sim.reflection('C')).toBe(35);
     expect(sim.colorPoints()).toHaveLength(1);
+  });
+});
+
+describe('Taster am Hindernis', () => {
+  it('gedrückt erst, wenn die Spitze das Hindernis berührt – der Roboter fährt dann noch, bis der Taster eingedrückt ist', async () => {
+    // ein Kraftsensor allein: Spitze 80 mm vor der Achse, das Gehäuse mit eingedrücktem Taster endet bei 71
+    const state = program(setup(), B('pb_drive_drive', null, {SPEED:N(100), RATE:N(0)}), B('pb_wait_until', null, {COND:{block:B('pb_force_pressed', {PORT:'E'})}}),
+      B('pb_print', null, {TEXT:{block:B('pb_drive_distance')}}), B('pb_wait', null, {MS:N(1000)}));
+    const {sim, out} = await simulate(state, 6000, s => { s.obstacles = [box(300, 0)]; });   // die Wand beginnt bei 250
+    expect(Number(out)).toBeGreaterThan(250 - 80 - 3); expect(Number(out)).toBeLessThanOrEqual(250 - 80 + 1);
+    expect(sim.pose.x).toBeLessThanOrEqual(250 - 71); expect(sim.pose.x).toBeGreaterThan(250 - 71 - 2);
+    expect(sim.forcePressed('E')).toBe(true);
   });
 });
 

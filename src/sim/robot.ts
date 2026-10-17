@@ -111,14 +111,15 @@ export const COLOR_SPOT = 5;
 export const ULTRA = {at:{x:24, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
 /** So weit vor den Farbsensoren sitzt der Abstandssensor, wenn es beide gibt. */
 const ULTRA_AHEAD_OF_COLORS = 24;
-/** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
+/** Ein Kreis um den Roboter: Dort lässt er sich anfassen und verschieben. (Anstoßen tut er mit seinem Umriss, footprint.ts.) */
 export const BUMPER = {at:{x:-18, y:0} as Point, radius:70};
 
 /**
- * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit sein Taster vor ihm liegt, wie weit
- * der tastet, was er gedrückt meldet (Newton) und wie weit er neben einem Abstandssensor sitzt.
+ * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit die Spitze seines Tasters vor diesem Platz liegt,
+ * ab welchem Abstand der Spitze zum Hindernis er gedrückt ist (er muss es berühren), was er gedrückt meldet (Newton)
+ * und wie weit er neben einem Abstandssensor sitzt.
  */
-export const FORCE = {front:72, spacing:30, tip:8, reach:12, pressed:10, besideUltra:40};
+export const FORCE = {front:72, spacing:30, tip:8, reach:1.5, pressed:10, besideUltra:40};
 /** Einzelne Motoren (ein Greifarm etwa) sitzen hinter dem Hub nebeneinander. */
 const MOTOR_BACK = -112, MOTOR_SPACING = 30;
 /**
