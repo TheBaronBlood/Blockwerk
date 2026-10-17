@@ -248,17 +248,17 @@
       <p class="sim-info" id="simValues" role="status"></p>
     </section>
     <section class="pad hidden" id="pad" tabindex="0" aria-label="Steuerfeld">
-      <div class="pad-stick" aria-label="Joystick"><div class="pad-knob"></div></div>
-      <div class="pad-buttons">
-        <button type="button" data-pad="A">A</button>
-        <button type="button" data-pad="B">B</button>
-        <button type="button" data-pad="C">C</button>
-        <button type="button" data-pad="D">D</button>
-      </div>
-      <p class="pad-note">Tastatur: erst hier hineinklicken, dann Pfeiltasten oder W A S D für den Joystick, 1 bis 4 für die Tasten. Ein Controller an diesem Gerät bedient das Steuerfeld ebenfalls.</p>
+      <!-- Joysticks und Tasten entstehen in padStrip.ts – dieselben wie in der Controller-Ansicht -->
+      <div class="pad-sticks"></div>
+      <div class="pad-buttons"></div>
+      <!-- nur mit Tastatur: welche Tasten wirken, nachdem ins Steuerfeld geklickt wurde -->
+      <p class="pad-keys" title="Erst ins Steuerfeld klicken"></p>
       <p class="pad-gamepad hidden" id="padGamepad" role="status"></p>
-      <button class="btn" id="btnPadBig" type="button" title="Steuerfeld bildschirmfüllend, zum Anordnen und für Tablets">Controller-Ansicht</button>
-      <button class="btn pad-close" id="btnPadClose" type="button" aria-label="Steuerfeld schließen" title="Schließen">✕</button>
+      <button class="btn" id="btnPadBig" type="button" title="Steuerfeld bildschirmfüllend: anordnen, Tasten und Joysticks hinzufügen">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        <span>Controller-Ansicht</span></button>
+      <button class="btn pad-close" id="btnPadClose" type="button" aria-label="Steuerfeld schließen" title="Schließen">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </section>
     <div class="split-h" id="splitTerm" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Höhe des Terminals ändern" title="Ziehen: Höhe ändern · Doppelklick: Standard"></div>
     <section class="term collapsed" id="term" aria-label="Terminal">

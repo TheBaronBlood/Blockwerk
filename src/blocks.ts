@@ -5,6 +5,7 @@ import * as Blockly from 'blockly';
 import { loops } from 'blockly/blocks';
 import * as De from 'blockly/msg/de';
 import { ICON_PATTERNS } from './matrix';
+import { PAD_BUTTONS, PAD_STICKS } from './hub/padProtocol';
 import './fieldMatrix';
 import './fieldDrive';
 
@@ -179,11 +180,12 @@ Blockly.common.defineBlocksWithJsonArray([
   stmt({type:'pb_remote_light', style:'remote_blocks', message0:'Licht der Fernbedienung %1', args0:[{type:'field_dropdown',name:'COLOR',options:COLORS_LIGHT}],
    tooltip:'Farbe des Lichts an der LEGO-Fernbedienung.'}),
   // Fernsteuerung: Steuerfeld in Blockwerk
-  val({type:'pb_pad_stick', style:'remote_blocks', message0:'Steuerfeld: Joystick %1',
-   args0:[{type:'field_dropdown',name:'AXIS',options:[['x (seitlich)','x'],['y (vor und zurück)','y']]}],
-   tooltip:'Stellung des Joysticks im Steuerfeld von Blockwerk: −100 bis 100.'}, 'Number'),
+  val({type:'pb_pad_stick', style:'remote_blocks', message0:'Steuerfeld: Joystick %1 %2',
+   args0:[{type:'field_dropdown',name:'STICK',options:Array.from({length:PAD_STICKS}, (_, i) => [String(i + 1), String(i + 1)])},
+     {type:'field_dropdown',name:'AXIS',options:[['x (seitlich)','x'],['y (vor und zurück)','y']]}],
+   tooltip:'Stellung eines Joysticks im Steuerfeld von Blockwerk: −100 bis 100.'}, 'Number'),
   val({type:'pb_pad_button', style:'remote_blocks', message0:'Steuerfeld: Taste %1 gedrückt',
-   args0:[{type:'field_dropdown',name:'BUTTON',options:[['A','A'],['B','B'],['C','C'],['D','D']]}],
+   args0:[{type:'field_dropdown',name:'BUTTON',options:PAD_BUTTONS.map(b => [b, b])}],
    tooltip:'Wahr, solange die Taste im Steuerfeld von Blockwerk gedrückt ist.'}, 'Boolean'),
 
   // Steuerung

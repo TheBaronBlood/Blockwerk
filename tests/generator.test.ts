@@ -136,6 +136,25 @@ describe('Generator', () => {
     expect(res.code).toContain("roboter.drive(steuerung('y') * 3, steuerung('x') * 2)");
     expect(res.code.indexOf('def steuerung(name):')).toBeLessThan(res.code.indexOf('while True:\n    roboter.drive'));
     expect(run(EXAMPLES.quadrat()).usesPad).toBe(false);
+    expect(res.padNames).toEqual(['A', 'x', 'y']);
+  });
+
+  it('kennt weitere Joysticks und Tasten; ältere Projekte ohne Nummer meinen Joystick 1', () => {
+    const say = (block: object) => ({type:'pb_print', inputs:{TEXT:{block}}});
+    const state = program({...say({type:'pb_pad_stick', fields:{STICK:'2', AXIS:'y'}}),
+      next:{block:{...say({type:'pb_pad_button', fields:{BUTTON:'F'}}), next:{block:say({type:'pb_pad_stick', fields:{AXIS:'x'}})}}}});
+    const res = run(state);
+    expect(res.code).toContain("print(steuerung('y2'))");
+    expect(res.code).toContain("print(steuerung('F'))");
+    expect(res.code).toContain("print(steuerung('x'))");
+    expect(res.code).toContain("steuerfeld = {'x': 0, 'y': 0, 'x2': 0, 'y2': 0, 'A': False, 'B': False, 'C': False, 'D': False, 'E': False, 'F': False}");
+    expect(res.code).not.toContain('x3');
+    expect(res.padNames).toEqual(['F', 'x', 'y2']);
+    if (python){
+      const file = join(tmp, 'steuerfeld2.py');
+      writeFileSync(file, res.code, 'utf8');
+      expect(spawnSync(python, ['-m', 'py_compile', file], {encoding:'utf8'}).status).toBe(0);
+    }
   });
 
   it('nimmt Zufall aus urandom und setzt den Import in den Kopf', () => {

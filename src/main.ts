@@ -26,7 +26,9 @@ import { lastFirmware, rememberFirmware } from './hub/lastHub';
 import { MONITOR_HEARTBEAT, MONITOR_HEARTBEAT_MS, MONITOR_PROGRAM, MonitorFeed, StrayFilter, type MonitorState } from './hub/monitor';
 import { initHubView } from './hub/monitorView';
 import { usbHint } from './versions';
-import { PAD_BUTTONS } from './hub/padProtocol';
+import { decodeByte } from './hub/padProtocol';
+import { partsFor } from './hub/padLayout';
+import { initPadStrip } from './hub/padStrip';
 import { initPadView, type PadView } from './hub/padView';
 import { encodeModules, MAIN_MODULE, ProgramTooLargeError } from './hub/protocol';
 import { TracebackParser } from './hub/traceback';
@@ -107,6 +109,8 @@ const warnEl = $('warnings');
 let currentCode = '';
 let currentLines: CodeLine[] = [];
 let currentUsesPad = false;
+/** Was das Programm im Steuerfeld abfragt (`x`, `y2`, `F` …) – fehlt dort ein Teil, kommt es dazu. */
+let currentPadNames: string[] = [];
 let currentUsesXbox = false;
 let padViewRef: PadView | null = null;   // die Controller-Ansicht; entsteht weiter unten
 /** Der Controller-Knopf an der Arbeitsfläche erscheint nur, wenn das Programm das Steuerfeld abfragt. */
@@ -123,9 +127,10 @@ let simView: import('./sim/view').SimView | null = null;   // der Simulator; ent
 function render(){
   let res: GenerateResult;
   try { res = generate(ws); }
-  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, usesXbox:false, modules:[], exprs:{}}; }
+  catch (err){ res = {lines:[{text:'# Fehler beim Übersetzen: ' + (err as Error).message, id:null}], warnings:[], usesPad:false, padNames:[], usesXbox:false, modules:[], exprs:{}}; }
   currentLines = res.lines; currentExprs = res.exprs;
   if (currentUsesPad !== res.usesPad){ currentUsesPad = res.usesPad; syncPadButton(); if (padViewRef) updateHubUi(); }
+  if (currentPadNames.join() !== res.padNames.join()){ currentPadNames = res.padNames; if (padViewRef) updateHubUi(); }
   currentModules = res.modules;
   currentUsesXbox = res.usesXbox;
   currentCode = res.lines.map(l => l.text).join('\n') + '\n';
@@ -661,7 +666,7 @@ function updateHubUi(){
   wsHub.textContent = hubNote ?? (hub?.isRunning && remoteState ? remoteState : hubText);
   wsHub.title = hubText;
   // die Controller-Ansicht zeigt denselben Stand (beim ersten Aufruf gibt es sie noch nicht)
-  padViewRef?.update({hubText:hubNote ?? hubText, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, gamepad:deviceGamepad});
+  padViewRef?.update({hubText:hubNote ?? hubText, connected:!!hub, running:!!hub?.isRunning, busy:hubBusy, usesPad:hub?.isRunning ? runUsesPad : currentUsesPad, needs:partsFor(currentPadNames), gamepad:deviceGamepad});
 }
 function hubFailed(err: unknown){
   console.error(err);
@@ -1027,21 +1032,17 @@ async function recheckPorts(missing: DeviceAt | null){
 // Steuerfeld: schickt Joystick und Tasten an das laufende Programm
 const padEl = $('pad'), btnPadWs = $('btnPadWs');
 /** Stand des Steuerfelds für den Simulator – mitgelesen aus dem, was das Steuerfeld an den Hub schickt (padProtocol.ts). */
-const padState: Record<string, number | boolean> = {x:0, y:0, A:false, B:false, C:false, D:false};
+const padState: Record<string, number | boolean> = {};
 function trackPad(byte: number){
-  if (byte >= 150 && byte <= 170) padState.x = (byte - 160) * 10;
-  else if (byte >= 180 && byte <= 200) padState.y = (byte - 190) * 10;
-  else if (byte >= 65 && byte <= 68) padState[String.fromCharCode(byte)] = true;
-  else if (byte >= 97 && byte <= 100) padState[String.fromCharCode(byte - 32)] = false;
+  const input = decodeByte(byte);
+  if (input) padState[input.name] = input.value;
 }
 const pad = createPad((byte) => { trackPad(byte); return hub && hub.isRunning && runUsesPad ? hub.sendBytes(new Uint8Array([byte])) : Promise.resolve(); });
-// der schmale Streifen unter dem Code: für Maus und Tastatur
-pad.bindStick(padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-stick')!, padEl.querySelector<HTMLElement>('.pad-knob')!);
-for (const b of PAD_BUTTONS) pad.bindButton(padEl.querySelector<HTMLElement>(`[data-pad="${b}"]`)!, b);
-pad.bindKeys(padEl);
-padEl.querySelector('.pad-stick')!.addEventListener('pointerdown', () => padEl.focus());
 // die Controller-Ansicht: bildschirmfüllend, zum Anordnen – auf Geräten mit Fingerbedienung der übliche Weg
 const padView = padViewRef = initPadView(pad, {run:() => btnRunWs.click(), stop:() => btnStopWs.click()});
+// der schmale Streifen unter dem Code: für Maus und Tastatur, mit denselben Teilen
+initPadStrip(padEl, pad, padView);
+pad.bindKeys(padEl);
 const fingers = () => isTablet() || matchMedia('(pointer:coarse)').matches;
 function showPad(on: boolean){
   if (on && (fingers() || isPhone())){ padView.open(); return; }
@@ -1062,7 +1063,7 @@ btnPadWs.addEventListener('click', () => {
 // erst, nachdem daran eine Taste gedrückt wurde.
 const gamepads = browserGamepads();
 if (gamepads) watchGamepad({
-  setStick:(x, y) => pad.setStick(x, y),
+  setStick:(x, y, stick) => pad.setStick(x, y, stick),
   setButton:(button, down) => pad.setButton(button, down),
   onGamepad:(name) => {
     deviceGamepad = name;

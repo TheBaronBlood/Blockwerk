@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  defaultLayout, defaultLayouts, fits, GRIDS, moveTile, orientationFor, resizeTile, sanitizeLayouts, sizeRange, TILE_IDS,
-  type Orientation, type Tile
+  addPart, BASE_IDS, defaultLayout, defaultLayouts, fits, GRIDS, moveTile, nextPart, orientationFor, partsFor, partsOf, placeTile,
+  removePart, resetLayout, resizeTile, sanitizeLayouts, sizeRange, type Orientation, type PadLayouts, type Tile
 } from '../src/hub/padLayout';
 
 const get = (tiles: Tile[], id: string) => tiles.find(t => t.id === id)!;
@@ -10,7 +10,7 @@ describe('Anordnung des Steuerfelds', () => {
   for (const o of Object.keys(GRIDS) as Orientation[]){
     it(`${o}: die Ausgangslage enthält jedes Teil einmal, im Raster und ohne Überdeckung`, () => {
       const tiles = defaultLayout(o);
-      expect(tiles.map(t => t.id).sort()).toEqual([...TILE_IDS].sort());
+      expect(tiles.map(t => t.id).sort()).toEqual([...BASE_IDS].sort());
       for (const t of tiles) expect(fits(tiles, t, GRIDS[o])).toBe(true);
     });
     it(`${o}: Joystick links, Tasten rechts, alles in der unteren Hälfte – für die Daumen`, () => {
@@ -75,7 +75,7 @@ describe('Anordnung des Steuerfelds', () => {
     const good = defaultLayouts();
     good.quer = moveTile(good.quer, 'A', 6, 0, GRIDS.quer)!;
     // die Reihenfolge der Teile ist nach dem Prüfen immer dieselbe
-    const sorted = (tiles: Tile[]) => TILE_IDS.map(id => get(tiles, id));
+    const sorted = (tiles: Tile[]) => BASE_IDS.map(id => get(tiles, id));
     const order = (l: typeof good) => ({quer:sorted(l.quer), flach:sorted(l.flach), hoch:sorted(l.hoch)});
     expect(sanitizeLayouts(JSON.parse(JSON.stringify(good)))).toEqual(order(good));
     expect(sanitizeLayouts(null)).toEqual(defaultLayouts());
@@ -87,5 +87,90 @@ describe('Anordnung des Steuerfelds', () => {
     expect(sanitizeLayouts({quer:good.quer.map(t => t.id === 'A' ? {...t, col:99} : t)}).quer).toEqual(defaultLayout('quer'));
     expect(sanitizeLayouts({quer:good.quer.map(t => t.id === 'A' ? {...t, size:1.5} : t)}).quer).toEqual(defaultLayout('quer'));
     expect(sanitizeLayouts({quer:good.quer.map(t => t.id === 'A' ? {...t, size:9} : t)}).quer).toEqual(defaultLayout('quer'));
+  });
+
+  const ORIENTATIONS = Object.keys(GRIDS) as Orientation[];
+  /** Jedes Format hat dieselben Teile, jedes im Raster und ohne Überdeckung. */
+  function expectValid(l: PadLayouts){
+    for (const o of ORIENTATIONS){
+      expect(l[o].map(t => t.id).sort()).toEqual([...partsOf(l)].sort());
+      for (const t of l[o]) expect(fits(l[o], t, GRIDS[o])).toBe(true);
+    }
+  }
+
+  it('fügt Tasten mit dem nächsten Buchstaben und Joysticks mit der nächsten Nummer hinzu – in allen Formaten', () => {
+    let l = defaultLayouts();
+    expect(nextPart(l, 'button')).toBe('E');
+    expect(nextPart(l, 'stick')).toBe('stick2');
+    l = addPart(l, 'E')!; l = addPart(l, 'stick2')!;
+    expectValid(l);
+    expect(partsOf(l)).toEqual(['stick', 'stick2', 'A', 'B', 'C', 'D', 'E']);
+    expect(nextPart(l, 'button')).toBe('F');
+    expect(addPart(l, 'E')).toBeNull();   // schon da
+    // eine neue Taste rückt von rechts ein, ein Joystick von links
+    for (const o of ORIENTATIONS){
+      const e = get(l[o], 'E'), s = get(l[o], 'stick2'), g = GRIDS[o];
+      if (o !== 'hoch'){ expect(e.col + e.size / 2).toBeGreaterThan(g.cols / 2); expect(s.col + s.size / 2).toBeLessThan(g.cols / 2); }
+    }
+    // die alte Anordnung bleibt unverändert
+    expect(partsOf(defaultLayouts())).toEqual(BASE_IDS);
+  });
+
+  it('entfernt nur hinzugefügte Teile; danach kommt der freie Buchstabe wieder zuerst', () => {
+    let l = addPart(addPart(defaultLayouts(), 'E')!, 'F')!;
+    expect(removePart(l, 'A')).toBeNull();
+    expect(removePart(l, 'stick')).toBeNull();
+    l = removePart(l, 'E')!;
+    expectValid(l);
+    expect(partsOf(l)).toEqual(['stick', 'A', 'B', 'C', 'D', 'F']);
+    expect(nextPart(l, 'button')).toBe('E');
+  });
+
+  it('bringt alle zehn Tasten und drei Joysticks unter; danach gibt es nichts mehr hinzuzufügen', () => {
+    let l = defaultLayouts();
+    for (const id of ['E', 'F', 'G', 'H', 'I', 'J', 'stick2', 'stick3'] as const){ const next = addPart(l, id); expect(next, id).not.toBeNull(); l = next!; }
+    expectValid(l);
+    expect(nextPart(l, 'button')).toBeNull();
+    expect(nextPart(l, 'stick')).toBeNull();
+  });
+
+  it('sucht einen kleineren Platz, wenn der übliche nicht frei ist, und gibt sonst auf', () => {
+    const g = GRIDS.flach;
+    // alles voll bis auf ein einzelnes Feld oben links
+    const full: Tile[] = [{id:'stick', col:1, row:0, size:5}, {id:'A', col:6, row:0, size:4}, {id:'B', col:10, row:0, size:4}, {id:'C', col:14, row:0, size:2},
+      {id:'D', col:14, row:2, size:2}, {id:'E', col:6, row:4, size:1}];
+    const tile = placeTile(full, 'F', g);
+    expect(tile).toMatchObject({size:1});
+    expect(placeTile(full, 'stick2', g)).toBeNull();
+  });
+
+  it('setzt ein Format zurück und behält dabei die hinzugefügten Teile', () => {
+    let l = addPart(defaultLayouts(), 'E')!;
+    l = {...l, quer:moveTile(l.quer, 'A', 6, 0, GRIDS.quer)!};
+    const back = resetLayout(l, 'quer');
+    expectValid(back);
+    expect(get(back.quer, 'A')).toEqual(get(defaultLayout('quer'), 'A'));
+    expect(partsOf(back)).toContain('E');
+    expect(back.hoch).toEqual(l.hoch);   // die anderen Formate bleiben, wie sie sind
+  });
+
+  it('übernimmt hinzugefügte Teile aus dem Speicher und ergänzt, was in einem Format fehlt', () => {
+    const l = addPart(addPart(defaultLayouts(), 'stick2')!, 'G')!;
+    expect(sanitizeLayouts(JSON.parse(JSON.stringify(l)))).toEqual({
+      quer:[...BASE_IDS, 'stick2', 'G'].map(id => get(l.quer, id)), flach:[...BASE_IDS, 'stick2', 'G'].map(id => get(l.flach, id)),
+      hoch:[...BASE_IDS, 'stick2', 'G'].map(id => get(l.hoch, id))});
+    // G fehlt im Hochformat: bekommt dort einen freien Platz
+    const partly = sanitizeLayouts({...l, hoch:l.hoch.filter(t => t.id !== 'G')});
+    expectValid(partly);
+    expect(partsOf(partly)).toContain('G');
+    // unbekannte Teile fallen weg
+    const odd = sanitizeLayouts({...l, quer:[...l.quer, {id:'Z', col:0, row:0, size:1}]});
+    expect(partsOf(odd)).not.toContain('Z');
+  });
+
+  it('weiß, welche Teile ein Programm braucht', () => {
+    expect(partsFor(['x', 'y', 'A'])).toEqual(['stick', 'A']);
+    expect(partsFor(['y2', 'x3', 'F', 'J'])).toEqual(['stick2', 'stick3', 'F', 'J']);
+    expect(partsFor(['x4', 'K', 'quatsch'])).toEqual([]);
   });
 });

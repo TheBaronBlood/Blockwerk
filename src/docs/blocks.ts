@@ -374,13 +374,13 @@ export const BLOCK_DOCS: Record<string, BlockDoc> = {
   // ----- Fernsteuerung -----
   pb_pad_stick: {
     title:'Steuerfeld: Joystick',
-    text:'Liefert die Stellung des Joysticks im Steuerfeld von Blockwerk. So lässt sich der Roboter vom Computer oder Handy aus live steuern, während das Programm läuft.\n\nDas Steuerfeld öffnet sich über den grünen Controller-Knopf über dem Startknopf; er erscheint, sobald das Programm das Steuerfeld benutzt. Der Hub muss dazu mit Blockwerk verbunden bleiben.\n\nEin Controller, der mit dem Handy, Tablet oder Computer verbunden ist (Xbox, PlayStation und andere), bedient das Steuerfeld ebenfalls: linker Stick oder Steuerkreuz für den Joystick, die vier Tasten rechts für A bis D. Drückt einmal eine Taste am Controller, dann zeigt Blockwerk an, dass es ihn erkannt hat.\n\nAuf dem Tablet und über »Controller-Ansicht« füllt das Steuerfeld den ganzen Bildschirm: Joystick links, Tasten rechts, für beide Daumen. Mit »Anordnen« schiebt ihr Joystick und Tasten in einem Raster an die Stelle, die euch am besten passt, und ändert ihre Größe. Blockwerk merkt sich die Anordnung.',
-    fields:[['x (seitlich)', '−100 ganz links, 0 Mitte, 100 ganz rechts.'], ['y (vor und zurück)', '100 ganz vorn, 0 Mitte, −100 ganz hinten.']],
-    python:'`steuerung(\'x\')` – die Funktion `steuerung` steht im Kopf des Programms. Sie liest, was Blockwerk seit dem letzten Mal geschickt hat, und gibt den gewünschten Wert zurück.',
+    text:'Liefert die Stellung eines Joysticks im Steuerfeld von Blockwerk. So lässt sich der Roboter vom Computer oder Handy aus live steuern, während das Programm läuft.\n\nDas Steuerfeld öffnet sich über den grünen Controller-Knopf über dem Startknopf; er erscheint, sobald das Programm das Steuerfeld benutzt. Der Hub muss dazu mit Blockwerk verbunden bleiben.\n\nEin Controller, der mit dem Handy, Tablet oder Computer verbunden ist (Xbox, PlayStation und andere), bedient das Steuerfeld ebenfalls: linker Stick oder Steuerkreuz für Joystick 1, der rechte Stick für Joystick 2, die vier Tasten rechts für A bis D, Schultertasten und Trigger für E bis H. Drückt einmal eine Taste am Controller, dann zeigt Blockwerk an, dass es ihn erkannt hat.\n\nAuf dem Tablet und über »Controller-Ansicht« füllt das Steuerfeld den ganzen Bildschirm: Joystick links, Tasten rechts, für beide Daumen. Mit »Anordnen« schiebt ihr Joysticks und Tasten in einem Raster an die Stelle, die euch am besten passt, und ändert ihre Größe. Dort kommen auch weitere Tasten (E bis J) und Joysticks (bis zu drei) dazu. Fragt das Programm eine Taste oder einen Joystick ab, den das Steuerfeld noch nicht hat, erscheint er von selbst. Blockwerk merkt sich die Anordnung.',
+    fields:[['Nummer', 'Welcher Joystick: 1, 2 oder 3. Ohne weitere Joysticks im Steuerfeld ist es 1.'], ['x (seitlich)', '−100 ganz links, 0 Mitte, 100 ganz rechts.'], ['y (vor und zurück)', '100 ganz vorn, 0 Mitte, −100 ganz hinten.']],
+    python:'`steuerung(\'x\')` (Joystick 2: `steuerung(\'x2\')`) – die Funktion `steuerung` steht im Kopf des Programms. Sie liest, was Blockwerk seit dem letzten Mal geschickt hat, und gibt den gewünschten Wert zurück.',
     tips:['Der Block muss in einer Schleife immer wieder abgefragt werden, sonst merkt das Programm nichts von der Bewegung.',
       'Die Werte kommen in Zehnerschritten an. Mit »mal 3« wird aus 100 ein Tempo von 300 mm/s.',
       'Bricht die Verbindung ab oder wird das Browserfenster verdeckt, stellt das Programm nach einer Sekunde Joystick und Tasten auf Ruhe – der Roboter bleibt stehen.',
-      'Tastatur: Erst ins Steuerfeld klicken, dann steuern die Pfeiltasten oder W, A, S, D den Joystick.',
+      'Tastatur: Erst ins Steuerfeld klicken, dann steuern die Pfeiltasten oder W, A, S, D Joystick 1 und I, J, K, L Joystick 2.',
       'Joystick und Tasten lassen sich gleichzeitig bedienen – mit zwei Fingern oder mit Tastatur und Maus.'],
     example:() => drv(forever(B('pb_drive_drive', null, {
       SPEED:NB(0, B('math_arithmetic', {OP:'MULTIPLY'}, {A:blk(B('pb_pad_stick', {AXIS:'y'})), B:N(3)})),
@@ -388,8 +388,8 @@ export const BLOCK_DOCS: Record<string, BlockDoc> = {
   },
   pb_pad_button: {
     title:'Steuerfeld: Taste gedrückt',
-    text:'Wahr, solange eine der vier Tasten A bis D im Steuerfeld von Blockwerk gedrückt ist.',
-    fields:[['Taste', 'A, B, C oder D. Auf der Tastatur die Zifferntasten 1 bis 4, nachdem ins Steuerfeld geklickt wurde.']],
+    text:'Wahr, solange eine Taste im Steuerfeld von Blockwerk gedrückt ist. Es gibt immer A bis D; in der Controller-Ansicht kommen unter »Anordnen« weitere bis J dazu.',
+    fields:[['Taste', 'A bis J. Auf der Tastatur die Zifferntasten 1 bis 9 und 0, nachdem ins Steuerfeld geklickt wurde.']],
     python:'`steuerung(\'A\')` liefert `True` oder `False`.',
     example:() => prog(forever(B('controls_if', null, {IF0:blk(B('pb_pad_button', {BUTTON:'A'})), DO0:S(icon('HAPPY')), ELSE:S(B('pb_display_off'))}, {hasElse:true}), wait(20)))
   },

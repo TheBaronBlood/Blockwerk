@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 import { pythonGenerator as py, Order } from 'blockly/python';
-import { PAD_HELPER } from './hub/padProtocol';
+import { padAxisName, padHelper, padSize } from './hub/padProtocol';
 import { toRows } from './matrix';
 
 py.INDENT = '    ';
@@ -29,7 +29,7 @@ type Slot = Partial<Record<Kind, boolean>> & {dir?: string};
 interface Drive { id: string | null; lp: string; ld: string; rp: string; rd: string; wheel: number; axle: number; gyro: boolean }
 interface Ctx {
   ports: Record<string, Slot>; params: Set<string>; tools: Set<string>; umath: Set<string>; black: Set<string>; drive: Drive | null;
-  driveBlocks: number; usesDrive: boolean; timer: boolean; xbox: boolean; remote: boolean; pad: boolean; warnings: string[];
+  driveBlocks: number; usesDrive: boolean; timer: boolean; xbox: boolean; remote: boolean; pad: Set<string>; warnings: string[];
   parts: Map<string, HeaderPart>;
   /** Mehrere Ereignisse laufen gleichzeitig: Das Programm besteht aus Aufgaben mit `async` und `await`. */
   multi: boolean;
@@ -61,6 +61,8 @@ export interface GenerateResult {
   usesXbox: boolean;
   /** Das Programm fragt das Steuerfeld von Blockwerk ab. */
   usesPad: boolean;
+  /** Was es dort abfragt: Achsen (x, y2 …) und Tasten (A …). */
+  padNames: string[];
   /** Module aus Erweiterungen, die mit auf den Hub müssen. */
   modules: ProgramModule[];
   /** Der Ausdruck, den ein Wertblock (Zahl, Sensor, Rechnung) erzeugt hat – zum Hervorheben im Code. */
@@ -85,7 +87,7 @@ const KIND: Record<Kind, {cls: string; pre: string; label: string}> = {
 };
 const KINDS = Object.keys(KIND) as Kind[];
 const kindsOf = (slot: Slot) => (Object.keys(slot) as Kind[]).filter(k => KIND[k]);
-function newCtx(): Ctx { return {ports:{}, params:new Set(), tools:new Set(), umath:new Set(), black:new Set(), drive:null, driveBlocks:0, usesDrive:false, timer:false, xbox:false, remote:false, pad:false, warnings:[], parts:new Map(),
+function newCtx(): Ctx { return {ports:{}, params:new Set(), tools:new Set(), umath:new Set(), black:new Set(), drive:null, driveBlocks:0, usesDrive:false, timer:false, xbox:false, remote:false, pad:new Set(), warnings:[], parts:new Map(),
   multi:false, asyncProcs:new Set(), sent:new Set(), received:new Set(), extBlocks:0}; }
 let G = newCtx();
 function warn(t: string){ if (!G.warnings.includes(t)) G.warnings.push(t); }
@@ -169,7 +171,7 @@ F['pb_unsupported_value'] = (b) => { untranslated(b); return ['0', Order.ATOMIC]
 // Fernsteuerung
 const xbox = () => { G.xbox = true; return 'controller'; };
 const remote = () => { G.remote = true; return 'fernbedienung'; };
-const pad = (name: string) => { G.pad = true; G.tools.add('read_input_byte'); G.tools.add('StopWatch'); return `steuerung('${name}')`; };
+const pad = (name: string) => { G.pad.add(name); G.tools.add('read_input_byte'); G.tools.add('StopWatch'); return `steuerung('${name}')`; };
 F['pb_xbox_stick'] = (b) => [`${xbox()}.joystick_${b.getFieldValue('SIDE')}()[${b.getFieldValue('AXIS')}]`, Order.MEMBER];
 F['pb_xbox_trigger'] = (b) => [`${xbox()}.triggers()[${b.getFieldValue('SIDE')}]`, Order.MEMBER];
 F['pb_xbox_button'] = (b) => { G.params.add('Button'); return [`Button.${b.getFieldValue('BUTTON')} in ${xbox()}.buttons.pressed()`, Order.RELATIONAL]; };
@@ -180,7 +182,7 @@ F['pb_remote_light'] = (b) => {
   if (c === 'OFF') return aw(`${remote()}.light.off()\n`);
   G.params.add('Color'); return aw(`${remote()}.light.on(Color.${c})\n`);
 };
-F['pb_pad_stick'] = (b) => [pad(b.getFieldValue('AXIS')), Order.FUNCTION_CALL];
+F['pb_pad_stick'] = (b) => [pad(padAxisName(b.getFieldValue('STICK'), b.getFieldValue('AXIS'))), Order.FUNCTION_CALL];
 F['pb_pad_button'] = (b) => [pad(b.getFieldValue('BUTTON')), Order.FUNCTION_CALL];
 
 F['pb_display_text'] = (b) => {
@@ -423,7 +425,7 @@ export function generate(ws: Blockly.Workspace): GenerateResult {
     if (G.xbox){ push(`print(${py.quote_(REMOTE_STATUS.xbox.search)})`); push('controller = XboxController()'); push(`print(${py.quote_(REMOTE_STATUS.xbox.found)})`); }
     if (G.remote){ push(`print(${py.quote_(REMOTE_STATUS.remote.search)})`); push('fernbedienung = Remote()'); push(`print(${py.quote_(REMOTE_STATUS.remote.found)})`); }
   }
-  if (G.pad){ push(''); PAD_HELPER.forEach(l => push(l)); }
+  if (G.pad.size){ push(''); padHelper(...padSize([...G.pad])).forEach(l => push(l)); }
   if (G.sent.size || (G.multi && G.received.size)){
     push(''); push('# Nachrichten zwischen den Programmteilen: wie oft welche gesendet wurde');
     push('nachrichten = {}'); push('');
@@ -497,5 +499,5 @@ export function generate(ws: Blockly.Workspace): GenerateResult {
     lines.push({text:'', id:null});
     lines.push({text:'# Zieh den Block »wenn Programm startet« aus »Ereignisse« auf die Fläche.', id:null});
   }
-  return {lines, warnings: G.warnings, usesPad: G.pad, usesXbox: G.xbox, modules: parts.flatMap(p => p.modules), exprs};
+  return {lines, warnings: G.warnings, usesPad: G.pad.size > 0, padNames: [...G.pad].sort(), usesXbox: G.xbox, modules: parts.flatMap(p => p.modules), exprs};
 }
