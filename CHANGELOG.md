@@ -15,6 +15,36 @@ Nicht jede Version gibt es als Programm zum Herunterladen: Kleine Schritte gehen
 die Fassung im Netz, die deshalb immer die neueste Nummer zeigt. Ein Release mit den fertigen
 Programmen (und einem Git-Tag wie `v0.26.0`) fasst dann zusammen, was seit dem vorigen dazukam.
 
+## Nächste Version (noch ohne Nummer)
+
+- Neu: Das **Steuerfeld wächst mit** – unter »Anordnen« kommen Tasten mit dem nächsten Buchstaben
+  (bis J) und Joysticks mit der nächsten Nummer (bis 3) dazu; Entf oder »Entfernen« nimmt sie
+  wieder weg, A–D und Joystick 1 bleiben. Fragt das Programm eine Taste oder einen Joystick ab,
+  den das Steuerfeld noch nicht hat, erscheint er von selbst. Die Blöcke »Joystick 1/2/3« und
+  »Taste A–J« gibt es dazu; ältere Projekte meinen Joystick 1. Am Gamepad ist der rechte Stick
+  Joystick 2, Schultertasten, Trigger und die beiden Mitteltasten sind E bis J; auf der Tastatur
+  steuern I J K L Joystick 2.
+- Geändert: Die Controller-Ansicht sieht aus wie die übrigen Leisten (Zeichen vor dem Wort, der Stand
+  des Hubs mit Punkt); jede Taste und jeder Joystick hat seine eigene Farbe, auch im Streifen unter
+  dem Code. Beim Anordnen fehlt keine Rasterlinie mehr.
+- Neu: **Der Roboter im Simulator sieht aus wie ein echter** – Hub mit Lichtmatrix, Farb-, Abstands-
+  und Kraftsensor, Motoren und Räder in ihren echten Maßen, von oben. Die Motoren liegen unter dem
+  Hub, die Räder direkt daran; die Rillen der Räder laufen beim Fahren mit.
+- Neu: Beim **Umbauen** gibt es zwei Ebenen – unten die Motoren, oben Hub und Sensoren. Motoren
+  lassen sich versetzen, drehen, spiegeln und auf groß oder klein stellen, Farbsensoren nach vorn
+  kippen, Sensoren auf die andere Ebene setzen. Auf jedem Teil steht sein Anschluss; ein Tipp
+  darauf steckt es um und ändert dabei alle Blöcke des Programms. Teile derselben Ebene können
+  sich nicht überdecken. Heranholen geht jetzt auch beim Umbauen.
+- Geändert: Der Simulator **rechnet mit dem echten Aufbau**: Passt »normal/umgekehrt« in der
+  Fahrbasis nicht zum Einbau, dreht sich der Roboter im Kreis; weicht die Spurbreite im Programm
+  von der am Roboter ab, dreht er ohne Kreisel falsch (»Spurbreite übernehmen« trägt die echte
+  ein); die Motoren schaffen höchstens 156 bzw. 138 Umdrehungen in der Minute. Die niedrige Wand
+  bemerken nur Sensoren unten, die hohe beide Ebenen. Der Taster drückt erst bei Berührung, und
+  der Roboter stößt mit seinem Umriss an statt mit einem Kreis.
+- Behoben: Die Leiste des Simulators ordnet sich bei wenig Platz sauber an – erst fallen Wörter
+  weg, dann bricht sie fest in zwei Reihen um; das Tempo steht immer rechts. Beim Bahnbauen stehen
+  Größe, Vorlage und Datei neben Start und Fertig.
+
 ## 0.30.0 – 12. Oktober 2026
 
 Ein Release mit fertigen Programmen. Seit dem vorigen (0.26.0) kamen dazu: der **Simulator** mit Bahnen

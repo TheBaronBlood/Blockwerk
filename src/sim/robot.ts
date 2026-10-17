@@ -5,10 +5,20 @@
 // ---------------------------------------------------------------
 import type * as Blockly from 'blockly';
 import { PORT_BLOCKS, type PortKind } from '../ports';
+import { motorUnderHub, type MotorMount } from './parts';
 import type { Point } from './world';
 
 export interface SimDrive {
   left: string; right: string; wheel: number; axle: number;
+  /**
+   * Zählrichtung der beiden Motoren laut Programm: 1 »normal« (CLOCKWISE), −1 »umgekehrt«. Ob das zum Einbau
+   * passt, merkt erst die Fahrt: Ein falsch herum gezählter Motor dreht sein Rad rückwärts.
+   */
+  leftDir: 1 | -1; rightDir: 1 | -1;
+  /** Die Fahrbasis hält ihre Richtung mit dem Kreisel des Hubs (»Kreisel benutzen«). */
+  gyro: boolean;
+  /** Ohne Block »Fahrbasis einrichten«: Die Anschlüsse A und B stehen nirgends im Programm, umstecken geht nicht. */
+  implicit?: true;
   /**
    * Das Programm hat keine Fahrbasis, sondern dreht die beiden Motoren einzeln. Dann gilt der übliche
    * Aufbau: Der linke Motor sitzt gespiegelt – dreht er vorwärts, fährt sein Rad rückwärts.
@@ -31,7 +41,8 @@ export interface SimRobot {
 
 export const MAX_COLOR_SENSORS = 4;
 /** Wie beim Generator: ohne Block »Fahrbasis einrichten« gelten diese Werte. */
-const DEFAULT_DRIVE: SimDrive = {left:'A', right:'B', wheel:56, axle:112, direct:false};
+const DEFAULT_DRIVE: SimDrive = {left:'A', right:'B', wheel:56, axle:112, leftDir:-1, rightDir:1, gyro:true, direct:false, implicit:true};
+const dirOf = (value: unknown): 1 | -1 => value === 'COUNTERCLOCKWISE' ? -1 : 1;
 const HATS = ['pb_start', 'pb_when', 'pb_when_message', 'procedures_defnoreturn', 'procedures_defreturn'];
 
 /** Die Blöcke, die zum Programm gehören: alles unter einem Ereignis und in eigenen Blöcken. */
@@ -46,14 +57,16 @@ export function robotFromWorkspace(ws: Blockly.Workspace): SimRobot {
   let drive: SimDrive | null = null;
   for (const b of programBlocks(ws)){
     if (b.type === 'pb_drive_setup'){
-      drive = {left:b.getFieldValue('LEFT_PORT'), right:b.getFieldValue('RIGHT_PORT'), wheel:Number(b.getFieldValue('WHEEL')), axle:Number(b.getFieldValue('AXLE')), direct:false};
+      drive = {left:b.getFieldValue('LEFT_PORT'), right:b.getFieldValue('RIGHT_PORT'), wheel:Number(b.getFieldValue('WHEEL')) || 56, axle:Number(b.getFieldValue('AXLE')) || 112,
+        leftDir:dirOf(b.getFieldValue('LEFT_DIR')), rightDir:dirOf(b.getFieldValue('RIGHT_DIR')), gyro:b.getFieldValue('GYRO') !== 'FALSE', direct:false};
     } else if (b.type.startsWith('pb_drive_')) drive ??= DEFAULT_DRIVE;
     else if (PORT_BLOCKS[b.type]) found[PORT_BLOCKS[b.type]].add(b.getFieldValue('PORT'));
   }
   const sorted = (ports: Set<string>) => [...ports].sort();
   const colors = sorted(found.color), ultras = sorted(found.ultra), motors = sorted(found.motor), notes: string[] = [];
   // ohne Fahrbasis sind die ersten beiden Motoren die Räder (wie bei den Vorgaben der Blockliste, ports.ts)
-  if (!drive && motors.length >= 2) drive = {...DEFAULT_DRIVE, left:motors[0], right:motors[1], direct:true};
+  // (einzelne Motoren zählen beide »normal« – der linke ist gespiegelt eingebaut, sein Rad läuft also andersherum)
+  if (!drive && motors.length >= 2){ drive = {...DEFAULT_DRIVE, left:motors[0], right:motors[1], leftDir:1, gyro:false, direct:true}; delete drive.implicit; }
   if (colors.length > MAX_COLOR_SENSORS) notes.push(`Der Simulator kennt höchstens ${MAX_COLOR_SENSORS} Farbsensoren – die an ${colors.slice(MAX_COLOR_SENSORS).join(', ')} sehen immer Weiß.`);
   if (ultras.length > 1) notes.push(`Der Simulator kennt einen Abstandssensor – der an ${ultras.slice(1).join(', ')} sieht nie etwas.`);
   return {
@@ -90,30 +103,46 @@ export function robotParts(robot: SimRobot): RobotPart[] {
 }
 
 // Maße am Roboter in Millimetern: x nach vorn, y nach rechts, der Ursprung liegt mitten zwischen den Rädern
-/** Der Körper (der Hub mit dem Rahmen darum). */
-export const BODY = {back:-45, front:85, minWidth:60};
 /** Abstand der Farbsensoren voneinander und von der Achse. */
-const COLOR_SPACING = 40, COLOR_FRONT = 100;
+const COLOR_SPACING = 40, COLOR_FRONT = 24;
 /** Halber Durchmesser des Flecks, den ein Farbsensor sieht. */
 export const COLOR_SPOT = 5;
 /** Der Abstandssensor: wo er sitzt, halber Öffnungswinkel in Grad, Reichweite und der Wert ohne Hindernis. */
-export const ULTRA = {at:{x:85, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
-/** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
-export const BUMPER = {at:{x:20, y:0} as Point, radius:75};
+export const ULTRA = {at:{x:24, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
+/** So weit vor den Farbsensoren sitzt der Abstandssensor, wenn es beide gibt. */
+const ULTRA_AHEAD_OF_COLORS = 24;
+/** Ein Kreis um den Roboter: Dort lässt er sich anfassen und verschieben. (Anstoßen tut er mit seinem Umriss, footprint.ts.) */
+export const BUMPER = {at:{x:-18, y:0} as Point, radius:70};
 
 /**
- * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit sein Taster vor ihm liegt, wie weit
- * der tastet und was er gedrückt meldet (Newton).
+ * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit die Spitze seines Tasters vor diesem Platz liegt,
+ * ab welchem Abstand der Spitze zum Hindernis er gedrückt ist (er muss es berühren), was er gedrückt meldet (Newton)
+ * und wie weit er neben einem Abstandssensor sitzt.
  */
-export const FORCE = {front:92, spacing:30, tip:8, reach:12, pressed:10};
+export const FORCE = {front:72, spacing:30, tip:8, reach:1.5, pressed:10, besideUltra:40};
+/** Einzelne Motoren (ein Greifarm etwa) sitzen hinter dem Hub nebeneinander. */
+const MOTOR_BACK = -112, MOTOR_SPACING = 30;
 /**
- * Wo jeder Sensor sitzt, solange ihn niemand versetzt hat: Farbsensoren nebeneinander vorn, der
- * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Anschluss → Platz am Roboter.
+ * Wo jedes Teil sitzt, solange es niemand versetzt hat: Farbsensoren nebeneinander vorn, der
+ * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Die Motoren der Fahrbasis liegen
+ * unter dem Hub, der linke gespiegelt, die Abtriebe außen, die Räder direkt daran (kleine Motoren, wie in
+ * der Fahrbasis eines SPIKE-Roboters üblich). Wie weit die Räder dann auseinander laufen, ist die echte
+ * Spurbreite – steht im Programm eine andere, dreht der Roboter ohne Kreisel falsch, wie in echt.
+ * Anschluss → Platz am Roboter.
  */
-export function defaultMounts(robot: SimRobot): Record<string, Point> {
-  const mounts: Record<string, Point> = {};
-  robot.force.forEach((port, i) => { mounts[port] = {x:FORCE.front, y:(i - (robot.force.length - 1) / 2) * FORCE.spacing}; });
-  if (robot.ultra) mounts[robot.ultra] = {...ULTRA.at};
+export function defaultMounts(robot: SimRobot): Record<string, Point & Partial<MotorMount>> {
+  const mounts: Record<string, Point & Partial<MotorMount>> = {};
+  const d = robot.drive;
+  if (d){ mounts[d.left] = motorUnderHub(-1, 'small'); mounts[d.right] = motorUnderHub(1, 'small'); }
+  robot.motors.forEach((port, i) => { mounts[port] = {x:MOTOR_BACK, y:(i - (robot.motors.length - 1) / 2) * MOTOR_SPACING}; });
+  // mit Abstandssensor rücken die Kraftsensoren neben ihn (er sitzt vorn in der Mitte) – sonst lägen sie übereinander
+  const aside = robot.ultra ? FORCE.besideUltra : 0;
+  robot.force.forEach((port, i) => {
+    const y = (i - (robot.force.length - 1) / 2) * FORCE.spacing;
+    mounts[port] = {x:FORCE.front, y:aside && robot.force.length === 1 ? aside : y + Math.sign(y) * aside};
+  });
+  // mit Farbsensoren rückt der Abstandssensor vor sie – beide säßen sonst direkt vor dem Hub übereinander
+  if (robot.ultra) mounts[robot.ultra] = robot.colors.length ? {x:ULTRA.at.x + ULTRA_AHEAD_OF_COLORS, y:ULTRA.at.y} : {...ULTRA.at};
   colorSensorPoints(robot.colors.length).forEach((p, i) => { mounts[robot.colors[i]] = p; });
   return mounts;
 }
@@ -121,3 +150,31 @@ export function defaultMounts(robot: SimRobot): Record<string, Point> {
 /** Wo die Farbsensoren sitzen: nebeneinander vor dem Roboter, um die Mitte verteilt. */
 export const colorSensorPoints = (count: number): Point[] =>
   Array.from({length:count}, (_, i) => ({x:COLOR_FRONT, y:(i - (count - 1) / 2) * COLOR_SPACING}));
+
+/** Alle Teile mit Anschluss, die der Roboter laut Programm hat. */
+export const robotPorts = (robot: SimRobot): string[] => [
+  ...(robot.drive ? [robot.drive.left, robot.drive.right] : []), ...robot.motors,
+  ...robot.colors, ...(robot.ultra ? [robot.ultra] : []), ...robot.force];
+/** Die Motoren des Roboters: die der Fahrbasis und die einzelnen. */
+export const robotMotors = (robot: SimRobot): string[] => [...(robot.drive ? [robot.drive.left, robot.drive.right] : []), ...robot.motors];
+
+/** Felder, in denen Blöcke einen Anschluss nennen: »PORT« und die beiden der Fahrbasis. */
+const PORT_FIELDS = ['PORT', 'LEFT_PORT', 'RIGHT_PORT'];
+/**
+ * Steckt im Programm ein Gerät um: Jeder Block, der Anschluss `from` nennt, nennt danach `to`. Steckt an `to`
+ * schon etwas, tauschen die beiden – wie zwei Kabel, die man am Hub vertauscht. Gilt für alle Blöcke auf der
+ * Arbeitsfläche, auch die, die gerade nicht am Programm hängen; zusammen ein Schritt für »Rückgängig«.
+ * Liefert, ob sich etwas geändert hat.
+ */
+export function swapPorts(ws: Blockly.Workspace, from: string, to: string, events?: {setGroup(on: boolean): void}): boolean {
+  if (from === to) return false;
+  let changed = false;
+  events?.setGroup(true);
+  try {
+    for (const b of ws.getAllBlocks(false)) for (const name of PORT_FIELDS){
+      const value = b.getField(name) ? b.getFieldValue(name) : null;
+      if (value === from || value === to){ b.setFieldValue(value === from ? to : from, name); changed = true; }
+    }
+  } finally { events?.setGroup(false); }
+  return changed;
+}

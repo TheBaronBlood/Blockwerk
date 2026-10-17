@@ -198,6 +198,9 @@ Seit 0.24.0 bedient ein Gamepad, das mit dem Gerät verbunden ist, das Steuerfel
 (`src/hub/gamepad.ts`, Gamepad-Schnittstelle des Browsers), und Blockwerk zeigt an, ob der
 Hub den Xbox-Controller oder die Fernbedienung gefunden hat. Beides ist nur mit
 nachgestellten Geräten geprüft.
+Seither lassen sich im Steuerfeld weitere Tasten (bis J) und Joysticks (bis 3) hinzufügen; die Bytes dafür liegen
+in eigenen Bereichen ohne Steuerzeichen (`src/hub/padProtocol.ts`), das Gegenstück auf dem Hub kennt nur, was das Programm
+braucht. Mit echtem Python getestet, am Hub noch nicht.
 
 Automatisch geprüft: erzeugter Code, Importe nur bei Bedarf, Kompilieren, und dass die
 Python-Funktion auf dem Hub genau die Bytes versteht, die der Browser schickt (Test mit
@@ -425,6 +428,11 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
   nur eine Richtung bzw. 45 Grad, Strg ohne Spiegeln. Plätze und Größe des Roboters bleiben
   gemerkt; sie gelten je Gruppe von Sensoren – wird aus zwei Farbsensoren einer, sitzt der
   wieder in der Mitte.
+
+- **Bauteile wie in echt** (`parts.ts`, `drawParts.ts`, `footprint.ts`): Hub, Sensoren, Motoren und Räder in ihren Maßen von oben,
+  in zwei Ebenen (unten die Motoren unter dem Hub). Gerechnet wird mit dem Einbau: Drehrichtung im Programm gegen
+  Einbaurichtung, echte Spurbreite, Höchsttempo der Motoren; die niedrige Wand bemerken nur Sensoren unten. Ein Tipp auf
+  den Anschluss eines Teils steckt es im Programm um.
 
 Geprüft im Browserfenster am Computer – auch die gebaute Seite mit ihrer
 Content-Security-Policy – und mit Fenstern im Handy- und Tablet-Format samt Berührungsereignissen.

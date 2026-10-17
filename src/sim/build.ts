@@ -1,27 +1,53 @@
 // ---------------------------------------------------------------
-// Simulator – Umbauen: Sensoren an einen anderen Platz am Roboter setzen und drehen. Das Raster
+// Simulator – Umbauen: Teile an einen anderen Platz am Roboter setzen, drehen und spiegeln. Das Raster
 // hat den Abstand der LEGO-Noppen (8 mm), gedreht wird in Schritten von 15 Grad; mit Symmetrie
-// wandert und dreht der Sensor auf der anderen Seite spiegelbildlich mit. (Ohne DOM.)
+// wandert und dreht das Teil auf der anderen Seite spiegelbildlich mit. Teile sind die Sensoren und
+// die Motoren (die liegen eine Ebene tiefer, unter dem Hub). (Ohne DOM.)
 // ---------------------------------------------------------------
-import type { SimRobot } from './robot';
+import { SHAFT, type MotorKind } from './parts';
+import { robotMotors, type SimRobot } from './robot';
 import type { Point } from './world';
 
 /** Abstand der Rasterlinien in Millimetern: eine LEGO-Noppe. */
 export const GRID_MM = 8;
-/** In solchen Schritten dreht sich ein Sensor – und in diesen gröberen, wenn es gerade Winkel sein sollen. */
+/** In solchen Schritten dreht sich ein Teil – und in diesen gröberen, wenn es gerade Winkel sein sollen. */
 export const ANGLE_STEP = 15, ANGLE_STEP_COARSE = 45;
-/** Der Bereich, in dem ein Sensor sitzen darf – Millimeter am Roboter, x nach vorn, y nach rechts. Die Grenzen liegen auf dem Raster. */
-export const MOUNT_AREA = {back:-120, front:184, side:144};
-/** Mit Symmetrie, aber ohne Raster rastet ein einzelner Sensor auf der Mittellinie ein, wenn er ihr so nah kommt. */
+/** Der Bereich, in dem ein Teil sitzen darf – Millimeter am Roboter, x nach vorn, y nach rechts. Die Grenzen liegen auf dem Raster. */
+export const MOUNT_AREA = {back:-160, front:152, side:144};
+/** Mit Symmetrie, aber ohne Raster rastet ein einzelnes Teil auf der Mittellinie ein, wenn es ihr so nah kommt. */
 const AXIS_SNAP_MM = 10;
 
-/** Wo ein Sensor am Roboter sitzt und wie er gedreht ist: `angle` in Grad gegenüber »geradeaus«, positiv nach rechts. */
-export interface Mount extends Point { angle?: number }
+/**
+ * Wo ein Teil am Roboter sitzt und wie: `angle` in Grad gegenüber »geradeaus«, positiv nach rechts.
+ * Motoren: `flip` – gespiegelt eingebaut, der Abtrieb links; `kind` – großer oder kleiner Motor; `shaft` – wie weit sein Rad auf der Achse sitzt.
+ * Farbsensoren: `face` – »front« schaut nach vorn statt auf den Boden.
+ * Sensoren und einzelne Motoren: `level` – auf der anderen Ebene als üblich (siehe `usualLevel`).
+ */
+export interface Mount extends Point { angle?: number; flip?: boolean; kind?: MotorKind; shaft?: number; face?: 'front'; level?: Level }
+
+/**
+ * Die beiden Ebenen des Roboters: unten die Motoren (unter dem Hub), oben der Hub. Die niedrige Wand um die Bahn ist so
+ * hoch wie die untere Ebene – nur Sensoren dort bemerken sie; die hohe Wand reicht über beide.
+ */
+export type Level = 'upper' | 'lower';
+/**
+ * Wo ein Teil üblicherweise sitzt: Motoren und Kraftsensoren unten (der Taster stößt an die niedrige Wand), Farb- und
+ * Abstandssensoren oben (der Abstandssensor schaut über die niedrige Wand hinweg).
+ */
+export const usualLevel = (robot: SimRobot, port: string): Level => robotMotors(robot).includes(port) || robot.force.includes(port) ? 'lower' : 'upper';
+/** Die Ebene eines Teils, wie es eingebaut ist. Die Motoren der Fahrbasis liegen immer unten. */
+export function levelOf(robot: SimRobot, port: string, at?: Mount | null): Level {
+  const d = robot.drive;
+  if (d && (port === d.left || port === d.right)) return 'lower';
+  return at?.level ?? usualLevel(robot, port);
+}
+/** Ob sich die Ebene eines Teils umstellen lässt – bei den Motoren der Fahrbasis nicht. */
+export const canChangeLevel = (robot: SimRobot, port: string) => !robot.drive || (port !== robot.drive.left && port !== robot.drive.right);
 
 export interface BuildOptions {
-  /** Sensoren rasten auf dem Raster ein. */
+  /** Teile rasten auf dem Raster ein. */
   grid: boolean;
-  /** Der Sensor auf der anderen Seite wandert und dreht spiegelbildlich mit. */
+  /** Das Teil auf der anderen Seite wandert und dreht spiegelbildlich mit. */
   symmetry: boolean;
   /** Was beim Versetzen genau so bleibt, wie es ist: nur vor und zurück (`y` fest) oder nur seitlich (`x` fest). */
   fixed?: Partial<Point>;
@@ -29,31 +55,46 @@ export interface BuildOptions {
 
 /** Winkel zwischen −179 und 180 Grad, auf ganze Grad. */
 const tidy = (angle: number) => { const a = ((Math.round(angle) % 360) + 540) % 360 - 180; return a === -180 ? 180 : a + 0; };
-/** Ein Platz; der Winkel steht nur dabei, wenn der Sensor gedreht ist. */
-const mount = (x: number, y: number, angle: number): Mount => angle ? {x, y, angle} : {x, y};
+/** Ein Platz; was ein Teil nicht besonders hat (keine Drehung, nicht gespiegelt …), steht nicht dabei. */
+function mount(x: number, y: number, angle: number, extra: Omit<Mount, 'x' | 'y' | 'angle'> = {}): Mount {
+  const m: Mount = {x, y};
+  if (angle) m.angle = angle;
+  if (extra.flip) m.flip = true;
+  if (extra.kind) m.kind = extra.kind;
+  if (typeof extra.shaft === 'number') m.shaft = extra.shaft;
+  if (extra.face) m.face = extra.face;
+  if (extra.level) m.level = extra.level;
+  return m;
+}
+/** Dasselbe Teil spiegelbildlich auf der anderen Seite: seitlich gespiegelt, andersherum gedreht – ein Motor andersherum eingebaut. */
+const mirrored = (m: Mount, at: Point, motor: boolean): Mount => mount(at.x, -at.y, tidy(-(m.angle ?? 0)), {...m, flip:motor ? !m.flip : undefined});
 
 /**
- * Der Sensor, der auf der anderen Seite gegenüber sitzt: bei den Farbsensoren (und ebenso bei den
- * Kraftsensoren) der erste zum letzten, der zweite zum vorletzten. Ein einzelner Sensor und der
- * mittlere von dreien haben keinen.
+ * Das Teil, das auf der anderen Seite gegenüber sitzt: bei den Farbsensoren (ebenso bei den Kraftsensoren und
+ * den einzelnen Motoren) das erste zum letzten, das zweite zum vorletzten; der linke Motor der Fahrbasis zum
+ * rechten. Ein einzelnes Teil und das mittlere von dreien haben keines.
  */
 export function mirrorPartner(robot: SimRobot, port: string): string | null {
-  for (const group of [robot.colors, robot.force]){
+  const d = robot.drive;
+  if (d && (port === d.left || port === d.right)) return port === d.left ? d.right : d.left;
+  for (const group of [robot.colors, robot.force, robot.motors]){
     const i = group.indexOf(port);
     if (i >= 0) return group.length - 1 - i === i ? null : group[group.length - 1 - i];
   }
   return null;
 }
+const isMotor = (robot: SimRobot, port: string) => robotMotors(robot).includes(port);
 
 /**
- * Setzt den Sensor am Anschluss `port` an den Platz `at` und liefert alle versetzten Sensoren; seine
- * Drehung behält er. `usual` sind die üblichen Plätze: Sie entscheiden, auf welcher Seite der Sensor
- * bleibt, wenn er mit Symmetrie genau auf die Mittellinie gezogen wird (dort lägen sonst beide aufeinander).
+ * Setzt das Teil am Anschluss `port` an den Platz `at` und liefert alle versetzten Teile; Drehung und
+ * Einbau behält es. `usual` sind die üblichen Plätze: Sie entscheiden, auf welcher Seite das Teil
+ * bleibt, wenn es mit Symmetrie genau auf die Mittellinie gezogen wird (dort lägen sonst beide aufeinander).
  */
-export function placeSensor(robot: SimRobot, mounts: Record<string, Mount>, port: string, at: Point, usual: Record<string, Point>, options: BuildOptions): Record<string, Mount> {
+export function placeSensor(robot: SimRobot, mounts: Record<string, Mount>, port: string, at: Point, usual: Record<string, Mount>, options: BuildOptions): Record<string, Mount> {
   const step = options.grid ? GRID_MM : 1;
   const snap = (value: number, min: number, max: number) => Math.round(Math.max(min, Math.min(max, value)) / step) * step + 0;
-  const x = options.fixed?.x ?? snap(at.x, MOUNT_AREA.back, MOUNT_AREA.front), angle = mounts[port]?.angle ?? 0;
+  const here = mounts[port] ?? usual[port] ?? {x:0, y:0};
+  const x = options.fixed?.x ?? snap(at.x, MOUNT_AREA.back, MOUNT_AREA.front);
   let y = options.fixed?.y ?? snap(at.y, -MOUNT_AREA.side, MOUNT_AREA.side);
   const next = {...mounts};
   if (options.symmetry){
@@ -62,59 +103,106 @@ export function placeSensor(robot: SimRobot, mounts: Record<string, Mount>, port
       // beide bleiben auf ihrer Seite und mindestens einen Rasterschritt von der Mitte weg
       const side = Math.sign(y) || Math.sign(usual[port]?.y ?? 0) || -1;
       if (Math.abs(y) < GRID_MM) y = side * GRID_MM;
-      next[partner] = mount(x, -y, tidy(-angle));
+      next[partner] = mirrored(here, {x, y}, isMotor(robot, port));
     } else if (!options.grid && Math.abs(y) < AXIS_SNAP_MM) y = 0;   // (mit Raster liegt die Mittellinie ohnehin auf einer Rasterlinie)
   }
-  next[port] = mount(x, y, angle);
+  next[port] = mount(x, y, here.angle ?? 0, here);
   return next;
 }
 
 /**
- * Dreht den Sensor am Anschluss `port` auf den Winkel `angle` (Grad gegenüber »geradeaus«, positiv nach
- * rechts) und liefert alle versetzten Sensoren. `step`: Der Winkel rastet in solchen Schritten ein, 0 lässt
- * ihn frei. Mit `symmetry` dreht der Sensor gegenüber spiegelbildlich mit.
+ * Dreht das Teil am Anschluss `port` auf den Winkel `angle` (Grad gegenüber »geradeaus«, positiv nach
+ * rechts) und liefert alle versetzten Teile. `step`: Der Winkel rastet in solchen Schritten ein, 0 lässt
+ * ihn frei. Mit `symmetry` dreht das Teil gegenüber spiegelbildlich mit.
  */
-export function rotateSensor(robot: SimRobot, mounts: Record<string, Mount>, port: string, angle: number, usual: Record<string, Point>, options: {step: number; symmetry: boolean}): Record<string, Mount> {
+export function rotateSensor(robot: SimRobot, mounts: Record<string, Mount>, port: string, angle: number, usual: Record<string, Mount>, options: {step: number; symmetry: boolean}): Record<string, Mount> {
   const turned = tidy(options.step ? Math.round(angle / options.step) * options.step : angle);
   const here = mounts[port] ?? usual[port], next = {...mounts};
   if (!here) return next;
-  next[port] = mount(here.x, here.y, turned);
+  next[port] = mount(here.x, here.y, turned, here);
   const partner = options.symmetry ? mirrorPartner(robot, port) : null, there = partner ? mounts[partner] ?? usual[partner] : null;
-  if (partner && there) next[partner] = mount(there.x, there.y, tidy(-turned));
+  if (partner && there) next[partner] = mount(there.x, there.y, tidy(-turned), there);
   return next;
 }
 
-/** Gemerkte Plätze: je Gruppe von Sensoren (»color:C,D«) die Sensoren darin, die jemand versetzt oder gedreht hat. */
+/**
+ * Ändert, wie ein Teil eingebaut ist: einen Motor spiegeln (`flip`) oder groß/klein tauschen (`kind`),
+ * einen Farbsensor nach vorn oder nach unten schauen lassen (`face`). Mit Symmetrie macht das Teil
+ * gegenüber mit – ein gespiegelter Motor heißt dort: andersherum gespiegelt.
+ */
+export function changePart(robot: SimRobot, mounts: Record<string, Mount>, port: string, change: 'flip' | 'kind' | 'face' | 'level', usual: Record<string, Mount>, symmetry: boolean): Record<string, Mount> {
+  const apply = (m: Mount): Mount => change === 'flip' ? mount(m.x, m.y, m.angle ?? 0, {...m, flip:!m.flip})
+    : change === 'kind' ? mount(m.x, m.y, m.angle ?? 0, {...m, kind:(m.kind ?? 'large') === 'large' ? 'small' : undefined})
+    : change === 'face' ? mount(m.x, m.y, m.angle ?? 0, {...m, face:m.face ? undefined : 'front'})
+    // die andere Ebene; ist das die übliche, steht keine dabei
+    : mount(m.x, m.y, m.angle ?? 0, {...m, level:levelOf(robot, port, m) === usualLevel(robot, port) ? (usualLevel(robot, port) === 'upper' ? 'lower' : 'upper') : undefined});
+  const here = mounts[port] ?? usual[port], next = {...mounts};
+  if (!here) return next;
+  if (change === 'level' ? !canChangeLevel(robot, port) : change === 'face' ? !robot.colors.includes(port) : !isMotor(robot, port)) return next;
+  next[port] = apply(here);
+  const partner = symmetry ? mirrorPartner(robot, port) : null, there = partner ? mounts[partner] ?? usual[partner] : null;
+  if (partner && there) next[partner] = apply(there);
+  return next;
+}
+
+/** Gemerkte Plätze: je Gruppe von Teilen (»color:C,D«) die Teile darin, die jemand versetzt oder gedreht hat. */
 export type SavedMounts = Record<string, Record<string, Mount>>;
+/**
+ * Bauweise der Motoren, mit der gemerkte Plätze gespeichert werden. Ändert sich, wo Motor und Rad zueinander sitzen
+ * (parts.ts), passen ältere Plätze nicht mehr – jeder Browser und jedes Gerät hätte sonst seinen eigenen, veralteten
+ * Roboter. 2: Motoren unter dem Hub, Rad auf einer Achse im Abstand der Spurbreite; 3: Rad direkt am Abtrieb
+ * (beides Oktober 2026).
+ */
+export const PARTS_VERSION = 3;
+/** Gemerkte Plätze aus dem Speicher: Motoren aus einer anderen Bauweise gelten nicht mehr, Sensoren bleiben. */
+export function currentMounts(saved: SavedMounts, version: unknown): SavedMounts {
+  if (version === PARTS_VERSION) return saved;
+  return Object.fromEntries(Object.entries(saved).filter(([key]) => !key.startsWith('drive') && !key.startsWith('motor:')));
+}
 
 /**
- * Sensoren, deren Plätze zusammengehören: die Farbsensoren, der Abstandssensor, die Kraftsensoren.
- * Der Schlüssel nennt Art und Anschlüsse. Ändert das Programm die Sensoren einer Gruppe – aus zwei
- * Farbsensoren wird einer –, ist das eine andere Gruppe: Ihre Sensoren sitzen am üblichen Platz,
- * der einzelne also in der Mitte, auch wenn er als einer von zweien woanders saß.
+ * Teile, deren Plätze zusammengehören: die Farbsensoren, der Abstandssensor, die Kraftsensoren, die
+ * Motoren der Fahrbasis, die einzelnen Motoren. Der Schlüssel nennt Art und Anschlüsse. Ändert das
+ * Programm die Teile einer Gruppe – aus zwei Farbsensoren wird einer –, ist das eine andere Gruppe:
+ * Ihre Teile sitzen am üblichen Platz, der einzelne also in der Mitte, auch wenn er als einer von zweien
+ * woanders saß.
  */
-function sensorGroups(robot: SimRobot): [string, string[]][] {
-  const groups: [string, string[]][] = [['color', robot.colors], ['ultra', robot.ultra ? [robot.ultra] : []], ['force', robot.force]];
+function partGroups(robot: SimRobot): [string, string[]][] {
+  const d = robot.drive;
+  const groups: [string, string[]][] = [['color', robot.colors], ['ultra', robot.ultra ? [robot.ultra] : []], ['force', robot.force],
+    ['drive', d ? [d.left, d.right] : []], ['motor', robot.motors]];
   return groups.filter(([, ports]) => ports.length).map(([kind, ports]) => [`${kind}:${ports.join()}`, ports]);
 }
 const isMount = (v: unknown): v is Mount => typeof (v as Mount | null)?.x === 'number' && typeof (v as Mount).y === 'number';
 
-/** Die versetzten Sensoren für diesen Roboter: nur was für genau seine Gruppen von Sensoren gemerkt ist. */
+/** Die versetzten Teile für diesen Roboter: nur was für genau seine Gruppen gemerkt ist. */
 export function mountsFor(robot: SimRobot, saved: SavedMounts): Record<string, Mount> {
   const mounts: Record<string, Mount> = {};
-  for (const [key, ports] of sensorGroups(robot)) for (const port of ports){
+  for (const [key, ports] of partGroups(robot)) for (const port of ports){
     const at = saved[key]?.[port];
-    if (isMount(at)) mounts[port] = mount(at.x, at.y, typeof at.angle === 'number' ? tidy(at.angle) : 0);
+    if (isMount(at)) mounts[port] = mount(at.x, at.y, typeof at.angle === 'number' ? tidy(at.angle) : 0,
+      {flip:at.flip === true || undefined, kind:at.kind === 'small' || at.kind === 'large' ? at.kind : undefined,
+        shaft:typeof at.shaft === 'number' && Number.isFinite(at.shaft) ? Math.max(SHAFT.min, Math.min(SHAFT.max, at.shaft)) : undefined, face:at.face === 'front' ? 'front' : undefined,
+        level:at.level === 'upper' || at.level === 'lower' ? at.level : undefined});
   }
   return mounts;
 }
 
-/** Merkt die versetzten Sensoren dieses Roboters; was für andere Gruppen gemerkt ist, bleibt. */
+/** Merkt die versetzten Teile dieses Roboters; was für andere Gruppen gemerkt ist, bleibt. */
 export function saveMounts(robot: SimRobot, saved: SavedMounts, mounts: Record<string, Mount>): SavedMounts {
   const next = {...saved};
-  for (const [key, ports] of sensorGroups(robot)){
+  for (const [key, ports] of partGroups(robot)){
     const own = Object.fromEntries(ports.filter(port => mounts[port]).map(port => [port, mounts[port]]));
     if (Object.keys(own).length) next[key] = own; else delete next[key];
   }
+  return next;
+}
+
+/** Nach dem Umstecken: Die Teile an `from` und `to` tauschen ihre Plätze mit – jedes bleibt, wo es war. */
+export function swapMounts(mounts: Record<string, Mount>, from: string, to: string): Record<string, Mount> {
+  const next = {...mounts};
+  delete next[from]; delete next[to];
+  if (mounts[from]) next[to] = mounts[from];
+  if (mounts[to]) next[from] = mounts[to];
   return next;
 }

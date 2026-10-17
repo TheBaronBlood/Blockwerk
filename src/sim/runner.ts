@@ -194,6 +194,9 @@ export class Runner {
   /** Fährt für eine bestimmte Zeit und hält dann an. */
   private async move(speed: number, rate: number, ms: number){
     if (!Number.isFinite(ms)) return;
+    // schafft ein Motor das Tempo nicht, fährt die Fahrbasis langsamer – und dafür länger, bis die Strecke stimmt
+    const f = this.sim.driveLimit(speed, rate);
+    if (f > 0 && f < 1){ speed *= f; rate *= f; ms /= f; }
     this.sim.speed = speed; this.sim.rate = rate;
     await this.sleep(ms);
     this.sim.speed = this.sim.rate = 0;
@@ -201,8 +204,9 @@ export class Runner {
   /** Dreht einen Motor um einen Winkel (Vorzeichen: Richtung) und hält ihn dann an. */
   private async turnMotor(port: string, speed: number, angle: number){
     const m = this.sim.motor(port), end = m.angle + angle;
+    speed = this.sim.limit(port, Math.abs(speed));   // (schneller, als er kann, dreht kein Motor)
     if (!speed || !angle) return;
-    m.speed = Math.abs(speed) * Math.sign(angle);
+    m.speed = speed * Math.sign(angle);
     await this.sleep(Math.abs(angle / speed) * 1000);
     m.speed = 0; m.angle = end;
   }
