@@ -404,7 +404,8 @@ ohne DOM, geprüft in `tests/sim.test.ts`.
   Platten breit, zwei bis sechs hoch; Vorlagen, Speichern und Öffnen als Datei. Die Bahn bleibt
   gemerkt, samt Hindernissen und dem Platz des Roboters.
 - **Bahn und Hindernisse** (`world.ts`): Gerechnet wird auf einem Bild der Bahn von oben – dem der
-  Platten oder einem eigenen, das sich laden lässt; die Größe des Roboters darauf ist einstellbar.
+  Platten oder einem eigenen, das sich laden lässt. Auf den Platten steht der Roboter in echter Größe (ein Bildpunkt je
+  Millimeter); auf einem eigenen Bild ist seine Größe einstellbar.
   Reflexion und Farbe liest der Sensor aus dem Bild. Hindernisse sind Rechtecke zum Setzen, Ziehen und
   Vergrößern; der Abstandssensor sieht, was in seinem Kegel liegt, der Kraftsensor drückt am
   Hindernis oder per Knopf. Der Roboter fährt an ein Hindernis heran, nicht hinein – und nicht

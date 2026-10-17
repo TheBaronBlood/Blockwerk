@@ -120,6 +120,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   /** Die Bahn aus Platten. Sie bleibt gemerkt, auch während gerade ein eigenes Bild als Bahn dient (`usingImage`). */
   let tileMap: TileMap = TEMPLATES[0].make();
   let usingImage = false;
+  /**
+   * Größe des Roboters auf einem eigenen Bild als Bahn (Einheiten des Bildes je Millimeter) – dort weiß Blockwerk nicht, wie
+   * groß das Bild in echt ist, der Regler stellt es ein. Auf den Platten (300 × 300 mm, ein Bildpunkt je Millimeter) steht der
+   * Roboter immer in echter Größe.
+   */
+  let imageScale = 1;
   let trackImage: HTMLCanvasElement;
   let runner: Runner | null = null;
   let home: Pose;                 // dorthin stellt »Zurück« den Roboter
@@ -151,7 +157,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let storedStart: Pose | null = null, storedObstacles: Obstacle[] = [];
   const finite = (...values: unknown[]) => values.every(v => typeof v === 'number' && Number.isFinite(v));
   try {
-    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; parts?: number; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: Fence | boolean};
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; parts?: number; imageScale?: number; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: Fence | boolean};
     // (früher gab es den Rand nur an oder aus)
     if (typeof stored.fence === 'boolean') sim.fence = stored.fence ? 'hidden' : 'off';
     else if (FENCES.includes(stored.fence as Fence)) sim.fence = stored.fence as Fence;
@@ -163,14 +169,15 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (Array.isArray(stored.obstacles)) storedObstacles = stored.obstacles.filter(o => o && finite(o.x, o.y, o.w, o.h)).map((o, i) => ({id:i + 1, x:o.x, y:o.y, w:o.w, h:o.h}));
     }
     if (stored.layouts && typeof stored.layouts === 'object') saved = currentMounts(stored.layouts, stored.parts);
-    if (typeof stored.scale === 'number' && stored.scale > 0){ sim.scale = stored.scale; scaleInput.value = String(stored.scale); }
+    // (früher galt der Regler auch auf den Platten – dieser Wert passt nicht zum Bild: `scale` wird nicht mehr gelesen)
+    if (typeof stored.imageScale === 'number' && stored.imageScale > 0) imageScale = stored.imageScale;
     if (typeof stored.grid === 'boolean') build.grid = stored.grid;
     if (typeof stored.symmetry === 'boolean') build.symmetry = stored.symmetry;
   } catch { /* ohne Speicher beginnt der Roboter, wie er ist */ }
   gridInput.checked = build.grid; symmetryInput.checked = build.symmetry;
   const remember = () => {
     saved = saveMounts(sim.robot, saved, sim.mounts);
-    const store = {layouts:saved, parts:PARTS_VERSION, scale:sim.scale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
+    const store = {layouts:saved, parts:PARTS_VERSION, imageScale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch { /* gilt dann bis zum Neuladen */ }
   };
 
@@ -235,6 +242,13 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     sim.obstacles = obstacles;
     nextObstacle = Math.max(0, ...obstacles.map(o => o.id)) + 1;
   }
+  /** Die Größe des Roboters zur Bahn: auf den Platten echt, auf einem eigenen Bild wie eingestellt – nur dort gibt es den Regler. */
+  function syncScale(){
+    sim.scale = usingImage ? imageScale : 1;
+    scaleInput.value = String(imageScale);
+    scaleInput.closest('label')!.classList.toggle('hidden', !usingImage);
+  }
+  syncScale();
   // Start: die gemerkte Bahn – oder der Rundkurs –, der Roboter dort, wo er zuletzt hingestellt wurde
   useTrack(renderTiles(tileMap), storedStart ?? startPose(tileMap), storedObstacles);
   /**
@@ -246,7 +260,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     const size = mapSize(map), on = (p: Point) => p.x >= 0 && p.y >= 0 && p.x <= size.width && p.y <= size.height;
     const keep = !fresh && !usingImage;
     if (!keep){ zoom = 1; cam = null; }
-    tileMap = map; usingImage = false;
+    tileMap = map; usingImage = false; syncScale();
     useTrack(renderTiles(map), keep && on(sim.pose) ? sim.pose : startPose(map), keep ? sim.obstacles.filter(on) : []);
     editor.refresh(); remember(); layout();
   }
@@ -802,7 +816,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   });
 
   // ---- Einstellen ----
-  scaleInput.addEventListener('input', () => { sim.scale = Number(scaleInput.value); remember(); if (building) layout(); else draw(); });
+  scaleInput.addEventListener('input', () => { imageScale = Number(scaleInput.value) || 1; syncScale(); remember(); if (building) layout(); else draw(); });
   el('simObstacle').addEventListener('click', () => {
     // vor den Roboter, damit man es sieht – und der Abstandssensor auch
     const at = toWorld(sim.pose, sim.scale, {x:350, y:0}), size = 120 * sim.scale;
@@ -822,7 +836,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, image.width, image.height);
       ctx.drawImage(bitmap, 0, 0, image.width, image.height);
       if (runner) finish(runner, '— Simulation angehalten —');
-      usingImage = true; zoom = 1; cam = null;
+      usingImage = true; zoom = 1; cam = null; syncScale();
       useTrack(image, {x:image.width / 2, y:image.height / 2, heading:0});
       layout();
       opts.toast('Bahn geladen. Zieh den Roboter auf die Linie und stell seine Größe ein.');
