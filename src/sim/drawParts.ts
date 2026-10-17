@@ -79,13 +79,18 @@ export function drawForceSensor(g: Ctx, pressed: boolean){
 
 /**
  * Motor: vorn blau, hinten hell mit blauem Rand; vorn rechts der Abtrieb (gespiegelt links), in dem die
- * Achse steckt. Groß 72 mm, klein 56 mm lang.
+ * Achse steckt. Groß 72 mm, klein 56 mm lang. shaft: Sitzt das Rad weiter draußen, führt die Achse dorthin (mm).
  */
-export function drawMotor(g: Ctx, kind: MotorKind, flip: boolean){
+export function drawMotor(g: Ctx, kind: MotorKind, flip: boolean, shaft: number | null = null){
   const w = MOTOR.width, l = MOTOR.length[kind], blue = l * 0.54, r = 4, edge = 1.6;
   const ow = MOTOR.output.width, ol = MOTOR.output.length;
   g.save();
   if (flip) g.scale(-1, 1);
+  // die Achse zum Rad, wenn es weiter draußen sitzt: zwei dünne Linien in der Breite des Abtriebs
+  if (shaft !== null && shaft > 0){
+    g.fillStyle = C.motor;
+    for (const y of [-l / 2, -l / 2 + ol - 1.2]) g.fillRect(w / 2 + ow - 1, y, shaft + 2, 1.2);
+  }
   // der Abtrieb: ein blauer Bügel, innen offen zum Gehäuse hin
   rounded(g, w / 2 - r, -l / 2, ow + r, ol, [0, 4, 4, 0]); g.fillStyle = C.motor; g.fill();
   g.fillStyle = C.motorLight; g.fillRect(w / 2, -l / 2 + 2, ow - 2.3, ol - 4);

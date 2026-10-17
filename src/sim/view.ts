@@ -13,7 +13,7 @@ import {
   type BuildOptions, type Level, type Mount, type SavedMounts
 } from './build';
 import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame, partSize } from './drawParts';
-import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, wheelCenter } from './parts';
+import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, SHAFT, wheelCenter } from './parts';
 import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, robotFromWorkspace, robotMotors, robotParts, robotPorts, swapPorts, ULTRA, type RobotPart } from './robot';
 import { Runner } from './runner';
 import { FENCES, Simulation, type Fence } from './simulation';
@@ -50,7 +50,7 @@ const MIN_OBSTACLE = 20;
 /** So weit lässt sich die Bahn heranholen, und so viel der Fläche füllt sie, wenn sie ganz zu sehen ist. */
 const MAX_ZOOM = 8, FIT = 0.94;
 /** Beim Umbauen füllt der Roboter die Ansicht: so viele Millimeter sind zu sehen, um diesen Punkt am Roboter. */
-const BUILD_SPAN_MM = 270, BUILD_CENTER: Point = {x:26, y:0};
+const BUILD_SPAN_MM = 250, BUILD_CENTER: Point = {x:-16, y:0};
 /** So weit vor dem gewählten Sensor sitzt der Knopf, an dem man ihn dreht (Bildschirmpunkte). */
 const KNOB_PX = 46;
 /**
@@ -377,13 +377,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     g.globalAlpha = alphaFor('lower');
     for (const port of robotMotors(robot)){
       const m = sim.mount(port)!, kind = m.kind ?? 'large', wheel = !!d && (port === d.left || port === d.right);
-      if (wheel){
-        // das Rad dreht sich so, wie der Motor wirklich läuft – »umgekehrt« zählend andersherum, gespiegelt eingebaut rückwärts
-        const dir = d!.direct ? 1 : port === d!.left ? d!.leftDir : d!.rightDir;
-        placed({...wheelCenter(m), angle:m.angle}, () => drawWheel(g, d!.wheel, sim.motor(port).angle * dir * (m.flip ? -1 : 1)));
-      }
       placed(m, () => {
-        drawMotor(g, kind, !!m.flip);
+        drawMotor(g, kind, !!m.flip, wheel ? m.shaft ?? SHAFT.usual : null);
         if (wheel) return;
         // ein einzelner Motor (ein Greifarm etwa): eine Scheibe mit Zeiger, die sich mitdreht
         const y = MOTOR.length[kind] / 2 - 9, a = sim.motor(port).angle * Math.PI / 180;
@@ -391,6 +386,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
         g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.lineCap = 'round';
         g.beginPath(); g.moveTo(0, y); g.lineTo(5 * Math.sin(a), y - 5 * Math.cos(a)); g.stroke(); g.lineCap = 'butt';
       });
+      // das Rad auf der Achse – über dem Abtrieb, den es ein Stück überdeckt. Es dreht sich so, wie der Motor wirklich
+      // läuft: »umgekehrt« zählend andersherum, gespiegelt eingebaut rückwärts.
+      if (wheel){
+        const dir = d!.direct ? 1 : port === d!.left ? d!.leftDir : d!.rightDir;
+        placed({...wheelCenter(m), angle:m.angle}, () => drawWheel(g, d!.wheel, sim.motor(port).angle * dir * (m.flip ? -1 : 1)));
+      }
     }
 
     g.globalAlpha = alphaFor('upper');

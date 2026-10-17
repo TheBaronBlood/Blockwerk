@@ -103,24 +103,22 @@ export function robotParts(robot: SimRobot): RobotPart[] {
 }
 
 // Maße am Roboter in Millimetern: x nach vorn, y nach rechts, der Ursprung liegt mitten zwischen den Rädern
-/** Der Körper (der Hub mit dem Rahmen darum). */
-export const BODY = {back:-45, front:85, minWidth:60};
 /** Abstand der Farbsensoren voneinander und von der Achse. */
-const COLOR_SPACING = 40, COLOR_FRONT = 100;
+const COLOR_SPACING = 40, COLOR_FRONT = 24;
 /** Halber Durchmesser des Flecks, den ein Farbsensor sieht. */
 export const COLOR_SPOT = 5;
 /** Der Abstandssensor: wo er sitzt, halber Öffnungswinkel in Grad, Reichweite und der Wert ohne Hindernis. */
-export const ULTRA = {at:{x:85, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
+export const ULTRA = {at:{x:24, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
 /** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
-export const BUMPER = {at:{x:20, y:0} as Point, radius:75};
+export const BUMPER = {at:{x:-18, y:0} as Point, radius:70};
 
 /**
  * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit sein Taster vor ihm liegt, wie weit
  * der tastet, was er gedrückt meldet (Newton) und wie weit er neben einem Abstandssensor sitzt.
  */
-export const FORCE = {front:92, spacing:30, tip:8, reach:12, pressed:10, besideUltra:40};
-/** Einzelne Motoren (ein Greifarm etwa) sitzen hinten nebeneinander. */
-const MOTOR_BACK = -84, MOTOR_SPACING = 30;
+export const FORCE = {front:62, spacing:30, tip:8, reach:12, pressed:10, besideUltra:40};
+/** Einzelne Motoren (ein Greifarm etwa) sitzen hinter dem Hub nebeneinander. */
+const MOTOR_BACK = -112, MOTOR_SPACING = 30;
 /**
  * Wo jedes Teil sitzt, solange es niemand versetzt hat: Farbsensoren nebeneinander vorn, der
  * Abstandssensor vorn in der Mitte, Kraftsensoren an der Stoßkante. Die Motoren der Fahrbasis liegen

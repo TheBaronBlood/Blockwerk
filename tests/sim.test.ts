@@ -254,18 +254,18 @@ describe('Fahren', () => {
     expect(running).toBe(false);
     const seen = Number(out);
     expect(seen).toBeLessThan(100); expect(seen).toBeGreaterThan(95);
-    // Sensor 85 mm vor der Achse, Hindernis beginnt bei x = 750
-    expect(sim.pose.x).toBeCloseTo(750 - 85 - seen, 0);
+    // Sensor 24 mm vor der Achse, Hindernis beginnt bei x = 750
+    expect(sim.pose.x).toBeCloseTo(750 - 24 - seen, 0);
   });
   it('der Rand der Bahn hält den Roboter auf – Sensoren bemerken ihn nicht', async () => {
     const field = track(1000, 600, () => WHITE);
     const state = program(setup(), B('pb_drive_straight', null, {DIST:N(2000)}),
       B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
     const place = (fence: Simulation['fence']) => (s: Simulation) => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; };
-    // der Stoßkreis (75 mm, 20 mm vor der Achse) bleibt auf der Bahn: Die Achse kommt bis 905
+    // der Stoßkreis (70 mm, 18 mm hinter der Achse) bleibt auf der Bahn: Die Achse kommt bis 948
     const held = await simulate(state, 4000, place('hidden'));
     expect(held.sim.blocked).toBe(true);
-    expect(held.sim.pose.x).toBeLessThanOrEqual(905); expect(held.sim.pose.x).toBeGreaterThan(903);
+    expect(held.sim.pose.x).toBeLessThanOrEqual(948); expect(held.sim.pose.x).toBeGreaterThan(946);
     // … und weder Abstands- noch Kraftsensor merken etwas davon
     const after = await simulate(state, 12000, place('hidden'));
     expect(after.out).toBe('2000\nFalse\n');
@@ -278,10 +278,10 @@ describe('Fahren', () => {
     const state = program(setup(), B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_drive_straight', null, {DIST:N(2000)}),
       B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}), B('pb_print', null, {TEXT:{block:B('pb_force_pressed', {PORT:'E'})}}));
     const run = async (fence: Simulation['fence']) => (await simulate(state, 12000, s => { s.track = field; s.pose = {x:300, y:300, heading:0}; s.fence = fence; }));
-    // vom Start aus: Der Abstandssensor sitzt 85 mm vor der Achse, die Wand steht bei 1000
+    // vom Start aus: Der Abstandssensor sitzt 24 mm vor der Achse, die Wand steht bei 1000
     const high = await run('high');
-    expect(high.out).toBe('615\n10\nTrue\n');
-    expect(high.sim.pose.x).toBeLessThanOrEqual(905); expect(high.sim.pose.x).toBeGreaterThan(903);
+    expect(high.out).toBe('676\n28\nTrue\n');
+    expect(high.sim.pose.x).toBeLessThanOrEqual(948); expect(high.sim.pose.x).toBeGreaterThan(946);
     // über die niedrige Wand schaut der Abstandssensor hinweg – der Taster stößt trotzdem an
     expect((await run('low')).out).toBe('2000\n2000\nTrue\n');
     expect((await run('hidden')).out).toBe('2000\n2000\nFalse\n');
@@ -291,10 +291,10 @@ describe('Fahren', () => {
     const field = track(1000, 600, () => WHITE);
     const look = async (heading: number) => Number((await simulate(program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}})), 100,
       s => { s.track = field; s.pose = {x:500, y:300, heading}; s.fence = 'high'; })).out);
-    expect(await look(0)).toBe(415);     // nach rechts: 1000 − 585
-    expect(await look(90)).toBe(215);    // nach unten: 600 − 385
-    expect(await look(180)).toBe(415);   // nach links: 415 − 0
-    expect(await look(-90)).toBe(215);
+    expect(await look(0)).toBe(476);     // nach rechts: 1000 − 524
+    expect(await look(90)).toBe(276);    // nach unten: 600 − 324
+    expect(await look(180)).toBe(476);   // nach links: 476 − 0
+    expect(await look(-90)).toBe(276);
   });
   it('am Rand geht es nicht weiter hinaus, zurück aber immer', async () => {
     const field = track(1000, 600, () => WHITE);
@@ -302,14 +302,16 @@ describe('Fahren', () => {
     const over = (dist: number) => simulate(program(setup(), B('pb_drive_straight', null, {DIST:N(dist)})), 2000, s => { s.track = field; s.pose = {x:980, y:300, heading:0}; });
     expect((await over(100)).sim.pose.x).toBe(980);
     expect((await over(-100)).sim.pose.x).toBeCloseTo(880, 3);
-    // drehen auf der Stelle geht am Rand auch: Der Stoßkreis rückt dabei von der Kante weg
-    const turned = await simulate(program(setup(), B('pb_drive_turn', null, {ANGLE:N(90)})), 2000, s => { s.track = field; s.pose = {x:905, y:300, heading:0}; });
+    // drehen auf der Stelle geht nah am Rand auch – solange er dabei nicht über die Kante ragt (die Achse liegt vorn im
+    // Hub, das Heck schwenkt aus: Quer zur Kante reicht der Stoßkreis von hier aus genau bis an sie heran)
+    const turned = await simulate(program(setup(), B('pb_drive_turn', null, {ANGLE:N(90)})), 2000, s => { s.track = field; s.pose = {x:930, y:300, heading:0}; });
     expect(turned.sim.pose.heading).toBeCloseTo(90, 3);
   });
   it('fährt nicht in ein Hindernis hinein', async () => {
     const {sim} = await simulate(program(setup(), B('pb_drive_straight', null, {DIST:N(1000)})), 3000, s => { s.obstacles = [box(400, 0)]; });
     expect(sim.blocked).toBe(true);
-    expect(sim.pose.x).toBeLessThan(260); expect(sim.pose.x).toBeGreaterThan(240);
+    // das Hindernis beginnt bei 350, der Stoßkreis reicht 52 mm vor die Achse
+    expect(sim.pose.x).toBeLessThanOrEqual(298); expect(sim.pose.x).toBeGreaterThan(290);
   });
 });
 
@@ -399,7 +401,7 @@ describe('Programm', () => {
     expect(moved.sim.colorPoints()[0]).toMatchObject({x:expect.closeTo(150, 3), y:expect.closeTo(140, 3)});
     // der Abstandssensor misst ab seinem Platz
     const far = program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}));
-    expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; })).out).toBe('415\n');
+    expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; })).out).toBe('476\n');
     expect((await simulate(far, 100, s => { s.obstacles = [box(550, 0)]; s.mounts = {D:{x:0, y:0}}; })).out).toBe('500\n');
     // … und in seine Richtung: nach rechts gedreht sieht er das Hindernis rechts neben dem Roboter, nicht mehr das vorn
     const beside = (mounts: Simulation['mounts']) => simulate(far, 100, s => { s.obstacles = [box(85, 300)]; s.mounts = mounts; });

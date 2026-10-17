@@ -4,7 +4,7 @@
 // wandert und dreht das Teil auf der anderen Seite spiegelbildlich mit. Teile sind die Sensoren und
 // die Motoren (die liegen eine Ebene tiefer, unter dem Hub). (Ohne DOM.)
 // ---------------------------------------------------------------
-import type { MotorKind } from './parts';
+import { SHAFT, type MotorKind } from './parts';
 import { robotMotors, type SimRobot } from './robot';
 import type { Point } from './world';
 
@@ -13,16 +13,16 @@ export const GRID_MM = 8;
 /** In solchen Schritten dreht sich ein Teil – und in diesen gröberen, wenn es gerade Winkel sein sollen. */
 export const ANGLE_STEP = 15, ANGLE_STEP_COARSE = 45;
 /** Der Bereich, in dem ein Teil sitzen darf – Millimeter am Roboter, x nach vorn, y nach rechts. Die Grenzen liegen auf dem Raster. */
-export const MOUNT_AREA = {back:-120, front:184, side:144};
+export const MOUNT_AREA = {back:-160, front:152, side:144};
 /** Mit Symmetrie, aber ohne Raster rastet ein einzelnes Teil auf der Mittellinie ein, wenn es ihr so nah kommt. */
 const AXIS_SNAP_MM = 10;
 
 /**
  * Wo ein Teil am Roboter sitzt und wie: `angle` in Grad gegenüber »geradeaus«, positiv nach rechts.
- * Motoren: `flip` – gespiegelt eingebaut, der Abtrieb links; `kind` – großer oder kleiner Motor.
+ * Motoren: `flip` – gespiegelt eingebaut, der Abtrieb links; `kind` – großer oder kleiner Motor; `shaft` – wie weit sein Rad auf der Achse sitzt.
  * Farbsensoren: `face` – »front« schaut nach vorn statt auf den Boden.
  */
-export interface Mount extends Point { angle?: number; flip?: boolean; kind?: MotorKind; face?: 'front' }
+export interface Mount extends Point { angle?: number; flip?: boolean; kind?: MotorKind; shaft?: number; face?: 'front' }
 
 /** Die beiden Ebenen des Roboters: unten die Motoren (unter dem Hub), oben Hub und Sensoren. */
 export type Level = 'upper' | 'lower';
@@ -45,6 +45,7 @@ function mount(x: number, y: number, angle: number, extra: Omit<Mount, 'x' | 'y'
   if (angle) m.angle = angle;
   if (extra.flip) m.flip = true;
   if (extra.kind) m.kind = extra.kind;
+  if (typeof extra.shaft === 'number') m.shaft = extra.shaft;
   if (extra.face) m.face = extra.face;
   return m;
 }
@@ -149,7 +150,8 @@ export function mountsFor(robot: SimRobot, saved: SavedMounts): Record<string, M
   for (const [key, ports] of partGroups(robot)) for (const port of ports){
     const at = saved[key]?.[port];
     if (isMount(at)) mounts[port] = mount(at.x, at.y, typeof at.angle === 'number' ? tidy(at.angle) : 0,
-      {flip:at.flip === true || undefined, kind:at.kind === 'small' || at.kind === 'large' ? at.kind : undefined, face:at.face === 'front' ? 'front' : undefined});
+      {flip:at.flip === true || undefined, kind:at.kind === 'small' || at.kind === 'large' ? at.kind : undefined,
+        shaft:typeof at.shaft === 'number' && Number.isFinite(at.shaft) ? Math.max(SHAFT.min, Math.min(SHAFT.max, at.shaft)) : undefined, face:at.face === 'front' ? 'front' : undefined});
   }
   return mounts;
 }
