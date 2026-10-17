@@ -150,7 +150,8 @@
     <div class="warnings hidden" id="warnings"></div>
     <div class="code-scroll"><div class="code-lines" id="codeLines"></div></div>
     <section class="sim hidden" id="sim" aria-label="Simulator">
-      <!-- Die Leiste des Simulators, in Gruppen: laufen lassen · Tempo · Bahn · Roboter. Jeder Knopf mit Zeichen und Wort. -->
+      <!-- Die Leiste des Simulators, in Gruppen: laufen lassen · Bahn · Roboter · Tempo. Jeder Knopf mit Zeichen und Wort;
+           wird es eng, fallen erst die Wörter weg (style.css, »Leiste des Simulators bei wenig Platz«). -->
       <div class="sim-bar">
         <div class="sim-group sim-g-run">
           <button class="btn primary" id="simRun" type="button">
@@ -163,10 +164,6 @@
           <!-- je Kraftsensor des Programms ein Knopf zum Drücken (entsteht in view.ts) -->
           <span class="sim-force" id="simForce"></span>
         </div>
-        <label class="sim-group sim-g-tempo" title="Tempo: Zeitlupe und Zeitraffer">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.300 19a10 10 0 1 1 17.400 0"/><path d="m12 14 4-4.500"/></svg>
-          <select class="btn" id="simSpeed" aria-label="Tempo"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
-        </label>
         <div class="sim-group sim-g-track">
           <button class="btn" id="simTrack" type="button" aria-pressed="false" title="Bahn aus Platten bauen, wie bei Rescue Line">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.500" height="7.500" rx="1.500"/><rect x="13.500" y="3" width="7.500" height="7.500" rx="1.500"/><rect x="3" y="13.500" width="7.500" height="7.500" rx="1.500"/><rect x="13.500" y="13.500" width="7.500" height="7.500" rx="1.500"/></svg>
@@ -186,12 +183,13 @@
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
             <input type="range" id="simScale" min="0.3" max="3" step="0.05" value="1" aria-label="Größe des Roboters"></label>
         </div>
-        <input type="file" id="simFile" accept="image/*" class="hidden">
-      </div>
-      <!-- nur bei »Bahn bauen«: Platten zur Auswahl (die Knöpfe entstehen in trackEditor.ts), Größe, Vorlagen, Datei -->
-      <div class="sim-bar sim-track-bar">
-        <div class="sim-tiles" id="simTiles" role="radiogroup" aria-label="Platte oder Werkzeug wählen"></div>
-        <div class="sim-group">
+        <!-- das Tempo steht immer am Ende, rechtsbündig -->
+        <label class="sim-group sim-g-tempo" title="Tempo: Zeitlupe und Zeitraffer">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.300 19a10 10 0 1 1 17.400 0"/><path d="m12 14 4-4.500"/></svg>
+          <select class="btn" id="simSpeed" aria-label="Tempo"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        </label>
+        <!-- nur bei »Bahn bauen«: Größe der Bahn, Vorlagen, Datei – rechtsbündig in derselben Zeile wie Start und Fertig -->
+        <div class="sim-group sim-g-tracksize">
           <span class="sim-step" title="Spalten: wie viele Platten die Bahn breit ist">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>
             <button class="btn" id="simColsLess" type="button" aria-label="eine Spalte weniger">−</button><output id="simCols">4</output><button class="btn" id="simColsMore" type="button" aria-label="eine Spalte mehr">+</button>
@@ -201,7 +199,7 @@
             <button class="btn" id="simRowsLess" type="button" aria-label="eine Zeile weniger">−</button><output id="simRows">3</output><button class="btn" id="simRowsMore" type="button" aria-label="eine Zeile mehr">+</button>
           </span>
         </div>
-        <div class="sim-group">
+        <div class="sim-group sim-g-trackfile">
           <select class="btn" id="simTemplate" aria-label="Vorlage laden"><option value="">Vorlage …</option></select>
           <button class="btn" id="simTrackSave" type="button" title="Bahn als Datei speichern">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
@@ -210,6 +208,11 @@
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.500h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             <span>Öffnen</span></button>
         </div>
+        <input type="file" id="simFile" accept="image/*" class="hidden">
+      </div>
+      <!-- nur bei »Bahn bauen«: Platten zur Auswahl (die Knöpfe entstehen in trackEditor.ts) und der Hinweis zum Werkzeug -->
+      <div class="sim-bar sim-track-bar">
+        <div class="sim-tiles" id="simTiles" role="radiogroup" aria-label="Platte oder Werkzeug wählen"></div>
         <input type="file" id="simTrackFile" accept=".json,application/json" class="hidden">
         <p class="sim-keys sim-track-hint" id="simTrackHint" role="status"></p>
       </div>
