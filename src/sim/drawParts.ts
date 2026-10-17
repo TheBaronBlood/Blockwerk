@@ -118,13 +118,3 @@ export function drawWheel(g: Ctx, diameter: number, turned: number){
   for (let y = -l / 2 - spacing + shift; y < l / 2 + spacing; y += spacing){ g.moveTo(-w / 2 + 2, y); g.lineTo(w / 2 - 2, y); }
   g.stroke(); g.restore();
 }
-
-/** Wie groß ein Teil in der Vorlage ist (Breite × Länge, mm) und wie weit seine Mitte von der Mitte des Umrisses liegt (nach vorn). */
-export function partSize(kind: 'color' | 'ultra' | 'force' | 'motor', motor: MotorKind = 'large'): {w: number; l: number; ahead: number} {
-  switch (kind){
-    case 'color': return {w:COLOR_SENSOR.size, l:COLOR_SENSOR.size, ahead:0};
-    case 'ultra': return {w:ULTRA_SENSOR.width, l:ULTRA_SENSOR.depth, ahead:0};
-    case 'force': return {w:FORCE_SENSOR.width, l:FORCE_SENSOR.length + FORCE_SENSOR.plunger, ahead:FORCE_SENSOR.plunger / 2};
-    case 'motor': return {w:MOTOR.width + MOTOR.output.width, l:MOTOR.length[motor], ahead:0};
-  }
-}

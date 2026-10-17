@@ -21,12 +21,28 @@ const AXIS_SNAP_MM = 10;
  * Wo ein Teil am Roboter sitzt und wie: `angle` in Grad gegenüber »geradeaus«, positiv nach rechts.
  * Motoren: `flip` – gespiegelt eingebaut, der Abtrieb links; `kind` – großer oder kleiner Motor; `shaft` – wie weit sein Rad auf der Achse sitzt.
  * Farbsensoren: `face` – »front« schaut nach vorn statt auf den Boden.
+ * Sensoren und einzelne Motoren: `level` – auf der anderen Ebene als üblich (siehe `usualLevel`).
  */
-export interface Mount extends Point { angle?: number; flip?: boolean; kind?: MotorKind; shaft?: number; face?: 'front' }
+export interface Mount extends Point { angle?: number; flip?: boolean; kind?: MotorKind; shaft?: number; face?: 'front'; level?: Level }
 
-/** Die beiden Ebenen des Roboters: unten die Motoren (unter dem Hub), oben Hub und Sensoren. */
+/**
+ * Die beiden Ebenen des Roboters: unten die Motoren (unter dem Hub), oben der Hub. Die niedrige Wand um die Bahn ist so
+ * hoch wie die untere Ebene – nur Sensoren dort bemerken sie; die hohe Wand reicht über beide.
+ */
 export type Level = 'upper' | 'lower';
-export const levelOf = (robot: SimRobot, port: string): Level => robotMotors(robot).includes(port) ? 'lower' : 'upper';
+/**
+ * Wo ein Teil üblicherweise sitzt: Motoren und Kraftsensoren unten (der Taster stößt an die niedrige Wand), Farb- und
+ * Abstandssensoren oben (der Abstandssensor schaut über die niedrige Wand hinweg).
+ */
+export const usualLevel = (robot: SimRobot, port: string): Level => robotMotors(robot).includes(port) || robot.force.includes(port) ? 'lower' : 'upper';
+/** Die Ebene eines Teils, wie es eingebaut ist. Die Motoren der Fahrbasis liegen immer unten. */
+export function levelOf(robot: SimRobot, port: string, at?: Mount | null): Level {
+  const d = robot.drive;
+  if (d && (port === d.left || port === d.right)) return 'lower';
+  return at?.level ?? usualLevel(robot, port);
+}
+/** Ob sich die Ebene eines Teils umstellen lässt – bei den Motoren der Fahrbasis nicht. */
+export const canChangeLevel = (robot: SimRobot, port: string) => !robot.drive || (port !== robot.drive.left && port !== robot.drive.right);
 
 export interface BuildOptions {
   /** Teile rasten auf dem Raster ein. */
@@ -47,6 +63,7 @@ function mount(x: number, y: number, angle: number, extra: Omit<Mount, 'x' | 'y'
   if (extra.kind) m.kind = extra.kind;
   if (typeof extra.shaft === 'number') m.shaft = extra.shaft;
   if (extra.face) m.face = extra.face;
+  if (extra.level) m.level = extra.level;
   return m;
 }
 /** Dasselbe Teil spiegelbildlich auf der anderen Seite: seitlich gespiegelt, andersherum gedreht – ein Motor andersherum eingebaut. */
@@ -113,12 +130,15 @@ export function rotateSensor(robot: SimRobot, mounts: Record<string, Mount>, por
  * einen Farbsensor nach vorn oder nach unten schauen lassen (`face`). Mit Symmetrie macht das Teil
  * gegenüber mit – ein gespiegelter Motor heißt dort: andersherum gespiegelt.
  */
-export function changePart(robot: SimRobot, mounts: Record<string, Mount>, port: string, change: 'flip' | 'kind' | 'face', usual: Record<string, Mount>, symmetry: boolean): Record<string, Mount> {
+export function changePart(robot: SimRobot, mounts: Record<string, Mount>, port: string, change: 'flip' | 'kind' | 'face' | 'level', usual: Record<string, Mount>, symmetry: boolean): Record<string, Mount> {
   const apply = (m: Mount): Mount => change === 'flip' ? mount(m.x, m.y, m.angle ?? 0, {...m, flip:!m.flip})
     : change === 'kind' ? mount(m.x, m.y, m.angle ?? 0, {...m, kind:(m.kind ?? 'large') === 'large' ? 'small' : undefined})
-    : mount(m.x, m.y, m.angle ?? 0, {...m, face:m.face ? undefined : 'front'});
+    : change === 'face' ? mount(m.x, m.y, m.angle ?? 0, {...m, face:m.face ? undefined : 'front'})
+    // die andere Ebene; ist das die übliche, steht keine dabei
+    : mount(m.x, m.y, m.angle ?? 0, {...m, level:levelOf(robot, port, m) === usualLevel(robot, port) ? (usualLevel(robot, port) === 'upper' ? 'lower' : 'upper') : undefined});
   const here = mounts[port] ?? usual[port], next = {...mounts};
-  if (!here || ((change === 'flip' || change === 'kind') !== isMotor(robot, port)) || (change === 'face' && !robot.colors.includes(port))) return next;
+  if (!here) return next;
+  if (change === 'level' ? !canChangeLevel(robot, port) : change === 'face' ? !robot.colors.includes(port) : !isMotor(robot, port)) return next;
   next[port] = apply(here);
   const partner = symmetry ? mirrorPartner(robot, port) : null, there = partner ? mounts[partner] ?? usual[partner] : null;
   if (partner && there) next[partner] = apply(there);
@@ -162,7 +182,8 @@ export function mountsFor(robot: SimRobot, saved: SavedMounts): Record<string, M
     const at = saved[key]?.[port];
     if (isMount(at)) mounts[port] = mount(at.x, at.y, typeof at.angle === 'number' ? tidy(at.angle) : 0,
       {flip:at.flip === true || undefined, kind:at.kind === 'small' || at.kind === 'large' ? at.kind : undefined,
-        shaft:typeof at.shaft === 'number' && Number.isFinite(at.shaft) ? Math.max(SHAFT.min, Math.min(SHAFT.max, at.shaft)) : undefined, face:at.face === 'front' ? 'front' : undefined});
+        shaft:typeof at.shaft === 'number' && Number.isFinite(at.shaft) ? Math.max(SHAFT.min, Math.min(SHAFT.max, at.shaft)) : undefined, face:at.face === 'front' ? 'front' : undefined,
+        level:at.level === 'upper' || at.level === 'lower' ? at.level : undefined});
   }
   return mounts;
 }

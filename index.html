@@ -227,24 +227,6 @@
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 13 9.5 5 9.5-5z" fill="currentColor" fill-opacity=".35"/></svg>
             <span>Unten</span></button>
         </div>
-        <!-- nur, wenn die Räder am Roboter anders auseinander laufen, als »Fahrbasis einrichten« sagt (view.ts) -->
-        <div class="sim-group hidden" id="simAxleGroup">
-          <button class="btn" id="simAxle" type="button" title="Die Spurbreite, wie die Räder am Roboter laufen, in »Fahrbasis einrichten« eintragen">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="4" height="12" rx="2"/><rect x="18" y="6" width="4" height="12" rx="2"/><path d="M7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3"/></svg>
-            <span>Spurbreite übernehmen</span></button>
-        </div>
-        <!-- nur, wenn ein Teil gewählt ist, das sich so einstellen lässt (view.ts) -->
-        <div class="sim-group sim-part-tools hidden" id="simPartTools">
-          <button class="btn hidden" id="simFlip" type="button" title="Spiegeln: Abtrieb und Rad auf die andere Seite – der Motor dreht sein Rad dann andersherum (F)">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M8 7 3 12l5 5zM16 7l5 5-5 5z"/></svg>
-            <span>Spiegeln</span></button>
-          <button class="btn hidden" id="simKind" type="button" title="Großer oder kleiner Motor: groß 156, klein 138 Umdrehungen in der Minute">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="7" height="13" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg>
-            <span>Großer Motor</span></button>
-          <button class="btn hidden" id="simFace" type="button" title="Farbsensor nach unten (liest die Bahn) oder nach vorn gekippt (sieht, was davor steht) (F)">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="10" rx="3"/><path d="M12 13v8M8 17l4 4 4-4"/></svg>
-            <span>Schaut nach unten</span></button>
-        </div>
         <div class="sim-group">
           <label class="sim-check" title="Einrasten: 8 mm (eine Noppe) und 15 Grad"><input type="checkbox" id="simGrid" checked> Raster</label>
           <label class="sim-check" title="Das Teil gegenüber wandert, dreht und spiegelt spiegelbildlich mit"><input type="checkbox" id="simSymmetry" checked> Symmetrie</label>
@@ -259,6 +241,31 @@
       <div class="sim-chips" id="simInfo" role="status" aria-label="Roboter laut Programm"></div>
       <div class="sim-stage">
         <canvas id="simCanvas"></canvas>
+        <!-- beim Umbauen über der Bahn, oben links: Was sich am gewählten Teil einstellen lässt, und die Spurbreite. Hier statt
+             in der Leiste, damit die Bahn nicht unter dem Finger verrutscht, wenn Knöpfe erscheinen oder verschwinden. -->
+        <div class="sim-bar sim-float" id="simFloat">
+          <!-- nur, wenn die Räder am Roboter anders auseinander laufen, als »Fahrbasis einrichten« sagt (view.ts) -->
+          <div class="sim-group hidden" id="simAxleGroup">
+            <button class="btn" id="simAxle" type="button" title="Die Spurbreite, wie die Räder am Roboter laufen, in »Fahrbasis einrichten« eintragen">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="4" height="12" rx="2"/><rect x="18" y="6" width="4" height="12" rx="2"/><path d="M7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3"/></svg>
+              <span>Spurbreite übernehmen</span></button>
+          </div>
+          <!-- nur, wenn ein Teil gewählt ist, das sich so einstellen lässt (view.ts) -->
+          <div class="sim-group sim-part-tools hidden" id="simPartTools">
+            <button class="btn hidden" id="simLevelMove" type="button" title="Das Teil auf die andere Ebene setzen: unten bemerkt ein Sensor auch die niedrige Wand">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 16 9.5 5 9.5-5"/><path d="M12 13v8"/></svg>
+              <span>Nach unten</span></button>
+            <button class="btn hidden" id="simFlip" type="button" title="Spiegeln: Abtrieb und Rad auf die andere Seite – der Motor dreht sein Rad dann andersherum (F)">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M8 7 3 12l5 5zM16 7l5 5-5 5z"/></svg>
+              <span>Spiegeln</span></button>
+            <button class="btn hidden" id="simKind" type="button" title="Großer oder kleiner Motor: groß 156, klein 138 Umdrehungen in der Minute">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="7" height="13" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/></svg>
+              <span>Großer Motor</span></button>
+            <button class="btn hidden" id="simFace" type="button" title="Farbsensor nach unten (liest die Bahn) oder nach vorn gekippt (sieht, was davor steht) (F)">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="10" rx="3"/><path d="M12 13v8M8 17l4 4 4-4"/></svg>
+              <span>Schaut nach unten</span></button>
+          </div>
+        </div>
         <!-- beim Umbauen: ein Tipp auf das Schild eines Teils – an welchem Anschluss es steckt (view.ts) -->
         <div class="sim-ports hidden" id="simPorts" role="menu" aria-label="Anschluss wählen"></div>
         <!-- die Bahn heranholen und wieder ganz zeigen (auch: Mausrad, zwei Finger) -->

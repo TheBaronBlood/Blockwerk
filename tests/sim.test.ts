@@ -3,8 +3,9 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
-import { changePart, currentMounts, mirrorPartner, PARTS_VERSION, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
+import { changePart, currentMounts, levelOf, mirrorPartner, PARTS_VERSION, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
 import { wheelCenter, wheelTrack } from '../src/sim/parts';
+import { collides } from '../src/sim/footprint';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
 import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, swapPorts, type SimRobot } from '../src/sim/robot';
 import { Runner } from '../src/sim/runner';
@@ -573,5 +574,44 @@ describe('Teile einstellen', () => {
     sim.obstacles = [box(181.5, 0)];
     expect(sim.reflection('C')).toBe(35);
     expect(sim.colorPoints()).toHaveLength(1);
+  });
+});
+
+describe('Ebenen und Überdecken', () => {
+  const robot: SimRobot = {drive:{left:'A', right:'B', wheel:56, axle:112, leftDir:-1, rightDir:1, gyro:true, direct:false}, colors:['C', 'D'], ultra:'E', force:['F'], motors:[], notes:[]};
+  const usual = defaultMounts(robot);
+  it('üblich: Motoren und Kraftsensor unten, Farb- und Abstandssensor oben; die Fahrmotoren bleiben unten', () => {
+    expect(['A', 'B', 'C', 'D', 'E', 'F'].map(p => levelOf(robot, p, usual[p]))).toEqual(['lower', 'lower', 'upper', 'upper', 'upper', 'lower']);
+    expect(levelOf(robot, 'C', changePart(robot, {}, 'C', 'level', usual, false).C)).toBe('lower');
+    expect(changePart(robot, {}, 'A', 'level', usual, false)).toEqual({});
+    // zurück auf die übliche Ebene: Dann steht keine dabei
+    const down = changePart(robot, {}, 'C', 'level', usual, false);
+    expect(changePart(robot, down, 'C', 'level', usual, false).C.level).toBeUndefined();
+  });
+  it('auf derselben Ebene überdeckt nichts das andere – oben auch nicht den Hub; auf verschiedenen Ebenen schon', () => {
+    // die üblichen Plätze überdecken sich nicht
+    expect(collides(robot, {}, usual, ['A', 'B', 'C', 'D', 'E', 'F'])).toBe(false);
+    // Farbsensor C genau auf D
+    expect(collides(robot, {C:{...usual.D}}, usual, ['C'])).toBe(true);
+    // Farbsensor auf den Hub (oben) – nein; unten unter den Hub – ja, solange er keinen Motor trifft
+    expect(collides(robot, {C:{x:-60, y:0}}, usual, ['C'])).toBe(true);
+    expect(collides(robot, {C:{x:-80, y:0, level:'lower'}}, usual, ['C'])).toBe(false);
+    expect(collides(robot, {C:{x:-30, y:-14, level:'lower'}}, usual, ['C'])).toBe(true);   // auf Motor A
+    // ein Rad gehört zum Motor: Den anderen Motor so nah heranzuschieben, dass sich die Räder treffen, geht nicht
+    expect(collides(robot, {B:{...usual.B, y:usual.A.y + 4}}, usual, ['B'])).toBe(true);
+    // aneinanderstoßen darf man
+    expect(collides(robot, {D:{...usual.C, y:usual.C.y + 23}}, usual, ['D'])).toBe(false);
+  });
+  it('die niedrige Wand bemerken nur Sensoren unten, die hohe Sensoren beider Ebenen', async () => {
+    const field = track(1000, 600, () => WHITE);
+    const state = program(B('pb_print', null, {TEXT:{block:B('pb_distance', {PORT:'D'})}}));
+    const look = async (fence: Simulation['fence'], down: boolean) => Number((await simulate(state, 100, s => {
+      s.track = field; s.pose = {x:500, y:300, heading:0}; s.fence = fence;
+      if (down) s.mounts = changePart(s.robot, {}, 'D', 'level', defaultMounts(s.robot), false);
+    })).out);
+    expect(await look('low', false)).toBe(2000);   // oben: schaut über die niedrige Wand hinweg
+    expect(await look('low', true)).toBe(476);     // unten: sieht sie (1000 − 524)
+    expect(await look('high', false)).toBe(476);
+    expect(await look('high', true)).toBe(476);
   });
 });

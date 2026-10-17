@@ -9,12 +9,13 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 import {
-  ANGLE_STEP, ANGLE_STEP_COARSE, changePart, currentMounts, GRID_MM, levelOf, mirrorPartner, MOUNT_AREA, mountsFor, PARTS_VERSION, placeSensor, rotateSensor, saveMounts, swapMounts,
+  ANGLE_STEP, ANGLE_STEP_COARSE, canChangeLevel, changePart, currentMounts, GRID_MM, levelOf, mirrorPartner, MOUNT_AREA, mountsFor, PARTS_VERSION, placeSensor, rotateSensor, saveMounts, swapMounts,
   type BuildOptions, type Level, type Mount, type SavedMounts
 } from './build';
-import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame, partSize } from './drawParts';
-import { FORCE_SENSOR, HUB_AT, MOTOR, onPart, SHAFT, wheelCenter, wheelTrack } from './parts';
-import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, robotFromWorkspace, robotMotors, robotParts, robotPorts, swapPorts, ULTRA, type RobotPart } from './robot';
+import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame } from './drawParts';
+import { collides, outlineOf, partCenter } from './footprint';
+import { HUB_AT, MOTOR, SHAFT, wheelCenter, wheelTrack } from './parts';
+import { BUMPER, COLOR_SPOT, defaultMounts, robotFromWorkspace, robotMotors, robotParts, robotPorts, swapPorts, ULTRA, type RobotPart } from './robot';
 import { Runner } from './runner';
 import { FENCES, Simulation, type Fence } from './simulation';
 import { cellAt, mapSize, readTileMap, startPose, TEMPLATES, TILE_MM, type TileMap } from './tiles';
@@ -51,6 +52,8 @@ const MIN_OBSTACLE = 20;
 const MAX_ZOOM = 8, FIT = 0.94;
 /** Beim Umbauen füllt der Roboter die Ansicht: so viele Millimeter sind zu sehen, um diesen Punkt am Roboter. */
 const BUILD_SPAN_MM = 250, BUILD_CENTER: Point = {x:-16, y:0};
+/** So weit lässt sich beim Umbauen heranholen. */
+const BUILD_MAX_ZOOM = 6;
 /** So weit vor dem gewählten Sensor sitzt der Knopf, an dem man ihn dreht (Bildschirmpunkte). */
 const KNOB_PX = 46;
 /**
@@ -100,7 +103,7 @@ function onDoubleTap(target: HTMLElement, handler: (e: PointerEvent) => void){
 }
 
 /** `pan`: an freier Stelle angefasst – Ziehen verschiebt die herangeholte Bahn; beim Bauen der Bahn ist es ohne Ziehen ein Tipp auf ein Feld (`tap`). */
-type Drag = {kind: 'pan'; from: Point; cam: Point; moved: boolean; tap: Point | null} | {kind: 'sensor'; port: string; from: Mount; start: Point; moved: boolean; label: boolean} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
+type Drag = {kind: 'pan'; from: Point; cam: Point; moved: boolean; tap: Point | null} | {kind: 'sensor'; port: string; from: Mount; start: Point; moved: boolean; label: boolean; grip: Point} | {kind: 'spin'; port: string} | {kind: 'robot'; dx: number; dy: number} | {kind: 'turn'} | {kind: 'move'; o: Obstacle; dx: number; dy: number} | {kind: 'size'; o: Obstacle};
 
 export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const el = <T extends HTMLElement>(id: string) => root.querySelector<T>('#' + id)!;
@@ -129,6 +132,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let tempo = 1;                  // Zeitlupe und Zeitraffer
   let zoom = 1;                   // 1: die ganze Bahn ist zu sehen
   let cam: Point | null = null;   // herangeholt: die Stelle der Bahn in der Mitte der Ansicht
+  let buildZoom = 1;              // beim Umbauen: 1 zeigt den ganzen Roboter
+  let buildCam: Point | null = null;   // beim Umbauen herangeholt: die Stelle am Roboter (mm) in der Mitte der Ansicht
   /** Zwei Finger auf der Bahn: wie weit sie am Anfang auseinander waren, der Zoom dabei und die Stelle der Bahn zwischen ihnen. */
   let pinch: {apart: number; zoom: number; under: Point} | null = null;
   let drag: Drag | null = null;
@@ -260,8 +265,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (!w || !h) return;
     if (building){
       // der Roboter in die Mitte, so groß es geht
-      k = Math.min(w, h) / (BUILD_SPAN_MM * sim.scale);
-      const mid = toWorld(sim.pose, sim.scale, BUILD_CENTER);
+      k = Math.min(w, h) / (BUILD_SPAN_MM * sim.scale) * buildZoom;
+      const mid = toWorld(sim.pose, sim.scale, buildCam ?? BUILD_CENTER);
       toScreen = new DOMMatrix().translate(w / 2, h / 2).scale(k).rotate(-90 - sim.pose.heading).translate(-mid.x, -mid.y);
     } else {
       k = fitScale() * zoom;
@@ -280,9 +285,24 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     place(); draw();
   }
+  /**
+   * Beim Umbauen heranholen: auf `next` (1 = der ganze Roboter, bis BUILD_MAX_ZOOM); die Stelle am Roboter unter `at`
+   * (Bildschirmpunkte) bleibt, wo sie ist. Der Roboter steht mit der Nase nach oben: x am Roboter zeigt nach oben, y nach rechts.
+   */
+  function zoomBuild(at: Point, next: number, under?: Point){
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const point = under ?? toRobot(toTrack.transformPoint(at));
+    buildZoom = Math.max(1, Math.min(BUILD_MAX_ZOOM, next));
+    if (buildZoom === 1){ buildCam = null; place(); draw(); return; }
+    const K = Math.min(w, h) / BUILD_SPAN_MM * buildZoom;   // Bildschirmpunkte je Millimeter am Roboter
+    buildCam = clampBuild({x:point.x + (at.y - h / 2) / K, y:point.y - (at.x - w / 2) / K});
+    place(); draw();
+  }
+  /** Weiter, als man bauen darf, lässt sich beim Umbauen nicht schieben. */
+  const clampBuild = (p: Point): Point => ({x:Math.max(MOUNT_AREA.back, Math.min(MOUNT_AREA.front, p.x)), y:Math.max(-MOUNT_AREA.side, Math.min(MOUNT_AREA.side, p.y))});
   /** Holt die Bahn heran oder rückt sie weg; die Stelle unter `at` (Bildschirmpunkte) bleibt, wo sie ist. */
   function zoomAt(at: Point, factor: number){
-    if (building) return;
+    if (building){ zoomBuild(at, buildZoom * factor); return; }
     const under = toTrack.transformPoint(at);
     zoom = Math.max(1, Math.min(MAX_ZOOM, zoom * factor));
     const next = fitScale() * zoom;
@@ -303,9 +323,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const zoomMid = (factor: number) => zoomAt({x:stage.clientWidth / 2, y:stage.clientHeight / 2}, factor);
   el('simZoomIn').addEventListener('click', () => zoomMid(1.5));
   el('simZoomOut').addEventListener('click', () => zoomMid(1 / 1.5));
-  el('simZoomFit').addEventListener('click', () => { zoom = 1; cam = null; place(); draw(); });
+  el('simZoomFit').addEventListener('click', () => { if (building){ buildZoom = 1; buildCam = null; } else { zoom = 1; cam = null; } place(); draw(); });
   canvas.addEventListener('wheel', (e) => {
-    if (building) return;
     e.preventDefault();
     const r = canvas.getBoundingClientRect();
     zoomAt({x:e.clientX - r.left, y:e.clientY - r.top}, e.deltaY < 0 ? 1.15 : 1 / 1.15);
@@ -320,8 +339,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const circle = (x: number, y: number, r: number) => { g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); };
 
   // ---- die Teile des Roboters ----
+  /** Auf welcher Ebene ein Teil sitzt (oben beim Hub oder unten bei den Motoren). */
+  const partLevel = (port: string): Level => levelOf(sim.robot, port, sim.mount(port));
   /** Teile mit Anschluss, die beim Umbauen auf der gewählten Ebene liegen. */
-  const levelPorts = () => robotPorts(sim.robot).filter(port => levelOf(sim.robot, port) === level);
+  const levelPorts = () => robotPorts(sim.robot).filter(port => partLevel(port) === level);
   const isMotorPort = (port: string) => robotMotors(sim.robot).includes(port);
   /** Wie das Teil an einem Anschluss heißt: »Farbsensor C«, »Motor A (Rad links)«. */
   function partName(port: string): string {
@@ -330,34 +351,32 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (d && port === d.right) return `Motor ${port} (Rad rechts)`;
     return `${r.motors.includes(port) ? 'Motor' : r.colors.includes(port) ? 'Farbsensor' : port === r.ultra ? 'Abstandssensor' : 'Kraftsensor'} ${port}`;
   }
-  const partKind = (port: string) => isMotorPort(port) ? 'motor' as const : sim.robot.colors.includes(port) ? 'color' as const : port === sim.robot.ultra ? 'ultra' as const : 'force' as const;
-  /** Der Kraftsensor sitzt mit der Spitze seines Tasters am Platz (dort tastet er): Sein Gehäuse liegt dahinter. */
-  const FORCE_BODY_BACK = FORCE_SENSOR.length / 2 + FORCE_SENSOR.plunger - FORCE.tip;
   /** Die Mitte eines Teils am Roboter (Millimeter, gedreht wie das Teil) – dort sitzt beim Umbauen sein Schild. */
-  function partCenter(port: string): Mount {
-    const at = sim.mount(port)!;
-    return sim.robot.force.includes(port) ? {...at, ...onPart(at, {x:-FORCE_BODY_BACK, y:0})} : at;
-  }
-  const labelPoint = (port: string) => toWorld(sim.pose, sim.scale, partCenter(port));
+  const partMid = (port: string): Mount => partCenter(sim.robot, port, sim.mount(port)!);
+  const labelPoint = (port: string) => toWorld(sim.pose, sim.scale, partMid(port));
   /** Ein Punkt der Bahn in Millimetern am Roboter: x nach vorn, y nach rechts. */
   function toRobot(p: Point): Point {
     const f = forward(sim.pose.heading), dx = (p.x - sim.pose.x) / sim.scale, dy = (p.y - sim.pose.y) / sim.scale;
     return {x:dx * f.x + dy * f.y, y:dy * f.x - dx * f.y};
   }
-  /** Der Umriss eines Teils, wie in der Vorlage (X quer, Y nach hinten), um seine Mitte: Mitte und halbe Maße. */
-  function outlineOf(port: string){
-    const at = sim.mount(port)!, size = partSize(partKind(port), at.kind ?? 'large');
-    const cx = isMotorPort(port) ? (at.flip ? -1 : 1) * MOTOR.output.width / 2 : 0;
-    return {cx, cy:-size.ahead, hw:size.w / 2, hl:size.l / 2};
-  }
   /** Ob ein Punkt der Bahn auf dem Teil liegt – mit etwas Rand für Finger. */
   function onPartAt(port: string, p: Point): boolean {
-    const c = partCenter(port), local = toRobot(p), a = -(c.angle ?? 0) * Math.PI / 180, o = outlineOf(port);
+    const c = partMid(port), local = toRobot(p), a = -(c.angle ?? 0) * Math.PI / 180, o = outlineOf(sim.robot, port, sim.mount(port)!);
     const dx = local.x - c.x, dy = local.y - c.y;
     // in die Lage der Vorlage: X = seitlich, Y = nach hinten
     const fx = dx * Math.cos(a) - dy * Math.sin(a), fy = dx * Math.sin(a) + dy * Math.cos(a), X = fy, Y = -fx;
     const pad = 3 + 6 * reach / (k * sim.scale);
     return Math.abs(X - o.cx) <= o.hw + pad && Math.abs(Y - o.cy) <= o.hl + pad;
+  }
+  /**
+   * Übernimmt neue Plätze nur, wenn dabei kein Teil ein anderes auf seiner Ebene überdeckt (oben auch nicht den Hub).
+   * `moved`: die Teile, die sich geändert haben. Liefert, ob es ging.
+   */
+  function tryMounts(next: Record<string, Mount>, moved: (string | null)[]): boolean {
+    const ports = moved.filter((p): p is string => !!p);
+    if (collides(sim.robot, next, defaultMounts(sim.robot), ports)) return false;
+    sim.mounts = next;
+    return true;
   }
 
   /** Wie stark das Teil der anderen Ebene beim Umbauen noch zu sehen ist. */
@@ -365,8 +384,9 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   /** Halbmesser des Schilds mit dem Anschluss (Bildschirmpunkte). */
   const LABEL_PX = 11;
   /**
-   * Zeichnet den Roboter, in Millimetern am Roboter (x nach vorn): unten die Räder und die Motoren, die meist unter
-   * dem Hub liegen; darüber der Hub und die Sensoren. Beim Umbauen tritt die Ebene zurück, an der gerade niemand baut.
+   * Zeichnet den Roboter, in Millimetern am Roboter (x nach vorn): unten die Motoren (meist unter dem Hub) mit ihren
+   * Rädern und was sonst unten sitzt; darüber der Hub und die Teile der oberen Ebene. Beim Umbauen tritt die Ebene
+   * zurück, an der gerade niemand baut.
    */
   function drawRobot(){
     const robot = sim.robot, d = robot.drive, base = g.globalAlpha, mm = 1 / (k * sim.scale);
@@ -374,10 +394,13 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       g.save(); g.translate(at.x, at.y); g.rotate((at.angle ?? 0) * Math.PI / 180); inPartFrame(g); shape(); g.restore();
     };
     const alphaFor = (lvl: Level) => base * (building && level !== lvl ? OTHER_LEVEL : 1);
-
-    g.globalAlpha = alphaFor('lower');
-    for (const port of robotMotors(robot)){
-      const m = sim.mount(port)!, kind = m.kind ?? 'large', wheel = !!d && (port === d.left || port === d.right);
+    /** Ein Teil zeichnen, wie es eingebaut ist. */
+    function drawPart(port: string){
+      const m = sim.mount(port)!;
+      if (robot.colors.includes(port)) return placed(m, () => drawColorSensor(g, sim.facesFront(port)));
+      if (port === robot.ultra) return placed(m, () => drawUltraSensor(g));
+      if (robot.force.includes(port)) return placed(partMid(port), () => drawForceSensor(g, sim.forcePressed(port)));
+      const kind = m.kind ?? 'large', wheel = !!d && (port === d.left || port === d.right);
       placed(m, () => {
         drawMotor(g, kind, !!m.flip, wheel ? m.shaft ?? SHAFT.usual : null);
         if (wheel) return;
@@ -387,30 +410,30 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
         g.strokeStyle = '#fff'; g.lineWidth = 1.6; g.lineCap = 'round';
         g.beginPath(); g.moveTo(0, y); g.lineTo(5 * Math.sin(a), y - 5 * Math.cos(a)); g.stroke(); g.lineCap = 'butt';
       });
-      // das Rad auf der Achse – über dem Abtrieb, den es ein Stück überdeckt. Es dreht sich so, wie der Motor wirklich
-      // läuft: »umgekehrt« zählend andersherum, gespiegelt eingebaut rückwärts.
+      // das Rad am Abtrieb, den es ein Stück überdeckt. Es dreht sich so, wie der Motor wirklich läuft: »umgekehrt«
+      // zählend andersherum, gespiegelt eingebaut rückwärts.
       if (wheel){
         const dir = d!.direct ? 1 : port === d!.left ? d!.leftDir : d!.rightDir;
         placed({...wheelCenter(m), angle:m.angle}, () => drawWheel(g, d!.wheel, sim.motor(port).angle * dir * (m.flip ? -1 : 1)));
       }
     }
-
+    // erst die Motoren, dann die Sensoren – je Ebene
+    const ordered = [...robotMotors(robot), ...robot.force, ...(robot.ultra ? [robot.ultra] : []), ...robot.colors];
+    g.globalAlpha = alphaFor('lower');
+    for (const port of ordered) if (partLevel(port) === 'lower') drawPart(port);
     g.globalAlpha = alphaFor('upper');
     placed(HUB_AT, () => drawHubPart(g, sim.display, runner && sim.light ? LIGHTS[sim.light] ?? '#FFFFFF' : null));
-    if (robot.ultra) placed(sim.mount(robot.ultra)!, () => drawUltraSensor(g));
-    for (const port of robot.force) placed(partCenter(port), () => drawForceSensor(g, sim.forcePressed(port)));
-    for (const port of robot.colors) placed(sim.mount(port)!, () => drawColorSensor(g, sim.facesFront(port)));
+    for (const port of ordered) if (partLevel(port) === 'upper') drawPart(port);
 
     // beim Umbauen: das gewählte Teil (und mit Symmetrie das gegenüber) mit Rahmen
     g.globalAlpha = base;
     const mirrored = selected && build.symmetry ? mirrorPartner(robot, selected) : null;
-    if (building) for (const port of [selected, mirrored]) if (port && robotPorts(robot).includes(port)) placed(partCenter(port), () => {
-      const o = outlineOf(port);
+    if (building) for (const port of [selected, mirrored]) if (port && robotPorts(robot).includes(port)) placed(partMid(port), () => {
+      const o = outlineOf(robot, port, sim.mount(port)!);
       g.setLineDash([4 * mm, 3 * mm]); g.strokeStyle = '#E644B9'; g.lineWidth = 2 * mm;
       g.beginPath(); g.roundRect(o.cx - o.hw - 2.5, o.cy - o.hl - 2.5, 2 * o.hw + 5, 2 * o.hl + 5, 4); g.stroke(); g.setLineDash([]);
     });
   }
-
   let shownValues = '';
   function draw(){
     if (!shown) return;
@@ -592,7 +615,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   const btnBuild = el('simBuild');
   function setBuilding(on: boolean){
     if (on && editing) setEditing(false);
-    building = on; drag = null; selected = null; level = 'upper'; closePorts();
+    building = on; drag = null; selected = null; level = 'upper'; buildZoom = 1; buildCam = null; closePorts();
     for (const [name, b] of Object.entries(levelButtons)) b.setAttribute('aria-checked', String(name === level));
     root.classList.toggle('building', on);
     partTools();
@@ -614,23 +637,39 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   levelButtons.upper.addEventListener('click', () => setLevel('upper'));
   levelButtons.lower.addEventListener('click', () => setLevel('lower'));
   // was sich am gewählten Teil einstellen lässt: Motor spiegeln, groß oder klein; Farbsensor nach unten oder vorn
-  const tools = el('simPartTools'), btnFlip = el('simFlip'), btnKind = el('simKind'), btnFace = el('simFace');
+  const tools = el('simPartTools'), btnFlip = el('simFlip'), btnKind = el('simKind'), btnFace = el('simFace'), btnMove = el('simLevelMove');
   function partTools(){
     const motor = building && !!selected && isMotorPort(selected), color = building && !!selected && sim.robot.colors.includes(selected);
+    const movable = building && !!selected && canChangeLevel(sim.robot, selected);
     const at = selected ? sim.mount(selected) : null;
     btnFlip.classList.toggle('hidden', !motor); btnKind.classList.toggle('hidden', !motor); btnFace.classList.toggle('hidden', !color);
-    tools.classList.toggle('hidden', !motor && !color);
+    btnMove.classList.toggle('hidden', !movable);
+    if (movable) label(btnMove, partLevel(selected!) === 'upper' ? 'Nach unten' : 'Nach oben');
+    tools.classList.toggle('hidden', !motor && !color && !movable);
     if (motor) label(btnKind, (at?.kind ?? 'large') === 'large' ? 'Großer Motor' : 'Kleiner Motor');
     if (color) label(btnFace, at?.face ? 'Schaut nach vorn' : 'Schaut nach unten');
   }
-  function change(what: 'flip' | 'kind' | 'face', e?: {ctrlKey: boolean; metaKey: boolean}){
+  function change(what: 'flip' | 'kind' | 'face' | 'level', e?: {ctrlKey: boolean; metaKey: boolean}){
     if (!selected) return;
-    sim.mounts = changePart(sim.robot, sim.mounts, selected, what, defaultMounts(sim.robot), e ? mirroring(e) : build.symmetry);
+    const sym = e ? mirroring(e) : build.symmetry;
+    // (überdeckt das Teil danach ein anderes – ein gespiegelter Motor etwa sein Rad am Nachbarn –, bleibt es, wie es war)
+    tryMounts(changePart(sim.robot, sim.mounts, selected, what, defaultMounts(sim.robot), sym), [selected, sym ? mirrorPartner(sim.robot, selected) : null]);
     remember(); partTools(); draw();
   }
   btnFlip.addEventListener('click', (e) => change('flip', e));
   btnKind.addEventListener('click', (e) => change('kind', e));
   btnFace.addEventListener('click', (e) => change('face', e));
+  // auf die andere Ebene: Die Ansicht geht mit, damit das Teil gewählt bleibt
+  btnMove.addEventListener('click', (e) => {
+    if (!selected) return;
+    change('level', e);
+    const now = partLevel(selected);
+    if (now !== level){
+      level = now;
+      for (const [name, b] of Object.entries(levelButtons)) b.setAttribute('aria-checked', String(name === now));
+      partTools(); draw();
+    }
+  });
 
   // die Spurbreite, wie die Räder am Roboter laufen: auf ganze Millimeter, in »Fahrbasis einrichten« übernehmen
   const axleGroup = el('simAxleGroup');
@@ -820,7 +859,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (selected && near(p, sensorKnob(selected), 13)) return {kind:'spin', port:selected};
       // das Schild mit dem Anschluss zuerst: Ein Tipp darauf (ohne Ziehen) steckt das Teil um
       const labelled = levelPorts().reverse().find(port => onLabel(port, p)), port = labelled ?? sensorAt(p);
-      return port ? {kind:'sensor', port, from:{...sim.mount(port)!}, start:(({x, y}) => ({x, y}))(toScreen.transformPoint(p)), moved:false, label:!!labelled} : null;
+      if (!port) return null;
+      // wo genau angefasst: Das Teil behält diesen Abstand zum Zeiger, statt mit seiner Mitte unter ihn zu springen
+      const at = sim.mount(port)!, here = toRobot(p);
+      return {kind:'sensor', port, from:{...at}, start:(({x, y}) => ({x, y}))(toScreen.transformPoint(p)), moved:false, label:!!labelled, grip:{x:here.x - at.x, y:here.y - at.y}};
     }
     if (near(p, turnHandle(), HANDLE_PX * 1.6)) return {kind:'turn'};
     const body = toWorld(sim.pose, sim.scale, BUMPER.at);
@@ -834,10 +876,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   canvas.addEventListener('pointerdown', (e) => {
     fingers.set(e.pointerId, local(e));
     try { canvas.setPointerCapture(e.pointerId); } catch { /* ohne Zeigerbindung geht es trotzdem */ }
-    if (fingers.size === 2 && !building){
+    if (fingers.size === 2){
       // der zweite Finger: ab jetzt wird herangeholt und geschoben – was der erste angefangen hat, gilt nicht mehr
-      const [a, b] = [...fingers.values()], under = toTrack.transformPoint({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2});
-      pinch = {apart:Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom, under:{x:under.x, y:under.y}};
+      // (beim Umbauen merkt sich das die Stelle am Roboter, sonst die auf der Bahn)
+      const [a, b] = [...fingers.values()], at = toTrack.transformPoint({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2});
+      const under = building ? toRobot(at) : {x:at.x, y:at.y};
+      pinch = {apart:Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom:building ? buildZoom : zoom, under};
       drag = null;
       return;
     }
@@ -856,6 +900,8 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       // angefasst ist gewählt; daneben getippt wählt ab. Die Leinwand bekommt die Tasten (Pfeile, R).
       selected = drag?.kind === 'sensor' || drag?.kind === 'spin' ? drag.port : null;
       partTools();
+      // herangeholt: an freier Stelle angefasst, schiebt sich die Ansicht
+      if (!drag && buildZoom > 1) drag = {kind:'pan', from:local(e), cam:buildCam ?? BUILD_CENTER, moved:false, tap:null};
       canvas.focus({preventScroll:true});
     }
     else drag ??= pan(null);
@@ -865,6 +911,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (fingers.has(e.pointerId)) fingers.set(e.pointerId, local(e));
     if (pinch && fingers.size >= 2){
       const [a, b] = [...fingers.values()], mid = {x:(a.x + b.x) / 2, y:(a.y + b.y) / 2};
+      if (building){ zoomBuild(mid, pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.apart, pinch.under); return; }
       zoom = Math.max(1, Math.min(MAX_ZOOM, pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.apart));
       const next = fitScale() * zoom;
       cam = {x:pinch.under.x - (mid.x - stage.clientWidth / 2) / next, y:pinch.under.y - (mid.y - stage.clientHeight / 2) / next};
@@ -875,7 +922,12 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     if (drag?.kind === 'pan'){
       const at = local(e);
       if (Math.hypot(at.x - drag.from.x, at.y - drag.from.y) > 6) drag.moved = true;
-      if (drag.moved && zoom > 1){ cam = {x:drag.cam.x - (at.x - drag.from.x) / k, y:drag.cam.y - (at.y - drag.from.y) / k}; place(); }
+      if (drag.moved && building){
+        // beim Umbauen herangeholt: Die Stelle am Roboter wandert mit dem Finger
+        const K = k * sim.scale;
+        buildCam = clampBuild({x:drag.cam.x + (at.y - drag.from.y) / K, y:drag.cam.y - (at.x - drag.from.x) / K}); place();
+      }
+      else if (drag.moved && zoom > 1){ cam = {x:drag.cam.x - (at.x - drag.from.x) / k, y:drag.cam.y - (at.y - drag.from.y) / k}; place(); }
       if (editing) hover = p;
       draw();
       return;
@@ -892,16 +944,17 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (!drag.moved && Math.hypot(screen.x - drag.start.x, screen.y - drag.start.y) < 6) return;
       drag.moved = true;
       // zurück in Millimeter am Roboter: x nach vorn, y nach rechts
-      const at = toRobot(p), from = drag.from;
+      const pointer = toRobot(p), at = {x:pointer.x - drag.grip.x, y:pointer.y - drag.grip.y}, from = drag.from;
       // Umschalt: nur vor und zurück oder nur seitlich – je nachdem, wohin es weiter geht
       const fixed = !e.shiftKey ? undefined : Math.abs(at.x - from.x) >= Math.abs(at.y - from.y) ? {y:from.y} : {x:from.x};
-      sim.mounts = placeSensor(sim.robot, sim.mounts, drag.port, at, defaultMounts(sim.robot), {grid:snapping(e), symmetry:mirroring(e), fixed});
+      // dorthin, wo es ein anderes Teil derselben Ebene überdecken würde, geht es nicht – es bleibt am letzten freien Platz
+      tryMounts(placeSensor(sim.robot, sim.mounts, drag.port, at, defaultMounts(sim.robot), {grid:snapping(e), symmetry:mirroring(e), fixed}), [drag.port, mirroring(e) ? mirrorPartner(sim.robot, drag.port) : null]);
     }
     else if (drag.kind === 'spin'){
       // der Winkel vom Sensor zum Zeiger, gezählt ab »geradeaus«. Er rastet in 15-Grad-Schritten ein, mit Umschalt in 45ern.
       const at = sim.sensorPoint(drag.port)!, angle = Math.atan2(p.y - at.y, p.x - at.x) * 180 / Math.PI - sim.pose.heading;
       const step = !snapping(e) ? 0 : e.shiftKey ? ANGLE_STEP_COARSE : ANGLE_STEP;
-      sim.mounts = rotateSensor(sim.robot, sim.mounts, drag.port, angle, defaultMounts(sim.robot), {step, symmetry:mirroring(e)});
+      tryMounts(rotateSensor(sim.robot, sim.mounts, drag.port, angle, defaultMounts(sim.robot), {step, symmetry:mirroring(e)}), [drag.port, mirroring(e) ? mirrorPartner(sim.robot, drag.port) : null]);
     }
     else if (drag.kind === 'robot') sim.pose = {...sim.pose, x:p.x + drag.dx, y:p.y + drag.dy};
     else if (drag.kind === 'turn') sim.pose = {...sim.pose, heading:Math.atan2(p.y - sim.pose.y, p.x - sim.pose.x) * 180 / Math.PI};
@@ -945,7 +998,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (!port) return;
       const mounts = {...sim.mounts};
       delete mounts[port]; if (partner) delete mounts[partner];
-      sim.mounts = mounts; remember(); draw();
+      tryMounts(mounts, [port, partner]); remember(); draw();
       return;
     }
     const hit = [...sim.obstacles].reverse().find(o => inside(o, p));
@@ -968,9 +1021,10 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
     const usual = defaultMounts(sim.robot), step = snapping(e) ? GRID_MM : 1;
     const move = ({ArrowUp:[step, 0], ArrowDown:[-step, 0], ArrowLeft:[0, -step], ArrowRight:[0, step]} as Record<string, number[]>)[e.key];
     // (die andere Richtung bleibt genau, wie sie ist – sonst spränge ein Sensor neben dem Raster beim ersten Schritt auch seitlich)
-    if (move) sim.mounts = placeSensor(sim.robot, sim.mounts, selected, {x:at.x + move[0], y:at.y + move[1]}, usual,
-      {grid:snapping(e), symmetry:build.symmetry, fixed:move[0] ? {y:at.y} : {x:at.x}});
-    else if (e.key.toLowerCase() === 'r') sim.mounts = rotateSensor(sim.robot, sim.mounts, selected, (at.angle ?? 0) + (e.shiftKey ? -1 : 1) * (snapping(e) ? ANGLE_STEP : 1), usual, {step:0, symmetry:build.symmetry});
+    const partner = build.symmetry ? mirrorPartner(sim.robot, selected) : null;
+    if (move) tryMounts(placeSensor(sim.robot, sim.mounts, selected, {x:at.x + move[0], y:at.y + move[1]}, usual,
+      {grid:snapping(e), symmetry:build.symmetry, fixed:move[0] ? {y:at.y} : {x:at.x}}), [selected, partner]);
+    else if (e.key.toLowerCase() === 'r') tryMounts(rotateSensor(sim.robot, sim.mounts, selected, (at.angle ?? 0) + (e.shiftKey ? -1 : 1) * (snapping(e) ? ANGLE_STEP : 1), usual, {step:0, symmetry:build.symmetry}), [selected, partner]);
     else if (e.key.toLowerCase() === 'f'){ change(isMotorPort(selected) ? 'flip' : 'face', e); return e.preventDefault(); }
     else if (e.key === 'Escape'){ selected = null; partTools(); }
     else return;

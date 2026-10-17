@@ -3,7 +3,7 @@
 // melden. `step()` lässt Zeit vergehen; das Programm (runner.ts) stellt nur Geschwindigkeiten ein
 // und fragt Sensoren ab. (Ohne DOM.)
 // ---------------------------------------------------------------
-import type { Mount } from './build';
+import { levelOf, type Mount } from './build';
 import { DISPLAY_OFF, type Pixels } from './hubDisplay';
 import { MOTOR, wheelCenter, wheelRoll } from './parts';
 import { BUMPER, COLOR_SPOT, defaultMounts, FORCE, ULTRA, type SimDrive, type SimRobot } from './robot';
@@ -141,7 +141,9 @@ export class Simulation {
   }
   private bumps(pose: Pose){ return touches(this.obstacles, toWorld(pose, this.scale, BUMPER.at), BUMPER.radius * this.scale); }
 
-  /** Die Wände um die Bahn als Hindernisse – für die Sensoren, die sie bemerken (`seenBy`: die niedrige Wand zählt mit). */
+  /** Ob der Sensor an diesem Anschluss unten sitzt – auf der Höhe der niedrigen Wand. */
+  private low(port: string): boolean { return levelOf(this.robot, port, this.mount(port)) === 'lower'; }
+  /** Die Wände um die Bahn als Hindernisse – für die Sensoren, die sie bemerken (`low`: die niedrige Wand zählt mit). */
   private walls(low: boolean): Obstacle[] {
     if (!this.track || !(this.fence === 'high' || (low && this.fence === 'low'))) return [];
     const {width:w, height:h} = this.track, wall = (x: number, y: number, bw: number, bh: number, id: number): Obstacle => ({id, x:x + bw / 2, y:y + bh / 2, w:bw, h:bh});
@@ -167,7 +169,7 @@ export class Simulation {
   private frontDistance(port: string): number | null {
     const at = this.mount(port)!, out = forward(at.angle ?? 0);
     const from = toWorld(this.pose, this.scale, {x:at.x + out.x * COLOR_FRONT.edge, y:at.y + out.y * COLOR_FRONT.edge});
-    const hit = coneDistance(from, this.sensorHeading(port), COLOR_FRONT.halfAngle, COLOR_FRONT.range * this.scale, [...this.obstacles, ...this.walls(true)]);
+    const hit = coneDistance(from, this.sensorHeading(port), COLOR_FRONT.halfAngle, COLOR_FRONT.range * this.scale, [...this.obstacles, ...this.walls(this.low(port))]);
     return hit === null ? null : hit / this.scale;
   }
 
@@ -194,14 +196,14 @@ export class Simulation {
     if (this.forceHeld.has(port)) return true;
     // der Taster sitzt vorn am Sensor – wohin das ist, hängt an seiner Drehung
     const out = forward(at.angle ?? 0), tip = toWorld(this.pose, this.scale, {x:at.x + FORCE.tip * out.x, y:at.y + FORCE.tip * out.y});
-    // (auch an der Wand um die Bahn, wenn sie eine ist – hoch oder niedrig)
-    return touches([...this.obstacles, ...this.walls(true)], tip, FORCE.reach * this.scale);
+    // (auch an der Wand um die Bahn: an der hohen immer, an der niedrigen nur, wenn er unten sitzt)
+    return touches([...this.obstacles, ...this.walls(this.low(port))], tip, FORCE.reach * this.scale);
   }
   /** Abstand am Abstandssensor in Millimetern; ohne Hindernis im Kegel 2000 wie am echten Sensor. */
   ultrasonic(port: string): number {
     if (port !== this.robot.ultra) return ULTRA.nothing;
-    // (die hohe Wand um die Bahn sieht er, über die niedrige schaut er hinweg)
-    const hit = coneDistance(this.ultraPoint(), this.ultraHeading(), ULTRA.halfAngle, ULTRA.range * this.scale, [...this.obstacles, ...this.walls(false)]);
+    // (die hohe Wand um die Bahn sieht er immer, die niedrige nur von unten – oben schaut er über sie hinweg)
+    const hit = coneDistance(this.ultraPoint(), this.ultraHeading(), ULTRA.halfAngle, ULTRA.range * this.scale, [...this.obstacles, ...this.walls(this.low(port))]);
     return hit === null ? ULTRA.nothing : Math.round(hit / this.scale);
   }
   /** Ausrichtung des Hubs in Grad, positiv nach rechts. */

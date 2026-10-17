@@ -109,6 +109,8 @@ const COLOR_SPACING = 40, COLOR_FRONT = 24;
 export const COLOR_SPOT = 5;
 /** Der Abstandssensor: wo er sitzt, halber Öffnungswinkel in Grad, Reichweite und der Wert ohne Hindernis. */
 export const ULTRA = {at:{x:24, y:0} as Point, halfAngle:17.5, range:2000, nothing:2000};
+/** So weit vor den Farbsensoren sitzt der Abstandssensor, wenn es beide gibt. */
+const ULTRA_AHEAD_OF_COLORS = 24;
 /** Der Kreis, mit dem der Roboter an Hindernisse stößt. */
 export const BUMPER = {at:{x:-18, y:0} as Point, radius:70};
 
@@ -116,7 +118,7 @@ export const BUMPER = {at:{x:-18, y:0} as Point, radius:70};
  * Der Kraftsensor: wo er sitzt (vorn, mehrere nebeneinander), wie weit sein Taster vor ihm liegt, wie weit
  * der tastet, was er gedrückt meldet (Newton) und wie weit er neben einem Abstandssensor sitzt.
  */
-export const FORCE = {front:62, spacing:30, tip:8, reach:12, pressed:10, besideUltra:40};
+export const FORCE = {front:72, spacing:30, tip:8, reach:12, pressed:10, besideUltra:40};
 /** Einzelne Motoren (ein Greifarm etwa) sitzen hinter dem Hub nebeneinander. */
 const MOTOR_BACK = -112, MOTOR_SPACING = 30;
 /**
@@ -138,7 +140,8 @@ export function defaultMounts(robot: SimRobot): Record<string, Point & Partial<M
     const y = (i - (robot.force.length - 1) / 2) * FORCE.spacing;
     mounts[port] = {x:FORCE.front, y:aside && robot.force.length === 1 ? aside : y + Math.sign(y) * aside};
   });
-  if (robot.ultra) mounts[robot.ultra] = {...ULTRA.at};
+  // mit Farbsensoren rückt der Abstandssensor vor sie – beide säßen sonst direkt vor dem Hub übereinander
+  if (robot.ultra) mounts[robot.ultra] = robot.colors.length ? {x:ULTRA.at.x + ULTRA_AHEAD_OF_COLORS, y:ULTRA.at.y} : {...ULTRA.at};
   colorSensorPoints(robot.colors.length).forEach((p, i) => { mounts[robot.colors[i]] = p; });
   return mounts;
 }
