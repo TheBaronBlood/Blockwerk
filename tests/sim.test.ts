@@ -3,7 +3,7 @@ import * as Blockly from 'blockly';
 import '../src/blocks';
 import { at, B, cmp, EXAMPLES, S, seq, setup, ws_, type WorkspaceState } from '../src/examples';
 import { N, T } from '../src/toolbox';
-import { changePart, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
+import { changePart, currentMounts, mirrorPartner, PARTS_VERSION, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts } from '../src/sim/build';
 import { wheelCenter } from '../src/sim/parts';
 import { charPixels, iconPixels, numberPixels } from '../src/sim/hubDisplay';
 import { colorSensorPoints, defaultMounts, describeRobot, robotFromWorkspace, robotParts, swapPorts, type SimRobot } from '../src/sim/robot';
@@ -551,6 +551,11 @@ describe('Teile einstellen', () => {
     expect(changePart(robot, {}, 'C', 'face', usual, false).C.face).toBe('front');
     expect(changePart(robot, {}, 'A', 'face', usual, false)).toEqual({});
     expect(changePart(robot, {}, 'C', 'flip', usual, false)).toEqual({});
+  });
+  it('gemerkte Motoren aus einer älteren Bauweise gelten nicht mehr – Sensoren schon', () => {
+    const saved = {'drive112:A,B':{A:{x:-20, y:-26, flip:true}}, 'motor:C':{C:{x:-90, y:0}}, 'color:C,D':{C:{x:96, y:-16}}};
+    expect(currentMounts(saved, undefined)).toEqual({'color:C,D':{C:{x:96, y:-16}}});
+    expect(currentMounts(saved, PARTS_VERSION)).toEqual(saved);
   });
   it('gemerkt wird, wie Motoren und Sensoren eingebaut sind', () => {
     const mounts = changePart(robot, changePart(robot, {}, 'A', 'flip', usual, true), 'C', 'face', usual, false);

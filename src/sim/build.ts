@@ -127,6 +127,17 @@ export function changePart(robot: SimRobot, mounts: Record<string, Mount>, port:
 
 /** Gemerkte Plätze: je Gruppe von Teilen (»color:C,D«) die Teile darin, die jemand versetzt oder gedreht hat. */
 export type SavedMounts = Record<string, Record<string, Mount>>;
+/**
+ * Bauweise der Motoren, mit der gemerkte Plätze gespeichert werden. Ändert sich, wo Motor und Rad zueinander sitzen
+ * (parts.ts), passen ältere Plätze nicht mehr – jeder Browser und jedes Gerät hätte sonst seinen eigenen, veralteten
+ * Roboter. 2: Motoren unter dem Hub, Rad am Abtrieb (Oktober 2026).
+ */
+export const PARTS_VERSION = 2;
+/** Gemerkte Plätze aus dem Speicher: Motoren aus einer anderen Bauweise gelten nicht mehr, Sensoren bleiben. */
+export function currentMounts(saved: SavedMounts, version: unknown): SavedMounts {
+  if (version === PARTS_VERSION) return saved;
+  return Object.fromEntries(Object.entries(saved).filter(([key]) => !key.startsWith('drive') && !key.startsWith('motor:')));
+}
 
 /**
  * Teile, deren Plätze zusammengehören: die Farbsensoren, der Abstandssensor, die Kraftsensoren, die

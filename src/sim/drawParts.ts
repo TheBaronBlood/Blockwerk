@@ -10,7 +10,7 @@ import { COLOR_SENSOR, FORCE_SENSOR, HUB, MOTOR, ULTRA_SENSOR, WHEEL, type Motor
 type Ctx = CanvasRenderingContext2D;
 const C = {
   hubFrame:'#DE9E14', hubFace:'#FAFAFA', pixelOff:'#E3E3E3', pixelOn:'#FFCD38', buttonRing:'#CDCDCD', button:'#EBEBEB',
-  black:'#111214', white:'#FFFFFF', motor:'#2EAFCF', motorLight:'#FAFAFA',
+  black:'#111214', white:'#FFFFFF', halo:'rgba(255,255,255,.85)', motor:'#2EAFCF', motorLight:'#FAFAFA',
   // das Rad: dunkler als der Motor und ohne Verlauf, mit Schatten und Rillen, die beim Fahren mitlaufen
   wheel:'#1A6F8C', wheelEdge:'#0E4A5E', tread:'rgba(255,255,255,.16)', shadow:'rgba(0,0,0,.38)'
 };
@@ -40,6 +40,8 @@ export function drawHub(g: Ctx, pixels: readonly number[], light: string | null)
 /** Ein Sensor mit Gehäuse: außen schwarz, innen ein weißer Ring; `white` – so viel der Höhe ist vorn weiß (die Vorderseite). */
 function housing(g: Ctx, w: number, l: number, r: number, white: number){
   const ring = 1.9, line = 1;
+  // ein heller Rand außen herum: Auf der schwarzen Linie verschwände der Sensor sonst
+  rounded(g, -w / 2 - 0.7, -l / 2 - 0.7, w + 1.4, l + 1.4, r + 0.7); g.fillStyle = C.halo; g.fill();
   rounded(g, -w / 2, -l / 2, w, l, r); g.fillStyle = C.black; g.fill();
   if (white > 0){
     // vorn weiß, bis zur Kante des schwarzen Teils

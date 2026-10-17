@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------
 import * as Blockly from 'blockly';
 import {
-  ANGLE_STEP, ANGLE_STEP_COARSE, changePart, GRID_MM, levelOf, mirrorPartner, MOUNT_AREA, mountsFor, placeSensor, rotateSensor, saveMounts, swapMounts,
+  ANGLE_STEP, ANGLE_STEP_COARSE, changePart, currentMounts, GRID_MM, levelOf, mirrorPartner, MOUNT_AREA, mountsFor, PARTS_VERSION, placeSensor, rotateSensor, saveMounts, swapMounts,
   type BuildOptions, type Level, type Mount, type SavedMounts
 } from './build';
 import { drawColorSensor, drawForceSensor, drawHub as drawHubPart, drawMotor, drawUltraSensor, drawWheel, inPartFrame, partSize } from './drawParts';
@@ -58,6 +58,7 @@ const KNOB_PX = 46;
  * Größe, Raster und Symmetrie – und die Bahn: ihre Platten, ihr Rand, wo der Roboter beginnt und die Hindernisse.
  */
 const STORE_KEY = 'blockwerk-sim-v1';
+
 /** Der Rand der Bahn: seine Farbe und was der Zeiger darüber sagt. Rot ist die hohe Wand, Orange die niedrige, Gelb hält nur auf; ohne Rand bleibt ein gestrichelter Umriss. */
 const FENCE_LOOK: Record<Fence, {color: string; name: string}> = {
   high:{color:'#DA3041', name:'Hohe Wand: Taster und Abstandssensor'},
@@ -145,7 +146,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   let storedStart: Pose | null = null, storedObstacles: Obstacle[] = [];
   const finite = (...values: unknown[]) => values.every(v => typeof v === 'number' && Number.isFinite(v));
   try {
-    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: Fence | boolean};
+    const stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as {layouts?: SavedMounts; parts?: number; scale?: number; grid?: boolean; symmetry?: boolean; track?: unknown; start?: Pose; obstacles?: Obstacle[]; fence?: Fence | boolean};
     // (früher gab es den Rand nur an oder aus)
     if (typeof stored.fence === 'boolean') sim.fence = stored.fence ? 'hidden' : 'off';
     else if (FENCES.includes(stored.fence as Fence)) sim.fence = stored.fence as Fence;
@@ -156,7 +157,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
       if (s && finite(s.x, s.y, s.heading)) storedStart = {x:s.x, y:s.y, heading:s.heading};
       if (Array.isArray(stored.obstacles)) storedObstacles = stored.obstacles.filter(o => o && finite(o.x, o.y, o.w, o.h)).map((o, i) => ({id:i + 1, x:o.x, y:o.y, w:o.w, h:o.h}));
     }
-    if (stored.layouts && typeof stored.layouts === 'object') saved = stored.layouts;
+    if (stored.layouts && typeof stored.layouts === 'object') saved = currentMounts(stored.layouts, stored.parts);
     if (typeof stored.scale === 'number' && stored.scale > 0){ sim.scale = stored.scale; scaleInput.value = String(stored.scale); }
     if (typeof stored.grid === 'boolean') build.grid = stored.grid;
     if (typeof stored.symmetry === 'boolean') build.symmetry = stored.symmetry;
@@ -164,7 +165,7 @@ export function initSimView(root: HTMLElement, opts: SimViewOptions): SimView {
   gridInput.checked = build.grid; symmetryInput.checked = build.symmetry;
   const remember = () => {
     saved = saveMounts(sim.robot, saved, sim.mounts);
-    const store = {layouts:saved, scale:sim.scale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
+    const store = {layouts:saved, parts:PARTS_VERSION, scale:sim.scale, ...build, fence:sim.fence, track:tileMap, ...(usingImage ? {} : {start:home, obstacles:sim.obstacles})};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch { /* gilt dann bis zum Neuladen */ }
   };
 
